@@ -1,0 +1,88 @@
+graph TD
+    %% Main Contracts
+    L1[CNSTokenL1<br/>L1 Token]
+    L2[CNSTokenL2<br/>L2 Token]
+    NFT[CNSAccessNFT<br/>Access NFTs]
+    TP[CNSTierProgression<br/>Tier System]
+    AC[CNSAccessControl<br/>Access Control]
+    TS[CNSTokenSale<br/>Token Sale]
+    
+    %% Bridge Components
+    Bridge[Bridge Contract<br/>L1 ↔ L2]
+    
+    %% User Interactions
+    User[Users]
+    
+    %% Contract Interactions
+    
+    %% L1/L2 Bridge Flow
+    L1 -->|Bridge| L2
+    L2 -->|Lock tokens<br/>for bridging| Bridge
+    Bridge -->|Unlock tokens<br/>after L1 transfer| L2
+    
+    %% NFT System Flow
+    User -->|Buy NFTs<br/>with ETH| NFT
+    NFT -->|Mint Tier 1,2,3<br/>NFTs| User
+    NFT -->|Store tier<br/>information| NFT
+    
+    %% Tier Progression Flow
+    TP -->|Manage sale<br/>start time| TP
+    TP -->|Calculate current<br/>phase| TP
+    TP -->|Return allowed<br/>tiers for phase| TP
+    
+    %% Access Control Flow
+    AC -->|Call getUserTier()| NFT
+    AC -->|Call getCurrentPhase()| TP
+    AC -->|Combine NFT tier +<br/>time phase| AC
+    AC -->|Return access<br/>decision| AC
+    
+    %% Token Sale Flow
+    TS -->|Check access| AC
+    TS -->|Transfer tokens| L2
+    TS -->|Calculate pricing| TS
+    TS -->|Handle ETH<br/>payments| TS
+    User -->|Send ETH<br/>buy tokens| TS
+    TS -->|Mint/burn<br/>for liquidity| L2
+    
+    %% Administrative Flow
+    Owner -->|Set bridge<br/>addresses| L1
+    Owner -->|Set bridge<br/>addresses| L2
+    Owner -->|Configure tier<br/>prices| NFT
+    Owner -->|Start sale<br/>timing| TP
+    Owner -->|Set sale<br/>parameters| TS
+    
+    %% Data Flow
+    NFT -.->|Tier data| AC
+    TP -.->|Phase data| AC
+    AC -.->|Access data| TS
+    L2 -.->|Token data| TS
+    
+    %% Styling
+    classDef contractClass fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef userClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef bridgeClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class L1,L2,NFT,TP,AC,TS contractClass
+    class User userClass
+    class Bridge bridgeClass
+    
+    %% Layout
+    subgraph "Layer 1"
+        L1
+    end
+    
+    subgraph "Layer 2"  
+        L2
+        NFT
+        TP
+        AC
+        TS
+    end
+    
+    subgraph "Bridge"
+        Bridge
+    end
+    
+    subgraph "Users"
+        User
+    end
