@@ -1,0 +1,61 @@
+# Foundry
+out/
+cache/
+broadcast/
+lib/
+forge-std/
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage reports
+coverage/
+lcov.info
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+dist/
+build/
+
+# Gas reports
+gas-report.txt
+gas-report.json
+
+# Test artifacts
+test-results/
+test-report.xml
+
+# Documentation
+docs/_build/
