@@ -23,6 +23,7 @@ formatter = { tab_width = 4, bracket_spacing = true, int_types = "long" }
 [profile.default.solc_config]
 remappings = [
     "forge-std/=lib/forge-std/src/",
+    "@openzeppelin/=lib/openzeppelin-contracts/contracts/",
 ]
 
 # CI profile for faster builds
