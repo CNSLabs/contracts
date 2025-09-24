@@ -8,6 +8,7 @@ import "../src/CNSTierProgression.sol";
 import "../src/CNSTokenSale.sol";
 import "../src/CNSTokenL2.sol";
 import "../src/CNSAccessControl.sol";
+import "../src/CREATE2Factory.sol";
 
 /**
  * @title DeployCNSContracts
@@ -17,7 +18,12 @@ contract DeployCNSContracts is Script {
     // Deployment addresses
     address public owner = address(0x1234); // Replace with actual owner address
 
+    // Deterministic deployment salts
+    bytes32 public constant TOKEN_L1_SALT = keccak256("CNS_TOKEN_L1_V1");
+    bytes32 public constant TOKEN_L2_SALT = keccak256("CNS_TOKEN_L2_V1");
+
     // Contract instances
+    CREATE2Factory public factory;
     CNSTokenL1 public tokenL1;
     CNSAccessNFT public accessNFT;
     CNSTierProgression public tierProgression;
@@ -30,27 +36,51 @@ contract DeployCNSContracts is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy L1 Token
-        console.log("Deploying CNSTokenL1...");
-        tokenL1 = new CNSTokenL1(owner);
+        // Deploy CREATE2 Factory
+        console.log("Deploying CREATE2Factory...");
+        factory = new CREATE2Factory();
+        console.log("CREATE2Factory deployed at:", address(factory));
+
+        // Pre-calculate deterministic token addresses
+        address predictedTokenL1 = factory.calculateAddress(
+            type(CNSTokenL1).creationCode,
+            TOKEN_L1_SALT
+        );
+        address predictedTokenL2 = factory.calculateAddress(
+            abi.encodePacked(type(CNSTokenL2).creationCode, abi.encode(owner, predictedTokenL1)),
+            TOKEN_L2_SALT
+        );
+
+        console.log("Predicted CNSTokenL1 address:", predictedTokenL1);
+        console.log("Predicted CNSTokenL2 address:", predictedTokenL2);
+
+        // Deploy L1 Token with CREATE2
+        console.log("Deploying CNSTokenL1 with CREATE2...");
+        bytes memory tokenL1Bytecode = type(CNSTokenL1).creationCode;
+        address deployedTokenL1 = factory.deploy(tokenL1Bytecode, TOKEN_L1_SALT);
+        tokenL1 = CNSTokenL1(deployedTokenL1);
+        require(address(tokenL1) == predictedTokenL1, "Token L1 address mismatch");
         console.log("CNSTokenL1 deployed at:", address(tokenL1));
 
-        // Deploy Access NFT
+        // Deploy Access NFT (regular deployment)
         console.log("Deploying CNSAccessNFT...");
         accessNFT = new CNSAccessNFT(owner, "https://api.cns.com/nft/");
         console.log("CNSAccessNFT deployed at:", address(accessNFT));
 
-        // Deploy Tier Progression
+        // Deploy Tier Progression (regular deployment)
         console.log("Deploying CNSTierProgression...");
         tierProgression = new CNSTierProgression(owner, address(accessNFT));
         console.log("CNSTierProgression deployed at:", address(tierProgression));
 
-        // Deploy L2 Token
-        console.log("Deploying CNSTokenL2...");
-        tokenL2 = new CNSTokenL2(
-            owner,
-            address(tokenL1) // L1 token address
+        // Deploy L2 Token with CREATE2
+        console.log("Deploying CNSTokenL2 with CREATE2...");
+        bytes memory tokenL2Bytecode = abi.encodePacked(
+            type(CNSTokenL2).creationCode,
+            abi.encode(owner, predictedTokenL1)
         );
+        address deployedTokenL2 = factory.deploy(tokenL2Bytecode, TOKEN_L2_SALT);
+        tokenL2 = CNSTokenL2(deployedTokenL2);
+        require(address(tokenL2) == predictedTokenL2, "Token L2 address mismatch");
         console.log("CNSTokenL2 deployed at:", address(tokenL2));
 
         // Deploy Access Control
@@ -104,12 +134,17 @@ contract DeployCNSContracts is Script {
     function _logDeploymentSummary() internal view {
         console.log("\n=== CNS Contract Deployment Summary ===");
         console.log("Owner:", owner);
-        console.log("CNSTokenL1:", address(tokenL1));
+        console.log("CREATE2Factory:", address(factory));
+        console.log("CNSTokenL1 (CREATE2):", address(tokenL1));
         console.log("CNSAccessNFT:", address(accessNFT));
         console.log("CNSTierProgression:", address(tierProgression));
-        console.log("CNSTokenL2:", address(tokenL2));
+        console.log("CNSTokenL2 (CREATE2):", address(tokenL2));
         console.log("CNSAccessControl:", address(accessControl));
         console.log("CNSTokenSale:", address(tokenSale));
+
+        console.log("\n=== Deterministic Deployment Info ===");
+        console.log("Token L1 Salt:", uint256(TOKEN_L1_SALT));
+        console.log("Token L2 Salt:", uint256(TOKEN_L2_SALT));
 
         console.log("\n=== Setup Information ===");
         console.log("Token Sale Price: 0.001 ETH per token");
