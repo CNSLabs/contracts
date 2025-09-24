@@ -45,12 +45,12 @@ contract CNSTokenL1Test is Test {
     }
 
     function testMaxSupply() public {
-        vm.prank(owner);
+        vm.startPrank(owner);
         token.mint(user1, token.MAX_SUPPLY() - token.totalSupply());
 
-        vm.prank(owner);
         vm.expectRevert("CNSTokenL1: max supply exceeded");
         token.mint(user2, 1);
+        vm.stopPrank();
     }
 
     function testBurn() public {

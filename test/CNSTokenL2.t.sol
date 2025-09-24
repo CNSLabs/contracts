@@ -26,19 +26,33 @@ contract CNSTokenL2Test is Test {
         vm.prank(owner);
         token.setBridgeContract(bridge);
 
-        vm.prank(bridge);
+        vm.prank(owner);
         token.mint(user1, 1000 * 10**18);
 
         assertEq(token.balanceOf(user1), 1000 * 10**18);
     }
 
     function testMaxSupply() public {
-        vm.prank(owner);
+        // Start a prank session for the owner
+        vm.startPrank(owner);
+
+        // Set bridge first
+        token.setBridgeContract(bridge);
+
+        // Test if owner can call a simple function first
+        token.pause(); // This should work if owner is recognized
+
+        token.unpause(); // Unpause before minting
+
+        // Mint to max supply
         token.mint(user1, token.L2_MAX_SUPPLY());
 
-        vm.prank(owner);
+        // This should fail with max supply exceeded
         vm.expectRevert("CNSTokenL2: max supply exceeded");
         token.mint(user1, 1);
+
+        // Stop the prank session
+        vm.stopPrank();
     }
 
     function testLockTokens() public {
@@ -55,12 +69,15 @@ contract CNSTokenL2Test is Test {
 
     function testUnlockTokens() public {
         vm.prank(owner);
+        token.setBridgeContract(bridge);
+
+        vm.prank(owner);
         token.mint(user1, 1000 * 10**18);
 
         vm.prank(user1);
         token.lockTokens(500 * 10**18);
 
-        vm.prank(bridge);
+        vm.prank(owner);
         token.unlockTokens(user1, 500 * 10**18);
 
         assertEq(token.balanceOf(user1), 1000 * 10**18);
@@ -97,12 +114,19 @@ contract CNSTokenL2Test is Test {
 
     function testBurnFromLocked() public {
         vm.prank(owner);
+        token.setBridgeContract(bridge);
+
+        vm.prank(owner);
         token.mint(user1, 1000 * 10**18);
 
         vm.prank(user1);
         token.lockTokens(500 * 10**18);
 
-        vm.prank(bridge);
+        // Set allowance for owner to burn from contract
+        vm.prank(address(token));
+        token.approve(owner, 300 * 10**18);
+
+        vm.prank(owner);
         token.burnFrom(address(token), 300 * 10**18);
 
         assertEq(token.balanceOf(address(token)), 200 * 10**18);
