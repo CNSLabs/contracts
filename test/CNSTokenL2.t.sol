@@ -16,10 +16,10 @@ contract CNSTokenL2Test is Test {
 
     function testMintByOwner() public {
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 1000 * 10**18);
-        assertEq(token.totalSupply(), 1000 * 10**18);
+        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
+        assertEq(token.totalSupply(), 1000 * 10 ** 18);
     }
 
     function testMintByBridge() public {
@@ -27,9 +27,9 @@ contract CNSTokenL2Test is Test {
         token.setBridgeContract(bridge);
 
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 1000 * 10**18);
+        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
     }
 
     function testMaxSupply() public {
@@ -57,14 +57,14 @@ contract CNSTokenL2Test is Test {
 
     function testLockTokens() public {
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
         vm.prank(user1);
-        token.lockTokens(500 * 10**18);
+        token.lockTokens(500 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 500 * 10**18);
-        assertEq(token.balanceOf(address(token)), 500 * 10**18);
-        assertEq(token.getLockedBalance(user1), 500 * 10**18);
+        assertEq(token.balanceOf(user1), 500 * 10 ** 18);
+        assertEq(token.balanceOf(address(token)), 500 * 10 ** 18);
+        assertEq(token.getLockedBalance(user1), 500 * 10 ** 18);
     }
 
     function testUnlockTokens() public {
@@ -72,15 +72,15 @@ contract CNSTokenL2Test is Test {
         token.setBridgeContract(bridge);
 
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
         vm.prank(user1);
-        token.lockTokens(500 * 10**18);
+        token.lockTokens(500 * 10 ** 18);
 
         vm.prank(owner);
-        token.unlockTokens(user1, 500 * 10**18);
+        token.unlockTokens(user1, 500 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 1000 * 10**18);
+        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
         assertEq(token.balanceOf(address(token)), 0);
         assertEq(token.getLockedBalance(user1), 0);
     }
@@ -117,29 +117,29 @@ contract CNSTokenL2Test is Test {
         token.setBridgeContract(bridge);
 
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
         vm.prank(user1);
-        token.lockTokens(500 * 10**18);
+        token.lockTokens(500 * 10 ** 18);
 
         // Set allowance for owner to burn from contract
         vm.prank(address(token));
-        token.approve(owner, 300 * 10**18);
+        token.approve(owner, 300 * 10 ** 18);
 
         vm.prank(owner);
-        token.burnFrom(address(token), 300 * 10**18);
+        token.burnFrom(address(token), 300 * 10 ** 18);
 
-        assertEq(token.balanceOf(address(token)), 200 * 10**18);
+        assertEq(token.balanceOf(address(token)), 200 * 10 ** 18);
     }
 
     function testEmergencyTransfer() public {
         vm.prank(owner);
-        token.mint(address(token), 1000 * 10**18);
+        token.mint(address(token), 1000 * 10 ** 18);
 
         vm.prank(owner);
-        token.emergencyTransfer(address(token), user1, 1000 * 10**18);
+        token.emergencyTransfer(address(token), user1, 1000 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 1000 * 10**18);
+        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
         assertEq(token.balanceOf(address(token)), 0);
     }
 }

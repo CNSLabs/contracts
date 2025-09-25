@@ -20,7 +20,7 @@ contract CNSTokenL1 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
     address public minter;
 
     // Total supply cap
-    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18; // 1 billion tokens
+    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10 ** 18; // 1 billion tokens
 
     // Events
     event BridgeContractSet(address indexed bridge);
@@ -31,24 +31,15 @@ contract CNSTokenL1 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @dev Constructor
      * @param initialOwner The owner of the contract
      */
-    constructor(
-        address initialOwner
-    )
-        ERC20("CNS Token", "CNS")
-        Ownable(initialOwner)
-        ERC20Permit("CNS Token")
-    {
-        _mint(initialOwner, 100_000_000 * 10**18); // Mint 100M tokens to owner
+    constructor(address initialOwner) ERC20("CNS Token", "CNS") Ownable(initialOwner) ERC20Permit("CNS Token") {
+        _mint(initialOwner, 100_000_000 * 10 ** 18); // Mint 100M tokens to owner
     }
 
     /**
      * @dev Modifier to check if caller is bridge or owner
      */
     modifier onlyBridgeOrOwner() {
-        require(
-            msg.sender == l1Bridge || msg.sender == owner(),
-            "CNSTokenL1: caller is not bridge or owner"
-        );
+        require(msg.sender == l1Bridge || msg.sender == owner(), "CNSTokenL1: caller is not bridge or owner");
         _;
     }
 
@@ -119,11 +110,7 @@ contract CNSTokenL1 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
     /**
      * @dev Hook that is called before any transfer of tokens
      */
-    function _update(
-        address from,
-        address to,
-        uint256 value
-    ) internal override(ERC20, ERC20Pausable) {
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Pausable) {
         super._update(from, to, value);
     }
 }

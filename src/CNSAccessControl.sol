@@ -17,10 +17,21 @@ contract CNSAccessControl is Ownable, ReentrancyGuard {
     }
 
     // Tier definitions
-    enum Tier { NONE, TIER1, TIER2, TIER3 }
+    enum Tier {
+        NONE,
+        TIER3,
+        TIER2,
+        TIER1
+    }
 
     // Sale phase definitions
-    enum SalePhase { NOT_STARTED, TIER1_ONLY, TIER12, ALL_TIERS, ENDED }
+    enum SalePhase {
+        NOT_STARTED,
+        TIER1_ONLY,
+        TIER12,
+        ALL_TIERS,
+        ENDED
+    }
 
     // Access control contracts
     AccessNFTContract public accessNFT;
@@ -38,11 +49,7 @@ contract CNSAccessControl is Ownable, ReentrancyGuard {
      * @param _accessNFT Address of the access NFT contract
      * @param _tierProgression Address of the tier progression contract
      */
-    constructor(
-        address initialOwner,
-        address _accessNFT,
-        address _tierProgression
-    ) Ownable(initialOwner) {
+    constructor(address initialOwner, address _accessNFT, address _tierProgression) Ownable(initialOwner) {
         accessNFT = AccessNFTContract(_accessNFT, true);
         tierProgression = _tierProgression;
     }
@@ -97,14 +104,18 @@ contract CNSAccessControl is Ownable, ReentrancyGuard {
     /**
      * @dev Get detailed access information for a user
      */
-    function getAccessInfo(address user) external view returns (
-        bool hasAccess,
-        Tier userTier,
-        SalePhase currentPhase,
-        uint256 timeUntilNextPhase,
-        Tier[] memory allowedTiers,
-        bool isActive
-    ) {
+    function getAccessInfo(address user)
+        external
+        view
+        returns (
+            bool hasAccess,
+            Tier userTier,
+            SalePhase currentPhase,
+            uint256 timeUntilNextPhase,
+            Tier[] memory allowedTiers,
+            bool isActive
+        )
+    {
         (hasAccess, userTier, currentPhase) = hasPurchaseAccess(user);
 
         if (tierProgression != address(0)) {

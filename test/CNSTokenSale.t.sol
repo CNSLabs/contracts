@@ -18,21 +18,21 @@ contract CNSTokenSaleTest is Test {
     address public user2 = address(0x789);
 
     function setUp() public {
+        // Fund test accounts
+        vm.deal(owner, 100 ether);
+        vm.deal(user1, 100 ether);
+        vm.deal(user2, 100 ether);
+
         // Deploy contracts
         tokenL2 = new CNSTokenL2(owner, address(0x123)); // Mock L1 token
         accessNFT = new CNSAccessNFT(owner, "https://api.cns.com/nft/");
         tierProgression = new CNSTierProgression(owner, address(accessNFT));
 
-        tokenSale = new CNSTokenSale(
-            address(tokenL2),
-            address(accessNFT),
-            address(tierProgression),
-            owner
-        );
+        tokenSale = new CNSTokenSale(address(tokenL2), address(accessNFT), address(tierProgression), owner);
 
         // Mint tokens to sale contract
         vm.prank(owner);
-        tokenL2.mint(address(tokenSale), 100000000 * 10**18);
+        tokenL2.mint(address(tokenSale), 100000000 * 10 ** 18);
 
         // Set up sale
         vm.prank(owner);
@@ -41,14 +41,14 @@ contract CNSTokenSaleTest is Test {
 
     function testCalculateTokenAmount() public {
         uint256 ethAmount = 1 ether;
-        uint256 expectedTokens = (ethAmount * 10**18) / tokenSale.tokenPrice();
+        uint256 expectedTokens = (ethAmount * 10 ** 18) / tokenSale.tokenPrice();
 
         assertEq(tokenSale.calculateTokenAmount(ethAmount), expectedTokens);
     }
 
     function testCalculateEthCost() public {
-        uint256 tokenAmount = 1000 * 10**18;
-        uint256 expectedCost = (tokenAmount * tokenSale.tokenPrice()) / 10**18;
+        uint256 tokenAmount = 1000 * 10 ** 18;
+        uint256 expectedCost = (tokenAmount * tokenSale.tokenPrice()) / 10 ** 18;
 
         assertEq(tokenSale.calculateEthCost(tokenAmount), expectedCost);
     }
@@ -66,7 +66,7 @@ contract CNSTokenSaleTest is Test {
     }
 
     function testPurchaseExactTokens() public {
-        uint256 tokenAmount = 1000 * 10**18;
+        uint256 tokenAmount = 1000 * 10 ** 18;
         uint256 ethCost = tokenSale.calculateEthCost(tokenAmount);
 
         vm.prank(user1);
@@ -100,11 +100,13 @@ contract CNSTokenSaleTest is Test {
     }
 
     function testCannotPurchaseBelowMin() public {
-        uint256 belowMin = tokenSale.minPurchase() - 1;
+        // Calculate ETH amount that would buy exactly 1 token less than minimum
+        uint256 tokensBelowMin = tokenSale.minPurchase() - 1;
+        uint256 ethForBelowMin = tokenSale.calculateEthCost(tokensBelowMin);
 
         vm.prank(user1);
         vm.expectRevert("CNSTokenSale: below minimum purchase");
-        tokenSale.purchaseTokens{value: 1 ether}();
+        tokenSale.purchaseTokens{value: ethForBelowMin}();
     }
 
     function testPauseUnpause() public {
@@ -132,8 +134,8 @@ contract CNSTokenSaleTest is Test {
     }
 
     function testSetPurchaseLimits() public {
-        uint256 newMin = 200 * 10**18;
-        uint256 newMax = 20000 * 10**18;
+        uint256 newMin = 200 * 10 ** 18;
+        uint256 newMax = 20000 * 10 ** 18;
 
         vm.prank(owner);
         tokenSale.setPurchaseLimits(newMin, newMax);
@@ -178,13 +180,8 @@ contract CNSTokenSaleTest is Test {
         vm.prank(user1);
         tokenSale.purchaseTokens{value: 1 ether}();
 
-        (
-            bool hasAccess,
-            uint256 purchased,
-            uint256 purchaseCount,
-            uint256 remainingAllowance,
-            bool whitelisted
-        ) = tokenSale.getUserStatus(user1);
+        (bool hasAccess, uint256 purchased, uint256 purchaseCount, uint256 remainingAllowance, bool whitelisted) =
+            tokenSale.getUserStatus(user1);
 
         assertEq(hasAccess, true); // Whitelisted
         assertEq(purchased, tokenSale.userPurchases(user1));

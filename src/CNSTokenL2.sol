@@ -27,7 +27,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
     mapping(address => uint256) public lockedTokens;
 
     // Total supply cap (may differ from L1)
-    uint256 public constant L2_MAX_SUPPLY = 2_000_000_000 * 10**18; // 2 billion tokens on L2
+    uint256 public constant L2_MAX_SUPPLY = 2_000_000_000 * 10 ** 18; // 2 billion tokens on L2
 
     // Events
     event L1TokenSet(address indexed l1Token);
@@ -42,10 +42,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @param initialOwner The owner of the contract
      * @param _l1Token Address of the L1 token contract
      */
-    constructor(
-        address initialOwner,
-        address _l1Token
-    )
+    constructor(address initialOwner, address _l1Token)
         ERC20("CNS Token L2", "CNS-L2")
         Ownable(initialOwner)
         ERC20Permit("CNS Token L2")
@@ -58,10 +55,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @dev Modifier to check if caller is bridge or owner
      */
     modifier onlyBridgeOrOwner() {
-        require(
-            msg.sender == l2Bridge || msg.sender == owner(),
-            "CNSTokenL2: caller is not bridge or owner"
-        );
+        require(msg.sender == l2Bridge || msg.sender == owner(), "CNSTokenL2: caller is not bridge or owner");
         _;
     }
 
@@ -178,11 +172,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
     /**
      * @dev Hook that is called before any transfer of tokens
      */
-    function _update(
-        address from,
-        address to,
-        uint256 value
-    ) internal override(ERC20, ERC20Pausable) {
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Pausable) {
         super._update(from, to, value);
     }
 
@@ -192,11 +182,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @param to Address to transfer to
      * @param amount Amount to transfer
      */
-    function emergencyTransfer(
-        address token,
-        address to,
-        uint256 amount
-    ) external onlyOwner {
+    function emergencyTransfer(address token, address to, uint256 amount) external onlyOwner {
         require(to != address(0), "CNSTokenL2: cannot transfer to zero address");
 
         if (token == address(this)) {

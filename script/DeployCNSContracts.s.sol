@@ -37,18 +37,12 @@ contract DeployCNSContracts is Script {
 
         // Deploy Access NFT
         console.log("Deploying CNSAccessNFT...");
-        accessNFT = new CNSAccessNFT(
-            owner,
-            "https://api.cns.com/nft/"
-        );
+        accessNFT = new CNSAccessNFT(owner, "https://api.cns.com/nft/");
         console.log("CNSAccessNFT deployed at:", address(accessNFT));
 
         // Deploy Tier Progression
         console.log("Deploying CNSTierProgression...");
-        tierProgression = new CNSTierProgression(
-            owner,
-            address(accessNFT)
-        );
+        tierProgression = new CNSTierProgression(owner, address(accessNFT));
         console.log("CNSTierProgression deployed at:", address(tierProgression));
 
         // Deploy L2 Token
@@ -61,11 +55,7 @@ contract DeployCNSContracts is Script {
 
         // Deploy Access Control
         console.log("Deploying CNSAccessControl...");
-        accessControl = new CNSAccessControl(
-            owner,
-            address(accessNFT),
-            address(tierProgression)
-        );
+        accessControl = new CNSAccessControl(owner, address(accessNFT), address(tierProgression));
         console.log("CNSAccessControl deployed at:", address(accessControl));
 
         // Deploy Token Sale
@@ -96,9 +86,9 @@ contract DeployCNSContracts is Script {
 
         // Set tier prices for NFT
         accessNFT.setTierPrices(
-            1 ether,    // Tier 1: 1 ETH
-            0.5 ether,  // Tier 2: 0.5 ETH
-            0.1 ether   // Tier 3: 0.1 ETH
+            1 ether, // Tier 1: 1 ETH
+            0.5 ether, // Tier 2: 0.5 ETH
+            0.1 ether // Tier 3: 0.1 ETH
         );
 
         // Start the sale (1 day from now)

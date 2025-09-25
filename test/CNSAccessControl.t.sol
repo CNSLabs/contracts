@@ -12,10 +12,15 @@ contract CNSAccessControlTest is Test {
     address public user2 = address(0x789);
 
     function setUp() public {
+        // Fund test accounts
+        vm.deal(owner, 100 ether);
+        vm.deal(user1, 100 ether);
+        vm.deal(user2, 100 ether);
+
         accessControl = new CNSAccessControl(
             owner,
             address(0x111), // Mock NFT contract
-            address(0x222)  // Mock tier progression
+            address(0x222) // Mock tier progression
         );
     }
 
@@ -47,7 +52,8 @@ contract CNSAccessControlTest is Test {
     }
 
     function testHasPurchaseAccess() public {
-        (bool hasAccess, CNSAccessControl.Tier userTier, CNSAccessControl.SalePhase currentPhase) = accessControl.hasPurchaseAccess(user1);
+        (bool hasAccess, CNSAccessControl.Tier userTier, CNSAccessControl.SalePhase currentPhase) =
+            accessControl.hasPurchaseAccess(user1);
 
         // Should return false since contracts are not set up properly in test
         assertEq(hasAccess, false);
