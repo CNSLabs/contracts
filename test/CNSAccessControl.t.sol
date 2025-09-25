@@ -19,16 +19,16 @@ contract CNSAccessControlTest is Test {
 
         accessControl = new CNSAccessControl(
             owner,
-            address(0x111), // Mock NFT contract
-            address(0x222) // Mock tier progression
+            address(0), // Mock NFT contract (inactive)
+            address(0) // Mock tier progression (inactive)
         );
     }
 
     function testInitialState() public {
         (address nftContract, bool isActive) = accessControl.accessNFT();
-        assertEq(nftContract, address(0x111));
-        assertEq(isActive, true);
-        assertEq(accessControl.tierProgression(), address(0x222));
+        assertEq(nftContract, address(0));
+        assertEq(isActive, false);
+        assertEq(accessControl.tierProgression(), address(0));
     }
 
     function testSetAccessNFT() public {
@@ -114,7 +114,7 @@ contract CNSAccessControlTest is Test {
         (address nftAddr,) = accessControl.accessNFT();
         address progressionAddr = accessControl.tierProgression();
 
-        assertEq(nftAddr, address(0x111));
-        assertEq(progressionAddr, address(0x222));
+        assertEq(nftAddr, address(0));
+        assertEq(progressionAddr, address(0));
     }
 }

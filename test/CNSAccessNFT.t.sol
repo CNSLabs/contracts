@@ -43,12 +43,14 @@ contract CNSAccessNFTTest is Test {
         vm.prank(owner);
         nft.toggleSale();
 
+        uint256 initialBalance = user1.balance;
         uint256 excessAmount = 2 ether;
         vm.prank(user1);
         nft.buyTier{value: excessAmount}(CNSAccessNFT.Tier.TIER1);
 
         assertEq(nft.balanceOf(user1), 1);
-        assertEq(user1.balance, excessAmount - 1 ether); // Should get 1 ETH back
+        // Initial: 100 ether, send 2 ether, get 1 ether refund = 99 ether
+        assertEq(user1.balance, initialBalance - excessAmount + 1 ether);
     }
 
     function testTierLimits() public {

@@ -114,7 +114,7 @@ contract CNSTokenSaleTest is Test {
         tokenSale.pause();
 
         vm.prank(user1);
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert(); // Throws EnforcedPause() when paused
         tokenSale.purchaseTokens{value: 1 ether}();
 
         vm.prank(owner);

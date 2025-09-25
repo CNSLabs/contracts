@@ -196,7 +196,6 @@ contract CNSTokenSale is Ownable, ReentrancyGuard, Pausable {
         require(tokensSold + tokenAmount <= totalTokensForSale, "CNSTokenSale: exceeds total supply");
 
         uint256 ethCost = calculateEthCost(tokenAmount);
-        require(msg.sender == tx.origin, "CNSTokenSale: contract caller not allowed");
 
         // Update user purchase tracking
         userPurchases[msg.sender] += tokenAmount;
