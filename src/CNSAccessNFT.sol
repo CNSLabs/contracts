@@ -257,9 +257,7 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      */
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0
-            ? string(abi.encodePacked(baseURI, "/", Strings.toString(tokenId)))
-            : "";
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, "/", Strings.toString(tokenId))) : "";
     }
 
     /**
