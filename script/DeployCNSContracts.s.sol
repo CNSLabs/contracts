@@ -42,13 +42,9 @@ contract DeployCNSContracts is Script {
         console.log("CREATE2Factory deployed at:", address(factory));
 
         // Pre-calculate deterministic token addresses
-        address predictedTokenL1 = factory.calculateAddress(
-            type(CNSTokenL1).creationCode,
-            TOKEN_L1_SALT
-        );
+        address predictedTokenL1 = factory.calculateAddress(type(CNSTokenL1).creationCode, TOKEN_L1_SALT);
         address predictedTokenL2 = factory.calculateAddress(
-            abi.encodePacked(type(CNSTokenL2).creationCode, abi.encode(owner, predictedTokenL1)),
-            TOKEN_L2_SALT
+            abi.encodePacked(type(CNSTokenL2).creationCode, abi.encode(owner, predictedTokenL1)), TOKEN_L2_SALT
         );
 
         console.log("Predicted CNSTokenL1 address:", predictedTokenL1);
@@ -74,10 +70,8 @@ contract DeployCNSContracts is Script {
 
         // Deploy L2 Token with CREATE2
         console.log("Deploying CNSTokenL2 with CREATE2...");
-        bytes memory tokenL2Bytecode = abi.encodePacked(
-            type(CNSTokenL2).creationCode,
-            abi.encode(owner, predictedTokenL1)
-        );
+        bytes memory tokenL2Bytecode =
+            abi.encodePacked(type(CNSTokenL2).creationCode, abi.encode(owner, predictedTokenL1));
         address deployedTokenL2 = factory.deploy(tokenL2Bytecode, TOKEN_L2_SALT);
         tokenL2 = CNSTokenL2(deployedTokenL2);
         require(address(tokenL2) == predictedTokenL2, "Token L2 address mismatch");

@@ -55,10 +55,7 @@ contract DeployCNSContractsTest is Test {
 
     function testDeterministicAddressCalculation() public {
         // Calculate expected addresses
-        address predictedTokenL1 = factory.calculateAddress(
-            type(CNSTokenL1).creationCode,
-            TOKEN_L1_SALT
-        );
+        address predictedTokenL1 = factory.calculateAddress(type(CNSTokenL1).creationCode, TOKEN_L1_SALT);
 
         // Verify address calculation works
         assertTrue(predictedTokenL1 != address(0));
@@ -77,14 +74,10 @@ contract DeployCNSContractsTest is Test {
 
     function testDeploymentStructure() public {
         // Test that we can calculate addresses correctly
-        address predictedTokenL1 = factory.calculateAddress(
-            type(CNSTokenL1).creationCode,
-            TOKEN_L1_SALT
-        );
+        address predictedTokenL1 = factory.calculateAddress(type(CNSTokenL1).creationCode, TOKEN_L1_SALT);
 
         address predictedTokenL2 = factory.calculateAddress(
-            abi.encodePacked(type(CNSTokenL2).creationCode, abi.encode(owner, predictedTokenL1)),
-            TOKEN_L2_SALT
+            abi.encodePacked(type(CNSTokenL2).creationCode, abi.encode(owner, predictedTokenL1)), TOKEN_L2_SALT
         );
 
         // Verify the addresses are different and valid
@@ -106,15 +99,9 @@ contract DeployCNSContractsTest is Test {
 
     function testDeploymentAddressConsistency() public {
         // Calculate addresses twice with same salt - should be identical
-        address predictedTokenL1_1 = factory.calculateAddress(
-            type(CNSTokenL1).creationCode,
-            TOKEN_L1_SALT
-        );
+        address predictedTokenL1_1 = factory.calculateAddress(type(CNSTokenL1).creationCode, TOKEN_L1_SALT);
 
-        address predictedTokenL1_2 = factory.calculateAddress(
-            type(CNSTokenL1).creationCode,
-            TOKEN_L1_SALT
-        );
+        address predictedTokenL1_2 = factory.calculateAddress(type(CNSTokenL1).creationCode, TOKEN_L1_SALT);
 
         // Same salt should produce same address
         assertEq(predictedTokenL1_1, predictedTokenL1_2);
