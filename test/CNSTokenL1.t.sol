@@ -15,16 +15,16 @@ contract CNSTokenL1Test is Test {
     }
 
     function testInitialSupply() public {
-        assertEq(token.balanceOf(owner), 100_000_000 * 10**18);
-        assertEq(token.totalSupply(), 100_000_000 * 10**18);
+        assertEq(token.balanceOf(owner), 100_000_000 * 10 ** 18);
+        assertEq(token.totalSupply(), 100_000_000 * 10 ** 18);
     }
 
     function testMintByOwner() public {
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 1000 * 10**18);
-        assertEq(token.totalSupply(), 100_000_000 * 10**18 + 1000 * 10**18);
+        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
+        assertEq(token.totalSupply(), 100_000_000 * 10 ** 18 + 1000 * 10 ** 18);
     }
 
     function testMintByBridge() public {
@@ -33,35 +33,35 @@ contract CNSTokenL1Test is Test {
         token.setBridgeContract(bridge);
 
         vm.prank(bridge);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
-        assertEq(token.balanceOf(user1), 1000 * 10**18);
+        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
     }
 
     function testCannotMintUnauthorized() public {
         vm.prank(user1);
         vm.expectRevert("CNSTokenL1: caller is not bridge or owner");
-        token.mint(user2, 1000 * 10**18);
+        token.mint(user2, 1000 * 10 ** 18);
     }
 
     function testMaxSupply() public {
-        vm.prank(owner);
+        vm.startPrank(owner);
         token.mint(user1, token.MAX_SUPPLY() - token.totalSupply());
 
-        vm.prank(owner);
         vm.expectRevert("CNSTokenL1: max supply exceeded");
         token.mint(user2, 1);
+        vm.stopPrank();
     }
 
     function testBurn() public {
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
         vm.prank(owner);
-        token.burn(500 * 10**18);
+        token.burn(500 * 10 ** 18);
 
-        assertEq(token.balanceOf(owner), 100_000_000 * 10**18 - 500 * 10**18);
-        assertEq(token.totalSupply(), 100_000_000 * 10**18 + 500 * 10**18);
+        assertEq(token.balanceOf(owner), 100_000_000 * 10 ** 18 - 500 * 10 ** 18);
+        assertEq(token.totalSupply(), 100_000_000 * 10 ** 18 + 500 * 10 ** 18);
     }
 
     function testSetBridgeContract() public {
@@ -96,13 +96,13 @@ contract CNSTokenL1Test is Test {
 
     function testTransferWhenPaused() public {
         vm.prank(owner);
-        token.mint(user1, 1000 * 10**18);
+        token.mint(user1, 1000 * 10 ** 18);
 
         vm.prank(owner);
         token.pause();
 
         vm.prank(user1);
         vm.expectRevert();
-        token.transfer(user2, 100 * 10**18);
+        token.transfer(user2, 100 * 10 ** 18);
     }
 }

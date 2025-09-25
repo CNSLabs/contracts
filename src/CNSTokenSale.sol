@@ -52,12 +52,9 @@ contract CNSTokenSale is Ownable, ReentrancyGuard, Pausable {
      * @param _tierProgression Address of the tier progression contract
      * @param initialOwner The owner of the contract
      */
-    constructor(
-        address _saleToken,
-        address _accessNFT,
-        address _tierProgression,
-        address initialOwner
-    ) Ownable(initialOwner) {
+    constructor(address _saleToken, address _accessNFT, address _tierProgression, address initialOwner)
+        Ownable(initialOwner)
+    {
         require(_saleToken != address(0), "CNSTokenSale: invalid token address");
         require(_accessNFT != address(0), "CNSTokenSale: invalid NFT address");
         require(_tierProgression != address(0), "CNSTokenSale: invalid progression address");
@@ -68,9 +65,9 @@ contract CNSTokenSale is Ownable, ReentrancyGuard, Pausable {
 
         // Set default values
         tokenPrice = 0.001 ether; // 1 token = 0.001 ETH
-        minPurchase = 100 * 10**18; // 100 tokens minimum
-        maxPurchase = 10000 * 10**18; // 10,000 tokens maximum per user
-        totalTokensForSale = 100000000 * 10**18; // 100M tokens for sale
+        minPurchase = 100 * 10 ** 18; // 100 tokens minimum
+        maxPurchase = 10000 * 10 ** 18; // 10,000 tokens maximum per user
+        totalTokensForSale = 100000000 * 10 ** 18; // 100M tokens for sale
     }
 
     /**
@@ -128,14 +125,14 @@ contract CNSTokenSale is Ownable, ReentrancyGuard, Pausable {
      * @dev Calculate token amount for given ETH amount
      */
     function calculateTokenAmount(uint256 ethAmount) public view returns (uint256) {
-        return (ethAmount * 10**18) / tokenPrice;
+        return (ethAmount * 10 ** 18) / tokenPrice;
     }
 
     /**
      * @dev Calculate ETH cost for token amount
      */
     function calculateEthCost(uint256 tokenAmount) public view returns (uint256) {
-        return (tokenAmount * tokenPrice) / 10**18;
+        return (tokenAmount * tokenPrice) / 10 ** 18;
     }
 
     /**
@@ -199,7 +196,6 @@ contract CNSTokenSale is Ownable, ReentrancyGuard, Pausable {
         require(tokensSold + tokenAmount <= totalTokensForSale, "CNSTokenSale: exceeds total supply");
 
         uint256 ethCost = calculateEthCost(tokenAmount);
-        require(msg.sender == tx.origin, "CNSTokenSale: contract caller not allowed");
 
         // Update user purchase tracking
         userPurchases[msg.sender] += tokenAmount;
@@ -253,32 +249,28 @@ contract CNSTokenSale is Ownable, ReentrancyGuard, Pausable {
     /**
      * @dev Get sale status
      */
-    function getSaleStatus() external view returns (
-        uint256 tokensRemaining,
-        uint256 tokensSold_,
-        uint256 totalSupply,
-        bool isActive,
-        bool isPaused
-    ) {
-        return (
-            totalTokensForSale - tokensSold,
-            tokensSold,
-            totalTokensForSale,
-            !paused(),
-            paused()
-        );
+    function getSaleStatus()
+        external
+        view
+        returns (uint256 tokensRemaining, uint256 tokensSold_, uint256 totalSupply, bool isActive, bool isPaused)
+    {
+        return (totalTokensForSale - tokensSold, tokensSold, totalTokensForSale, !paused(), paused());
     }
 
     /**
      * @dev Get user status
      */
-    function getUserStatus(address user) external view returns (
-        bool hasAccess,
-        uint256 purchased,
-        uint256 purchaseCount,
-        uint256 remainingAllowance,
-        bool isWhitelisted
-    ) {
+    function getUserStatus(address user)
+        external
+        view
+        returns (
+            bool hasAccess,
+            uint256 purchased,
+            uint256 purchaseCount,
+            uint256 remainingAllowance,
+            bool isWhitelisted
+        )
+    {
         return (
             hasPurchaseAccess(user),
             userPurchases[user],

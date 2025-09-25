@@ -11,7 +11,12 @@ contract CNSAccessNFTTest is Test {
     address public user2 = address(0x789);
 
     function setUp() public {
-        nft = new CNSAccessNFT(owner, "https://api.cns.com/nft/");
+        // Fund test accounts
+        vm.deal(owner, 100 ether);
+        vm.deal(user1, 100 ether);
+        vm.deal(user2, 100 ether);
+
+        nft = new CNSAccessNFT(owner, "https://api.cns.com/nft");
     }
 
     function testMintTier1() public {
@@ -38,12 +43,14 @@ contract CNSAccessNFTTest is Test {
         vm.prank(owner);
         nft.toggleSale();
 
+        uint256 initialBalance = user1.balance;
         uint256 excessAmount = 2 ether;
         vm.prank(user1);
         nft.buyTier{value: excessAmount}(CNSAccessNFT.Tier.TIER1);
 
         assertEq(nft.balanceOf(user1), 1);
-        assertEq(user1.balance, excessAmount - 1 ether); // Should get 1 ETH back
+        // Initial: 100 ether, send 2 ether, get 1 ether refund = 99 ether
+        assertEq(user1.balance, initialBalance - excessAmount + 1 ether);
     }
 
     function testTierLimits() public {
@@ -67,7 +74,7 @@ contract CNSAccessNFTTest is Test {
 
         assertEq(uint256(nft.getUserTier(user1)), uint256(CNSAccessNFT.Tier.TIER2));
 
-        // Mint Tier 1 (higher tier)
+        // Mint Tier 1 (highest tier)
         vm.prank(owner);
         nft.mintTier(user1, CNSAccessNFT.Tier.TIER1);
 
@@ -109,14 +116,8 @@ contract CNSAccessNFTTest is Test {
         vm.prank(owner);
         nft.mintTier(user1, CNSAccessNFT.Tier.TIER1);
 
-        (
-            uint256 tier1Minted,
-            uint256 tier2Minted,
-            uint256 tier3Minted,
-            bool tier1Sold,
-            bool tier2Sold,
-            bool tier3Sold
-        ) = nft.getTierStats();
+        (uint256 tier1Minted, uint256 tier2Minted, uint256 tier3Minted, bool tier1Sold, bool tier2Sold, bool tier3Sold)
+        = nft.getTierStats();
 
         assertEq(tier1Minted, 1);
         assertEq(tier2Minted, 0);

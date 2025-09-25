@@ -12,18 +12,23 @@ contract CNSAccessControlTest is Test {
     address public user2 = address(0x789);
 
     function setUp() public {
+        // Fund test accounts
+        vm.deal(owner, 100 ether);
+        vm.deal(user1, 100 ether);
+        vm.deal(user2, 100 ether);
+
         accessControl = new CNSAccessControl(
             owner,
-            address(0x111), // Mock NFT contract
-            address(0x222)  // Mock tier progression
+            address(0), // Mock NFT contract (inactive)
+            address(0) // Mock tier progression (inactive)
         );
     }
 
     function testInitialState() public {
         (address nftContract, bool isActive) = accessControl.accessNFT();
-        assertEq(nftContract, address(0x111));
-        assertEq(isActive, true);
-        assertEq(accessControl.tierProgression(), address(0x222));
+        assertEq(nftContract, address(0));
+        assertEq(isActive, false);
+        assertEq(accessControl.tierProgression(), address(0));
     }
 
     function testSetAccessNFT() public {
@@ -47,7 +52,8 @@ contract CNSAccessControlTest is Test {
     }
 
     function testHasPurchaseAccess() public {
-        (bool hasAccess, CNSAccessControl.Tier userTier, CNSAccessControl.SalePhase currentPhase) = accessControl.hasPurchaseAccess(user1);
+        (bool hasAccess, CNSAccessControl.Tier userTier, CNSAccessControl.SalePhase currentPhase) =
+            accessControl.hasPurchaseAccess(user1);
 
         // Should return false since contracts are not set up properly in test
         assertEq(hasAccess, false);
@@ -108,7 +114,7 @@ contract CNSAccessControlTest is Test {
         (address nftAddr,) = accessControl.accessNFT();
         address progressionAddr = accessControl.tierProgression();
 
-        assertEq(nftAddr, address(0x111));
-        assertEq(progressionAddr, address(0x222));
+        assertEq(nftAddr, address(0));
+        assertEq(progressionAddr, address(0));
     }
 }
