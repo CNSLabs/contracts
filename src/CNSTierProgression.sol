@@ -13,15 +13,26 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  */
 contract CNSTierProgression is Ownable, ReentrancyGuard {
     // Tier definitions (matching CNSAccessNFT)
-    enum Tier { NONE, TIER1, TIER2, TIER3 }
+    enum Tier {
+        NONE,
+        TIER1,
+        TIER2,
+        TIER3
+    }
 
     // Sale phases
-    enum SalePhase { NOT_STARTED, TIER1_ONLY, TIER12, ALL_TIERS, ENDED }
+    enum SalePhase {
+        NOT_STARTED,
+        TIER1_ONLY,
+        TIER12,
+        ALL_TIERS,
+        ENDED
+    }
 
     // Phase durations (in seconds)
-    uint256 public constant TIER1_ONLY_DURATION = 1 days;    // Day 1
-    uint256 public constant TIER12_DURATION = 2 days;        // Days 2-3
-    uint256 public constant ALL_TIERS_DURATION = 7 days;     // Days 4-10
+    uint256 public constant TIER1_ONLY_DURATION = 1 days; // Day 1
+    uint256 public constant TIER12_DURATION = 2 days; // Days 2-3
+    uint256 public constant ALL_TIERS_DURATION = 7 days; // Days 4-10
 
     // Sale start time
     uint256 public saleStartTime;
@@ -157,12 +168,11 @@ contract CNSTierProgression is Ownable, ReentrancyGuard {
     /**
      * @dev Get phase information
      */
-    function getPhaseInfo() public view returns (
-        SalePhase currentPhase,
-        uint256 timeRemaining,
-        SalePhase nextPhase,
-        bool isActive
-    ) {
+    function getPhaseInfo()
+        public
+        view
+        returns (SalePhase currentPhase, uint256 timeRemaining, SalePhase nextPhase, bool isActive)
+    {
         currentPhase = getCurrentPhase();
         (timeRemaining, nextPhase) = getTimeUntilNextPhase();
         isActive = currentPhase != SalePhase.NOT_STARTED && currentPhase != SalePhase.ENDED;
@@ -220,12 +230,11 @@ contract CNSTierProgression is Ownable, ReentrancyGuard {
     /**
      * @dev Get sale timeline information
      */
-    function getSaleTimeline() public view returns (
-        uint256 startTime,
-        uint256 tier1EndTime,
-        uint256 tier12EndTime,
-        uint256 allTiersEndTime
-    ) {
+    function getSaleTimeline()
+        public
+        view
+        returns (uint256 startTime, uint256 tier1EndTime, uint256 tier12EndTime, uint256 allTiersEndTime)
+    {
         startTime = saleStartTime;
         tier1EndTime = saleStartTime + TIER1_ONLY_DURATION;
         tier12EndTime = saleStartTime + TIER1_ONLY_DURATION + TIER12_DURATION;

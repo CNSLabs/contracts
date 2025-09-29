@@ -24,12 +24,10 @@ contract CNSTokenL1 is ERC20, ERC20Permit {
      * @dev initialSupply is in wei-style units (respecting 18 decimals by default).
      *      If you need different decimals, override decimals() below before deploy.
      */
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        uint256 initialSupply,
-        address initialSupplyRecipient
-    ) ERC20(name_, symbol_) ERC20Permit(name_) {
+    constructor(string memory name_, string memory symbol_, uint256 initialSupply, address initialSupplyRecipient)
+        ERC20(name_, symbol_)
+        ERC20Permit(name_)
+    {
         require(initialSupplyRecipient != address(0), "recipient=0");
         _mint(initialSupplyRecipient, initialSupply);
     }

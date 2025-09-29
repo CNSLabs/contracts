@@ -15,7 +15,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  */
 contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     // Tier definitions
-    enum Tier { NONE, TIER1, TIER2, TIER3 }
+    enum Tier {
+        NONE,
+        TIER1,
+        TIER2,
+        TIER3
+    }
 
     // Token ID counter
     uint256 private _nextTokenId = 1;
@@ -54,10 +59,7 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      * @param initialOwner The owner of the contract
      * @param baseURI Base URI for token metadata
      */
-    constructor(
-        address initialOwner,
-        string memory baseURI
-    ) ERC721("CNS Access NFT", "CNSNFT") Ownable(initialOwner) {
+    constructor(address initialOwner, string memory baseURI) ERC721("CNS Access NFT", "CNSNFT") Ownable(initialOwner) {
         _baseTokenURI = baseURI;
     }
 
@@ -71,11 +73,7 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * @dev Set tier prices
      */
-    function setTierPrices(
-        uint256 _tier1Price,
-        uint256 _tier2Price,
-        uint256 _tier3Price
-    ) external onlyOwner {
+    function setTierPrices(uint256 _tier1Price, uint256 _tier2Price, uint256 _tier3Price) external onlyOwner {
         tier1Price = _tier1Price;
         tier2Price = _tier2Price;
         tier3Price = _tier3Price;
@@ -252,14 +250,18 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * @dev Get tier statistics
      */
-    function getTierStats() external view returns (
-        uint256 tier1Minted,
-        uint256 tier2Minted,
-        uint256 tier3Minted,
-        bool tier1Sold,
-        bool tier2Sold,
-        bool tier3Sold
-    ) {
+    function getTierStats()
+        external
+        view
+        returns (
+            uint256 tier1Minted,
+            uint256 tier2Minted,
+            uint256 tier3Minted,
+            bool tier1Sold,
+            bool tier2Sold,
+            bool tier3Sold
+        )
+    {
         return (
             tierMinted[Tier.TIER1],
             tierMinted[Tier.TIER2],
