@@ -12,6 +12,7 @@ Smart contracts and tooling for the CNS token stack across L1 ↔ Linea L2.
 ## Local Development
 
 ```bash
+cp env.example .env
 forge install
 forge build
 forge test
@@ -21,6 +22,21 @@ Key tests:
 
 - `forge test --match-contract CNSTokenL2Test`
 - `forge test --match-contract CNSTokenL1Test`
+
+### Environment Variables
+
+`env.example` lists all variables consumed by deployment scripts. Required placeholders:
+
+- `PRIVATE_KEY`: broadcaster key used by Forge (keep in `.env`, never commit).
+- `LINEA_L2_BRIDGE`: network-specific Linea TokenBridge address.
+- `CNS_OWNER`: Safe receiving admin, pauser, allowlist, upgrader roles.
+- `CNS_ACCESS_NFT_BASE_URI`: metadata endpoint for the access NFT.
+
+Optional RPC overrides:
+
+- `L1_RPC_URL`, `L2_RPC_URL`: custom endpoints for Forge scripts.
+
+Load automatically with `direnv` (`use dotenv` already in `.envrc`) or export manually before running scripts.
 
 ## Linea Deployment Checklist
 

@@ -14,8 +14,7 @@ import "../src/CNSAccessControl.sol";
  * @dev Deployment script for CNS contract ecosystem
  */
 contract DeployCNSContracts is Script {
-    // Deployment addresses
-    address public owner = address(0x1234); // Replace with actual owner address
+    address public owner;
 
     // Contract instances
     CNSTokenL1 public tokenL1;
@@ -31,6 +30,13 @@ contract DeployCNSContracts is Script {
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        owner = vm.envAddress("CNS_OWNER");
+
+        string memory l1RpcUrl = vm.envOr("L1_RPC_URL", string(""));
+        string memory l2RpcUrl = vm.envOr("L2_RPC_URL", string(""));
+
+        if (bytes(l1RpcUrl).length > 0) vm.setEnv("FOUNDRY_ETH_RPC_URL", l1RpcUrl);
+        if (bytes(l2RpcUrl).length > 0) vm.setEnv("FOUNDRY_LINEA_RPC_URL", l2RpcUrl);
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -46,7 +52,8 @@ contract DeployCNSContracts is Script {
 
         // Deploy Access NFT
         console.log("Deploying CNSAccessNFT...");
-        accessNFT = new CNSAccessNFT(owner, "https://api.cns.com/nft/");
+        string memory baseUri = vm.envString("CNS_ACCESS_NFT_BASE_URI");
+        accessNFT = new CNSAccessNFT(owner, baseUri);
         console.log("CNSAccessNFT deployed at:", address(accessNFT));
 
         // Deploy Tier Progression
