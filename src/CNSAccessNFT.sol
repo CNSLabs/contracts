@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title CNSAccessNFT
@@ -17,9 +18,9 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     // Tier definitions
     enum Tier {
         NONE,
-        TIER1,
+        TIER3,
         TIER2,
-        TIER3
+        TIER1
     }
 
     // Token ID counter
@@ -68,6 +69,13 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      */
     function setBaseURI(string memory baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
+    }
+
+    /**
+     * @dev Base URI for computing {tokenURI}
+     */
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
     }
 
     /**
@@ -194,7 +202,18 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      */
     function hasTierAccess(address user, Tier requiredTier) public view returns (bool) {
         Tier userTier = getUserTier(user);
-        return uint256(userTier) >= uint256(requiredTier);
+        // User has access if they have the required tier or any higher tier
+        // Since TIER1 is highest priority, TIER1 users have access to all tiers
+        // TIER2 users have access to TIER2 and TIER3
+        // TIER3 users only have access to TIER3
+        if (requiredTier == Tier.TIER1) {
+            return userTier == Tier.TIER1;
+        } else if (requiredTier == Tier.TIER2) {
+            return userTier == Tier.TIER1 || userTier == Tier.TIER2;
+        } else if (requiredTier == Tier.TIER3) {
+            return userTier == Tier.TIER1 || userTier == Tier.TIER2 || userTier == Tier.TIER3;
+        }
+        return false;
     }
 
     /**
@@ -237,7 +256,8 @@ contract CNSAccessNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      * @dev Override tokenURI to use base URI
      */
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, "/", Strings.toString(tokenId))) : "";
     }
 
     /**

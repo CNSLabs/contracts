@@ -19,9 +19,9 @@ contract CNSAccessControl is Ownable, ReentrancyGuard {
     // Tier definitions
     enum Tier {
         NONE,
-        TIER1,
+        TIER3,
         TIER2,
-        TIER3
+        TIER1
     }
 
     // Sale phase definitions
@@ -50,7 +50,7 @@ contract CNSAccessControl is Ownable, ReentrancyGuard {
      * @param _tierProgression Address of the tier progression contract
      */
     constructor(address initialOwner, address _accessNFT, address _tierProgression) Ownable(initialOwner) {
-        accessNFT = AccessNFTContract(_accessNFT, true);
+        accessNFT = AccessNFTContract(_accessNFT, _accessNFT != address(0));
         tierProgression = _tierProgression;
     }
 

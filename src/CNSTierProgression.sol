@@ -15,9 +15,9 @@ contract CNSTierProgression is Ownable, ReentrancyGuard {
     // Tier definitions (matching CNSAccessNFT)
     enum Tier {
         NONE,
-        TIER1,
+        TIER3,
         TIER2,
-        TIER3
+        TIER1
     }
 
     // Sale phases
@@ -80,7 +80,7 @@ contract CNSTierProgression is Ownable, ReentrancyGuard {
      * @dev Get current sale phase
      */
     function getCurrentPhase() public view returns (SalePhase) {
-        if (saleStartTime == 0) {
+        if (saleStartTime == 0 || block.timestamp < saleStartTime) {
             return SalePhase.NOT_STARTED;
         }
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
@@ -93,7 +94,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @param to Address to mint tokens to
      * @param amount Amount of tokens to mint
      */
-    function mint(address to, uint256 amount) external onlyBridgeOrOwner {
+    function mint(address to, uint256 amount) external onlyOwner {
         require(to != address(0), "CNSTokenL2: cannot mint to zero address");
         require(totalSupply() + amount <= L2_MAX_SUPPLY, "CNSTokenL2: max supply exceeded");
 
@@ -105,7 +106,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @dev Burn tokens (only bridge can call)
      * @param amount Amount of tokens to burn
      */
-    function burn(uint256 amount) public override onlyBridgeOrOwner {
+    function burn(uint256 amount) public override onlyOwner {
         super.burn(amount);
     }
 
@@ -114,7 +115,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @param account Address to burn tokens from
      * @param amount Amount of tokens to burn
      */
-    function burnFrom(address account, uint256 amount) public override onlyBridgeOrOwner {
+    function burnFrom(address account, uint256 amount) public override onlyOwner {
         super.burnFrom(account, amount);
     }
 
@@ -137,7 +138,7 @@ contract CNSTokenL2 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit
      * @param to Address to unlock tokens to
      * @param amount Amount of tokens to unlock
      */
-    function unlockTokens(address to, uint256 amount) external onlyBridgeOrOwner {
+    function unlockTokens(address to, uint256 amount) external onlyOwner {
         require(lockedTokens[to] >= amount, "CNSTokenL2: insufficient locked tokens");
 
         lockedTokens[to] -= amount;
