@@ -32,7 +32,12 @@ contract DeployCNSContracts is Script {
 
         // Deploy L1 Token
         console.log("Deploying CNSTokenL1...");
-        tokenL1 = new CNSTokenL1(owner);
+        tokenL1 = new CNSTokenL1(
+            "Canonical CNS Token",
+            "CNS", 
+            100_000_000 * 10**18, // 100M tokens with 18 decimals
+            owner
+        );
         console.log("CNSTokenL1 deployed at:", address(tokenL1));
 
         // Deploy Access NFT
@@ -88,8 +93,8 @@ contract DeployCNSContracts is Script {
     }
 
     function _setupContracts() internal {
-        // Set bridge contract for L1 token
-        tokenL1.setBridgeContract(address(this)); // Temporary - replace with actual bridge
+        // Note: CNSTokenL1 is a simple ERC20 with fixed supply - no bridge setup needed
+        // The Linea canonical bridge will handle the L1->L2 bridging automatically
 
         // Set bridge contract for L2 token
         tokenL2.setBridgeContract(address(this)); // Temporary - replace with actual bridge
