@@ -141,6 +141,24 @@ cast call <contract_address> "function_name(uint256)" <value> --rpc-url <rpc_url
 cast send <contract_address> "function_name(uint256)" <value> --private-key <private_key> --rpc-url <rpc_url>
 ```
 
+## Linea Deployment Checklist
+
+- **Pin dependencies**: Vendor `src/linea/BridgedToken.sol` and `CustomBridgedToken.sol` from Linea commit `c7bc6313a6309d31ac532ce0801d1c3ad3426842`. Record this hash in deployment notes.
+- **Bridge addresses**: Supply the correct Linea TokenBridge (L2) address through `LINEA_L2_BRIDGE` env var during scripts. Refer to ConsenSys docs or deployment manifests (e.g., `linea-deployment-manifests`) for network-specific values (Mainnet vs Sepolia).
+- **Initializer params**: When calling `CNSTokenL2.initialize`, provide admin Safe, TokenBridge address, linked L1 token, L2 metadata (`name`, `symbol`, `decimals`). Ensure non-zero addresses to satisfy runtime guards.
+- **Role separation**:
+  - `DEFAULT_ADMIN_ROLE` / `UPGRADER_ROLE`: governance Safe (timelock if possible).
+  - `PAUSER_ROLE`: fast-response Safe for incident handling.
+  - `ALLOWLIST_ADMIN_ROLE`: operations Safe controlling transfer allowlist.
+- **Allowlist defaults**: Implementation auto-allowlists itself, the bridge, and admin. Add additional operational addresses before enabling user transfers.
+- **Linking workflow**: Coordinate with Linea bridge operators to link the L1 canonical token to the new L2 implementation. Capture approval transaction hashes for the deployment report.
+- **Operational tests**:
+  - On Linea Sepolia, simulate deposit (L1 escrow → L2 mint) and withdrawal (L2 burn → L1 release).
+  - Verify allowlist enforcement by attempting transfers between non-allowlisted accounts (should revert) and allowlisted accounts (should succeed when unpaused).
+  - Exercise pause/unpause and verify the bridge can still mint/burn.
+- **Upgrades**: Test a dummy implementation upgrade via Foundry to confirm `_authorizeUpgrade` role gating. Maintain a change log for auditors.
+- **Monitoring & runbooks**: Document emergency procedures for pausing, allowlist updates, and upgrade approvals. Consider on-chain monitoring for bridge-exclusive mint/burn events.
+
 ## Project Structure
 
 ```
