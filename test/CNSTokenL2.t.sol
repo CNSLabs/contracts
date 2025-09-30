@@ -1,0 +1,153 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import "forge-std/Test.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+
+import {CNSTokenL2} from "../src/CNSTokenL2.sol";
+
+contract CNSTokenL2Test is Test {
+    CNSTokenL2 internal token;
+
+    address internal admin;
+    address internal bridge;
+    address internal l1Token;
+    address internal user1;
+    address internal user2;
+
+    uint8 internal constant DECIMALS = 18;
+    uint256 internal constant INITIAL_BRIDGE_MINT = 1_000 ether;
+
+    string internal constant NAME = "CNS Linea Token";
+    string internal constant SYMBOL = "CNSL";
+
+    function setUp() public {
+        admin = makeAddr("admin");
+        bridge = makeAddr("bridge");
+        l1Token = makeAddr("l1Token");
+        user1 = makeAddr("user1");
+        user2 = makeAddr("user2");
+
+        token = _deployInitializedProxy(admin, bridge, l1Token);
+    }
+
+    function _deployInitializedProxy(address admin_, address bridge_, address l1Token_) internal returns (CNSTokenL2) {
+        CNSTokenL2 implementation = new CNSTokenL2();
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+        CNSTokenL2 proxied = CNSTokenL2(address(proxy));
+        proxied.initialize(admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS);
+        return proxied;
+    }
+
+    function testInitializeSetsState() public view {
+        assertEq(token.bridge(), bridge);
+        assertEq(token.l1Token(), l1Token);
+        assertEq(token.name(), NAME);
+        assertEq(token.symbol(), SYMBOL);
+        assertEq(token.decimals(), DECIMALS);
+
+        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(token.hasRole(token.PAUSER_ROLE(), admin));
+        assertTrue(token.hasRole(token.ALLOWLIST_ADMIN_ROLE(), admin));
+        assertTrue(token.hasRole(token.UPGRADER_ROLE(), admin));
+
+        assertTrue(token.isAllowlisted(address(token)));
+        assertTrue(token.isAllowlisted(bridge));
+        assertTrue(token.isAllowlisted(admin));
+    }
+
+    function testInitializeRevertsOnZeroAddresses() public {
+        CNSTokenL2 fresh = _deployProxy();
+
+        vm.expectRevert("admin=0");
+        fresh.initialize(address(0), bridge, l1Token, NAME, SYMBOL, DECIMALS);
+
+        fresh = _deployProxy();
+        vm.expectRevert("bridge=0");
+        fresh.initialize(admin, address(0), l1Token, NAME, SYMBOL, DECIMALS);
+
+        fresh = _deployProxy();
+        vm.expectRevert("l1Token=0");
+        fresh.initialize(admin, bridge, address(0), NAME, SYMBOL, DECIMALS);
+    }
+
+    function testInitializeCannotRunTwice() public {
+        vm.expectRevert();
+        token.initialize(admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
+    }
+
+    function testBridgeMintBypassesAllowlist() public {
+        vm.prank(bridge);
+        token.mint(user1, INITIAL_BRIDGE_MINT);
+
+        assertEq(token.balanceOf(user1), INITIAL_BRIDGE_MINT);
+
+        vm.prank(user1);
+        vm.expectRevert("from not allowlisted");
+        token.transfer(user2, 1 ether);
+    }
+
+    function testAllowlistAdminCanEnableTransfers() public {
+        vm.prank(bridge);
+        token.mint(user1, INITIAL_BRIDGE_MINT);
+
+        vm.prank(admin);
+        token.setAllowlist(user1, true);
+
+        vm.prank(admin);
+        token.setAllowlist(user2, true);
+
+        vm.prank(user1);
+        token.transfer(user2, 100 ether);
+
+        assertEq(token.balanceOf(user2), 100 ether);
+    }
+
+    function testPauseBlocksTransfers() public {
+        vm.prank(bridge);
+        token.mint(user1, INITIAL_BRIDGE_MINT);
+
+        vm.prank(admin);
+        token.setAllowlist(user1, true);
+        vm.prank(admin);
+        token.setAllowlist(user2, true);
+
+        vm.prank(admin);
+        token.pause();
+
+        vm.prank(user1);
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        token.transfer(user2, 1 ether);
+
+        vm.prank(admin);
+        token.unpause();
+
+        vm.prank(user1);
+        token.transfer(user2, 1 ether);
+        assertEq(token.balanceOf(user2), 1 ether);
+    }
+
+    function testBridgeBurnHonorsAllowance() public {
+        vm.prank(bridge);
+        token.mint(user1, INITIAL_BRIDGE_MINT);
+
+        vm.prank(admin);
+        token.setAllowlist(user1, true);
+
+        vm.prank(user1);
+        token.approve(bridge, INITIAL_BRIDGE_MINT);
+
+        vm.prank(bridge);
+        token.burn(user1, INITIAL_BRIDGE_MINT);
+
+        assertEq(token.balanceOf(user1), 0);
+        assertEq(token.totalSupply(), 0);
+    }
+
+    function _deployProxy() internal returns (CNSTokenL2) {
+        CNSTokenL2 implementation = new CNSTokenL2();
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+        return CNSTokenL2(address(proxy));
+    }
+}

@@ -24,6 +24,7 @@ formatter = { tab_width = 4, bracket_spacing = true, int_types = "long" }
 remappings = [
     "forge-std/=lib/forge-std/src/",
     "@openzeppelin/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
 # CI profile for faster builds

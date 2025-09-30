@@ -14,8 +14,7 @@ import "../src/CNSAccessControl.sol";
  * @dev Deployment script for CNS contract ecosystem
  */
 contract DeployCNSContracts is Script {
-    // Deployment addresses
-    address public owner = address(0x1234); // Replace with actual owner address
+    address public owner;
 
     // Contract instances
     CNSTokenL1 public tokenL1;
@@ -23,10 +22,21 @@ contract DeployCNSContracts is Script {
     CNSTierProgression public tierProgression;
     CNSTokenSale public tokenSale;
     CNSTokenL2 public tokenL2;
+
+    string internal constant L2_NAME = "CNS Linea Token";
+    string internal constant L2_SYMBOL = "CNSL";
+    uint8 internal constant L2_DECIMALS = 18;
     CNSAccessControl public accessControl;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        owner = vm.envAddress("CNS_OWNER");
+
+        string memory l1RpcUrl = vm.envOr("L1_RPC_URL", string(""));
+        string memory l2RpcUrl = vm.envOr("L2_RPC_URL", string(""));
+
+        if (bytes(l1RpcUrl).length > 0) vm.setEnv("FOUNDRY_ETH_RPC_URL", l1RpcUrl);
+        if (bytes(l2RpcUrl).length > 0) vm.setEnv("FOUNDRY_LINEA_RPC_URL", l2RpcUrl);
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -42,7 +52,8 @@ contract DeployCNSContracts is Script {
 
         // Deploy Access NFT
         console.log("Deploying CNSAccessNFT...");
-        accessNFT = new CNSAccessNFT(owner, "https://api.cns.com/nft/");
+        string memory baseUri = vm.envString("CNS_ACCESS_NFT_BASE_URI");
+        accessNFT = new CNSAccessNFT(owner, baseUri);
         console.log("CNSAccessNFT deployed at:", address(accessNFT));
 
         // Deploy Tier Progression
@@ -50,13 +61,14 @@ contract DeployCNSContracts is Script {
         tierProgression = new CNSTierProgression(owner, address(accessNFT));
         console.log("CNSTierProgression deployed at:", address(tierProgression));
 
-        // Deploy L2 Token
+        // Deploy L2 Token implementation (initialize separately)
         console.log("Deploying CNSTokenL2...");
-        tokenL2 = new CNSTokenL2(
-            owner,
-            address(tokenL1) // L1 token address
-        );
+        tokenL2 = new CNSTokenL2();
         console.log("CNSTokenL2 deployed at:", address(tokenL2));
+
+        address lineaL2Bridge = vm.envAddress("LINEA_L2_BRIDGE");
+
+        tokenL2.initialize(owner, lineaL2Bridge, address(tokenL1), L2_NAME, L2_SYMBOL, L2_DECIMALS);
 
         // Deploy Access Control
         console.log("Deploying CNSAccessControl...");
@@ -85,9 +97,6 @@ contract DeployCNSContracts is Script {
     function _setupContracts() internal {
         // Note: CNSTokenL1 is a simple ERC20 with fixed supply - no bridge setup needed
         // The Linea canonical bridge will handle the L1->L2 bridging automatically
-
-        // Set bridge contract for L2 token
-        tokenL2.setBridgeContract(address(this)); // Temporary - replace with actual bridge
 
         // Set tier prices for NFT
         accessNFT.setTierPrices(
