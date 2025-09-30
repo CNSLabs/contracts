@@ -26,15 +26,20 @@ contract DeployCNSContracts is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         owner = vm.envAddress("CNS_OWNER");
 
-        string memory l1RpcUrl = vm.envOr("L1_RPC_URL", string(""));
-        string memory l2RpcUrl = vm.envOr("L2_RPC_URL", string(""));
+        string memory l1RpcUrl = vm.envString("L1_RPC_URL");
+        string memory l2RpcUrl = vm.envString("L2_RPC_URL");
+        string memory etherscanApiKey = vm.envString("ETHERSCAN_API_KEY");
+        string memory lineaEtherscanApiKey = vm.envString("LINEA_ETHERSCAN_API_KEY");
 
-        if (bytes(l1RpcUrl).length > 0) vm.setEnv("FOUNDRY_ETH_RPC_URL", l1RpcUrl);
-        if (bytes(l2RpcUrl).length > 0) vm.setEnv("FOUNDRY_LINEA_RPC_URL", l2RpcUrl);
+        // Create forks for both chains
+        uint256 l1Fork = vm.createFork(l1RpcUrl);
+        uint256 l2Fork = vm.createFork(l2RpcUrl);
 
+        // Deploy L1 Token on Ethereum Sepolia
+        console.log("\n=== Deploying to L1 (Ethereum Sepolia) ===");
+        vm.selectFork(l1Fork);
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy L1 Token
         console.log("Deploying CNSTokenL1...");
         tokenL1 = new CNSTokenL1(
             "Canonical CNS Token",
@@ -44,7 +49,16 @@ contract DeployCNSContracts is Script {
         );
         console.log("CNSTokenL1 deployed at:", address(tokenL1));
 
-        // Deploy L2 Token implementation + proxy
+        vm.stopBroadcast();
+
+        // Verify L1 contract
+        _verifyL1Contract(address(tokenL1), etherscanApiKey);
+
+        // Deploy L2 Token on Linea Sepolia
+        console.log("\n=== Deploying to L2 (Linea Sepolia) ===");
+        vm.selectFork(l2Fork);
+        vm.startBroadcast(deployerPrivateKey);
+
         console.log("Deploying CNSTokenL2 implementation...");
         CNSTokenL2 implementation = new CNSTokenL2();
         tokenL2Implementation = address(implementation);
@@ -63,15 +77,62 @@ contract DeployCNSContracts is Script {
 
         vm.stopBroadcast();
 
+        // Verify L2 contracts
+        _verifyL2Contracts(tokenL2Implementation, address(tokenL2), initCalldata, lineaEtherscanApiKey);
+
         // Log deployment summary
         _logDeploymentSummary();
+    }
+
+    function _verifyL1Contract(address tokenL1Address, string memory apiKey) internal pure {
+        console.log("\n=== L1 Verification Command ===");
+        console.log("Run this command to verify CNSTokenL1:");
+        console.log(
+            string.concat(
+                "forge verify-contract ",
+                vm.toString(tokenL1Address),
+                " src/CNSTokenL1.sol:CNSTokenL1 --chain sepolia --etherscan-api-key ",
+                apiKey,
+                " --watch"
+            )
+        );
+    }
+
+    function _verifyL2Contracts(
+        address implementation,
+        address proxyAddress,
+        bytes memory initCalldata,
+        string memory /* apiKey */
+    ) internal pure {
+        console.log("\n=== L2 Verification Commands ===");
+
+        // Print implementation verification command
+        console.log("1. Verify CNSTokenL2 implementation:");
+        console.log(
+            string.concat(
+                "forge verify-contract ",
+                vm.toString(implementation),
+                " src/CNSTokenL2.sol:CNSTokenL2 --chain linea-sepolia --verifier blockscout --verifier-url https://api-sepolia.lineascan.build/api --watch"
+            )
+        );
+
+        console.log("\n2. Verify ERC1967Proxy:");
+        console.log(
+            string.concat(
+                "forge verify-contract ",
+                vm.toString(proxyAddress),
+                " lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy --chain linea-sepolia --verifier blockscout --verifier-url https://api-sepolia.lineascan.build/api --constructor-args ",
+                vm.toString(abi.encode(implementation, initCalldata)),
+                " --watch"
+            )
+        );
     }
 
     function _logDeploymentSummary() internal view {
         console.log("\n=== CNS Contract Deployment Summary ===");
         console.log("Owner:", owner);
-        console.log("CNSTokenL1:", address(tokenL1));
-        console.log("CNSTokenL2 proxy:", address(tokenL2));
-        console.log("CNSTokenL2 implementation:", tokenL2Implementation);
+        console.log("CNSTokenL1 (Ethereum Sepolia):", address(tokenL1));
+        console.log("CNSTokenL2 implementation (Linea Sepolia):", tokenL2Implementation);
+        console.log("CNSTokenL2 proxy (Linea Sepolia):", address(tokenL2));
     }
 }
