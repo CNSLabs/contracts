@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../src/CNSTokenL1.sol";
 import "../src/CNSTokenL2.sol";
 
@@ -15,6 +16,7 @@ contract DeployCNSContracts is Script {
     // Contract instances
     CNSTokenL1 public tokenL1;
     CNSTokenL2 public tokenL2;
+    address public tokenL2Implementation;
 
     string internal constant L2_NAME = "CNS Linea Token";
     string internal constant L2_SYMBOL = "CNSL";
@@ -42,14 +44,22 @@ contract DeployCNSContracts is Script {
         );
         console.log("CNSTokenL1 deployed at:", address(tokenL1));
 
-        // Deploy L2 Token implementation (initialize separately)
-        console.log("Deploying CNSTokenL2...");
-        tokenL2 = new CNSTokenL2();
-        console.log("CNSTokenL2 deployed at:", address(tokenL2));
+        // Deploy L2 Token implementation + proxy
+        console.log("Deploying CNSTokenL2 implementation...");
+        CNSTokenL2 implementation = new CNSTokenL2();
+        tokenL2Implementation = address(implementation);
+        console.log("CNSTokenL2 implementation deployed at:", tokenL2Implementation);
 
         address lineaL2Bridge = vm.envAddress("LINEA_L2_BRIDGE");
 
-        tokenL2.initialize(owner, lineaL2Bridge, address(tokenL1), L2_NAME, L2_SYMBOL, L2_DECIMALS);
+        bytes memory initCalldata = abi.encodeWithSelector(
+            CNSTokenL2.initialize.selector, owner, lineaL2Bridge, address(tokenL1), L2_NAME, L2_SYMBOL, L2_DECIMALS
+        );
+
+        console.log("Deploying CNSTokenL2 proxy...");
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initCalldata);
+        tokenL2 = CNSTokenL2(address(proxy));
+        console.log("CNSTokenL2 proxy deployed at:", address(tokenL2));
 
         vm.stopBroadcast();
 
@@ -61,6 +71,7 @@ contract DeployCNSContracts is Script {
         console.log("\n=== CNS Contract Deployment Summary ===");
         console.log("Owner:", owner);
         console.log("CNSTokenL1:", address(tokenL1));
-        console.log("CNSTokenL2:", address(tokenL2));
+        console.log("CNSTokenL2 proxy:", address(tokenL2));
+        console.log("CNSTokenL2 implementation:", tokenL2Implementation);
     }
 }

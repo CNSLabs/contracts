@@ -145,9 +145,38 @@ contract CNSTokenL2Test is Test {
         assertEq(token.totalSupply(), 0);
     }
 
+    function testUpgradeByUpgraderSucceeds() public {
+        CNSTokenL2MockV2 newImplementation = new CNSTokenL2MockV2();
+
+        vm.prank(admin);
+        token.upgradeToAndCall(address(newImplementation), "");
+
+        CNSTokenL2MockV2 upgraded = CNSTokenL2MockV2(address(token));
+
+        assertEq(upgraded.version(), 2);
+        assertEq(upgraded.bridge(), bridge);
+        assertTrue(upgraded.hasRole(upgraded.UPGRADER_ROLE(), admin));
+    }
+
+    function testUpgradeByNonUpgraderReverts() public {
+        CNSTokenL2MockV2 newImplementation = new CNSTokenL2MockV2();
+
+        vm.expectRevert(
+            abi.encodeWithSignature("AccessControlUnauthorizedAccount(address,bytes32)", user1, token.UPGRADER_ROLE())
+        );
+        vm.prank(user1);
+        token.upgradeToAndCall(address(newImplementation), "");
+    }
+
     function _deployProxy() internal returns (CNSTokenL2) {
         CNSTokenL2 implementation = new CNSTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         return CNSTokenL2(address(proxy));
+    }
+}
+
+contract CNSTokenL2MockV2 is CNSTokenL2 {
+    function version() external pure returns (uint256) {
+        return 2;
     }
 }
