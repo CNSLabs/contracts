@@ -18,6 +18,46 @@ Foundry consists of:
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
 - Git
 
+## Pre-commit Hook Setup
+
+This project includes a pre-commit hook that ensures all Solidity code is properly formatted before commits. The hook runs `forge fmt --check` and blocks commits if formatting issues are found.
+
+### Automatic Setup
+
+Run the setup script to install the pre-commit hook:
+
+```bash
+./setup-pre-commit.sh
+```
+
+### Manual Setup
+
+If you prefer to set up the hook manually:
+
+1. Copy the pre-commit hook to your git hooks directory:
+   ```bash
+   cp .git/hooks/pre-commit .git/hooks/pre-commit.backup  # backup existing if any
+   ```
+
+2. The hook is already installed in `.git/hooks/pre-commit` and will automatically run before each commit.
+
+### How It Works
+
+- **Before each commit**: The hook runs `forge fmt --check`
+- **If formatting issues are found**: The commit is blocked with helpful error messages
+- **To fix issues**: Run `forge fmt` to automatically format your code
+- **To check without fixing**: Run `forge fmt --check` to see what needs to be fixed
+
+### Bypassing the Hook (Not Recommended)
+
+If you absolutely need to bypass the hook for a specific commit:
+
+```bash
+git commit --no-verify -m "your commit message"
+```
+
+**Note**: This should only be used in exceptional circumstances, as it defeats the purpose of maintaining code quality.
+
 ## Installation
 
 1. Clone this repository:

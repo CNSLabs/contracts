@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
 import "../src/CNSTokenL1.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract CNSTokenL1Test is Test {
     CNSTokenL1 public token;
@@ -10,99 +11,208 @@ contract CNSTokenL1Test is Test {
     address public user1 = address(0x456);
     address public user2 = address(0x789);
 
+    uint256 public constant INITIAL_SUPPLY = 100_000_000 * 10 ** 18;
+
     function setUp() public {
-        token = new CNSTokenL1(owner);
+        token = new CNSTokenL1("Canonical CNS Token", "CNS", INITIAL_SUPPLY, owner);
     }
 
     function testInitialSupply() public {
-        assertEq(token.balanceOf(owner), 100_000_000 * 10 ** 18);
-        assertEq(token.totalSupply(), 100_000_000 * 10 ** 18);
+        assertEq(token.balanceOf(owner), INITIAL_SUPPLY);
+        assertEq(token.totalSupply(), INITIAL_SUPPLY);
     }
 
-    function testMintByOwner() public {
+    function testTokenMetadata() public {
+        assertEq(token.name(), "Canonical CNS Token");
+        assertEq(token.symbol(), "CNS");
+        assertEq(token.decimals(), 18);
+    }
+
+    function testConstructorZeroRecipient() public {
+        vm.expectRevert("recipient=0");
+        new CNSTokenL1("Test Token", "TEST", 1000, address(0));
+    }
+
+    // Basic ERC20 functionality tests
+    function testTransfer() public {
+        uint256 transferAmount = 1000 * 10 ** 18;
+
         vm.prank(owner);
-        token.mint(user1, 1000 * 10 ** 18);
+        bool success = token.transfer(user1, transferAmount);
 
-        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
-        assertEq(token.totalSupply(), 100_000_000 * 10 ** 18 + 1000 * 10 ** 18);
+        assertTrue(success);
+        assertEq(token.balanceOf(owner), INITIAL_SUPPLY - transferAmount);
+        assertEq(token.balanceOf(user1), transferAmount);
     }
 
-    function testMintByBridge() public {
-        address bridge = address(0x999);
+    function testTransferInsufficientBalance() public {
+        uint256 transferAmount = INITIAL_SUPPLY + 1;
+
         vm.prank(owner);
-        token.setBridgeContract(bridge);
-
-        vm.prank(bridge);
-        token.mint(user1, 1000 * 10 ** 18);
-
-        assertEq(token.balanceOf(user1), 1000 * 10 ** 18);
+        vm.expectRevert();
+        token.transfer(user1, transferAmount);
     }
 
-    function testCannotMintUnauthorized() public {
+    function testTransferToZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert();
+        token.transfer(address(0), 1000);
+    }
+
+    function testApprove() public {
+        uint256 approveAmount = 1000 * 10 ** 18;
+
+        vm.prank(owner);
+        bool success = token.approve(user1, approveAmount);
+
+        assertTrue(success);
+        assertEq(token.allowance(owner, user1), approveAmount);
+    }
+
+    function testTransferFrom() public {
+        uint256 approveAmount = 1000 * 10 ** 18;
+
+        // Owner approves user1 to spend tokens
+        vm.prank(owner);
+        token.approve(user1, approveAmount);
+
+        // User1 transfers from owner to user2
         vm.prank(user1);
-        vm.expectRevert("CNSTokenL1: caller is not bridge or owner");
-        token.mint(user2, 1000 * 10 ** 18);
+        bool success = token.transferFrom(owner, user2, approveAmount);
+
+        assertTrue(success);
+        assertEq(token.balanceOf(user2), approveAmount);
+        assertEq(token.balanceOf(owner), INITIAL_SUPPLY - approveAmount);
+        assertEq(token.allowance(owner, user1), 0);
     }
 
-    function testMaxSupply() public {
-        vm.startPrank(owner);
-        token.mint(user1, token.MAX_SUPPLY() - token.totalSupply());
-
-        vm.expectRevert("CNSTokenL1: max supply exceeded");
-        token.mint(user2, 1);
-        vm.stopPrank();
-    }
-
-    function testBurn() public {
-        vm.prank(owner);
-        token.mint(user1, 1000 * 10 ** 18);
-
-        vm.prank(owner);
-        token.burn(500 * 10 ** 18);
-
-        assertEq(token.balanceOf(owner), 100_000_000 * 10 ** 18 - 500 * 10 ** 18);
-        assertEq(token.totalSupply(), 100_000_000 * 10 ** 18 + 500 * 10 ** 18);
-    }
-
-    function testSetBridgeContract() public {
-        address newBridge = address(0x999);
-
-        vm.prank(owner);
-        token.setBridgeContract(newBridge);
-
-        assertEq(token.l1Bridge(), newBridge);
-    }
-
-    function testSetMinter() public {
-        address newMinter = address(0x888);
-
-        vm.prank(owner);
-        token.setMinter(newMinter);
-
-        assertEq(token.minter(), newMinter);
-    }
-
-    function testPauseUnpause() public {
-        vm.prank(owner);
-        token.pause();
-
-        assertEq(token.paused(), true);
-
-        vm.prank(owner);
-        token.unpause();
-
-        assertEq(token.paused(), false);
-    }
-
-    function testTransferWhenPaused() public {
-        vm.prank(owner);
-        token.mint(user1, 1000 * 10 ** 18);
-
-        vm.prank(owner);
-        token.pause();
-
+    function testTransferFromInsufficientAllowance() public {
         vm.prank(user1);
         vm.expectRevert();
-        token.transfer(user2, 100 * 10 ** 18);
+        token.transferFrom(owner, user2, 1000);
+    }
+
+    // ERC20Permit functionality tests
+    function testPermit() public {
+        uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
+        address signer = vm.addr(privateKey);
+
+        // Create a new token instance with the signer as the initial recipient
+        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+
+        uint256 value = 100 * 10 ** 18;
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 nonce = permitToken.nonces(signer);
+
+        // Create the permit message hash
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                signer,
+                user1,
+                value,
+                nonce,
+                deadline
+            )
+        );
+
+        bytes32 hash = MessageHashUtils.toTypedDataHash(permitToken.DOMAIN_SEPARATOR(), structHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
+
+        // Execute permit
+        permitToken.permit(signer, user1, value, deadline, v, r, s);
+
+        // Verify allowance was set
+        assertEq(permitToken.allowance(signer, user1), value);
+        assertEq(permitToken.nonces(signer), nonce + 1);
+    }
+
+    function testPermitExpired() public {
+        uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
+        address signer = vm.addr(privateKey);
+
+        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+
+        uint256 value = 100 * 10 ** 18;
+        uint256 deadline = block.timestamp - 1; // Expired deadline
+        uint256 nonce = permitToken.nonces(signer);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                signer,
+                user1,
+                value,
+                nonce,
+                deadline
+            )
+        );
+
+        bytes32 hash = MessageHashUtils.toTypedDataHash(permitToken.DOMAIN_SEPARATOR(), structHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
+
+        vm.expectRevert();
+        permitToken.permit(signer, user1, value, deadline, v, r, s);
+    }
+
+    function testPermitInvalidSignature() public {
+        uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
+        address signer = vm.addr(privateKey);
+
+        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+
+        uint256 value = 100 * 10 ** 18;
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 nonce = permitToken.nonces(signer);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                signer,
+                user1,
+                value,
+                nonce,
+                deadline
+            )
+        );
+
+        bytes32 hash = MessageHashUtils.toTypedDataHash(permitToken.DOMAIN_SEPARATOR(), structHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
+
+        // Use wrong signer
+        vm.expectRevert();
+        permitToken.permit(user1, user1, value, deadline, v, r, s);
+    }
+
+    function testPermitReplayAttack() public {
+        uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
+        address signer = vm.addr(privateKey);
+
+        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+
+        uint256 value = 100 * 10 ** 18;
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 nonce = permitToken.nonces(signer);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                signer,
+                user1,
+                value,
+                nonce,
+                deadline
+            )
+        );
+
+        bytes32 hash = MessageHashUtils.toTypedDataHash(permitToken.DOMAIN_SEPARATOR(), structHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
+
+        // First permit should succeed
+        permitToken.permit(signer, user1, value, deadline, v, r, s);
+
+        // Second permit with same signature should fail (replay attack)
+        vm.expectRevert();
+        permitToken.permit(signer, user1, value, deadline, v, r, s);
     }
 }

@@ -1,116 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+// OpenZeppelin v5 (non-upgradeable) — smallest, most audited surface area.
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 /**
- * @title CNSTokenL1
- * @dev CNS Token on L1 - the canonical home for the token
- * Includes bridge functionality and administrative controls
+ * @title CanonicalL1Token
+ * @notice Fixed-supply ERC20 intended to be the L1 canonical token for bridging to Linea.
+ *         The Linea canonical bridge will escrow this token on L1 and mint its L2 representation.
+ *         No special bridge logic is required here; standard ERC20 is the most compatible surface.
+ *
+ *         ERC20Permit (EIP-2612) is included to optionally allow single-tx approvals where supported
+ *         (many bridges/wrappers can use permit if available, but it isn't strictly required).
  */
-contract CNSTokenL1 is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit {
-    // Bridge contract address on L1
-    address public l1Bridge;
-
-    // Authorized minter for bridge operations
-    address public minter;
-
-    // Total supply cap
-    uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10 ** 18; // 1 billion tokens
-
-    // Events
-    event BridgeContractSet(address indexed bridge);
-    event MinterSet(address indexed minter);
-    event TokensMinted(address indexed to, uint256 amount);
-
+contract CNSTokenL1 is ERC20, ERC20Permit {
     /**
-     * @dev Constructor
-     * @param initialOwner The owner of the contract
+     * @param name_   Token name (also used for EIP-712 domain for Permit)
+     * @param symbol_ Token symbol
+     * @param initialSupply Recipient of initial fixed supply (minted exactly once)
+     * @param initialSupplyRecipient Address that receives the entire fixed supply
+     *
+     * @dev initialSupply is in wei-style units (respecting 18 decimals by default).
+     *      If you need different decimals, override decimals() below before deploy.
      */
-    constructor(address initialOwner) ERC20("CNS Token", "CNS") Ownable(initialOwner) ERC20Permit("CNS Token") {
-        _mint(initialOwner, 100_000_000 * 10 ** 18); // Mint 100M tokens to owner
+    constructor(string memory name_, string memory symbol_, uint256 initialSupply, address initialSupplyRecipient)
+        ERC20(name_, symbol_)
+        ERC20Permit(name_)
+    {
+        require(initialSupplyRecipient != address(0), "recipient=0");
+        _mint(initialSupplyRecipient, initialSupply);
     }
 
-    /**
-     * @dev Modifier to check if caller is bridge or owner
-     */
-    modifier onlyBridgeOrOwner() {
-        require(msg.sender == l1Bridge || msg.sender == owner(), "CNSTokenL1: caller is not bridge or owner");
-        _;
-    }
-
-    /**
-     * @dev Set the L1 bridge contract address
-     * @param _bridge Address of the L1 bridge contract
-     */
-    function setBridgeContract(address _bridge) external onlyOwner {
-        require(_bridge != address(0), "CNSTokenL1: invalid bridge address");
-        l1Bridge = _bridge;
-        emit BridgeContractSet(_bridge);
-    }
-
-    /**
-     * @dev Set the authorized minter
-     * @param _minter Address authorized to mint tokens
-     */
-    function setMinter(address _minter) external onlyOwner {
-        require(_minter != address(0), "CNSTokenL1: invalid minter address");
-        minter = _minter;
-        emit MinterSet(_minter);
-    }
-
-    /**
-     * @dev Mint tokens (only bridge or owner can call)
-     * @param to Address to mint tokens to
-     * @param amount Amount of tokens to mint
-     */
-    function mint(address to, uint256 amount) external onlyBridgeOrOwner {
-        require(to != address(0), "CNSTokenL1: cannot mint to zero address");
-        require(totalSupply() + amount <= MAX_SUPPLY, "CNSTokenL1: max supply exceeded");
-
-        _mint(to, amount);
-        emit TokensMinted(to, amount);
-    }
-
-    /**
-     * @dev Burn tokens (only bridge can call)
-     * @param amount Amount of tokens to burn
-     */
-    function burn(uint256 amount) public override onlyBridgeOrOwner {
-        super.burn(amount);
-    }
-
-    /**
-     * @dev Burn tokens from specific address (only bridge can call)
-     * @param account Address to burn tokens from
-     * @param amount Amount of tokens to burn
-     */
-    function burnFrom(address account, uint256 amount) public override onlyBridgeOrOwner {
-        super.burnFrom(account, amount);
-    }
-
-    /**
-     * @dev Pause token transfers
-     */
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    /**
-     * @dev Unpause token transfers
-     */
-    function unpause() external onlyOwner {
-        _unpause();
-    }
-
-    /**
-     * @dev Hook that is called before any transfer of tokens
-     */
-    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Pausable) {
-        super._update(from, to, value);
-    }
+    // If you need non-18 decimals, uncomment and set a constant.
+    // function decimals() public pure override returns (uint8) { return 6; }
 }
