@@ -6,7 +6,6 @@ Smart contracts and tooling for the CNS token stack across L1 ↔ Linea L2.
 
 - `CNSTokenL1`: canonical ERC20 on Ethereum L1 with ERC20Permit support.
 - `CNSTokenL2`: upgradeable Linea bridged token with pause + transfer allowlist, inheriting Linea's `CustomBridgedToken`.
-- `CNSAccessNFT`, `CNSTierProgression`, `CNSTokenSale`: supporting contracts for access control and sale mechanics.
 - Foundry scripts/tests for deployment, upgrade rehearsals, and bridge validation.
 
 ## Local Development
@@ -30,13 +29,15 @@ Key tests:
 - `PRIVATE_KEY`: broadcaster key used by Forge (keep in `.env`, never commit).
 - `LINEA_L2_BRIDGE`: network-specific Linea TokenBridge address.
 - `CNS_OWNER`: Safe receiving admin, pauser, allowlist, upgrader roles.
-- `CNS_ACCESS_NFT_BASE_URI`: metadata endpoint for the access NFT.
 
 Optional RPC overrides:
 
 - `L1_RPC_URL`, `L2_RPC_URL`: custom endpoints for Forge scripts.
 
 Load automatically with `direnv` (`use dotenv` already in `.envrc`) or export manually before running scripts.
+
+## Deploying to Testnets
+`forge script script/DeployCNSContracts.s.sol:DeployCNSContracts --broadcast --skip-simulation  -vvvv`
 
 ## Linea Deployment Checklist
 
