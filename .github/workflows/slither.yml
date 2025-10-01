@@ -1,0 +1,65 @@
+name: Slither Analysis
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Slither Static Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build
+        id: build
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        continue-on-error: true
+        with:
+          target: '.'
+          slither-config: slither.config.json
+          fail-on: none
+          sarif: results.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
+          category: slither
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## Slither Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f results.sarif ]; then
+            echo "✅ Slither analysis completed. Check the Security tab for detailed results." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Slither analysis encountered issues. Check the logs above." >> $GITHUB_STEP_SUMMARY
+          fi
+

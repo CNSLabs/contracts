@@ -1,0 +1,23 @@
+{
+  "filter_paths": "(lib/|test/|script/)",
+  "exclude_dependencies": true,
+  "exclude_informational": false,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "exclude_optimization": false,
+  "json": "-",
+  "checklist_limit": 10,
+  "detectors_to_exclude": [
+    "naming-convention",
+    "solc-version",
+    "pragma",
+    "similar-names"
+  ],
+  "exclude_informational_from_detectors": [
+    "assembly",
+    "low-level-calls",
+    "naming-convention"
+  ]
+}
+
