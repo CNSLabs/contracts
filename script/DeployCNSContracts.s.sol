@@ -112,7 +112,7 @@ contract DeployCNSContracts is Script {
             string.concat(
                 "forge verify-contract ",
                 vm.toString(implementation),
-                " src/CNSTokenL2.sol:CNSTokenL2 --chain linea-sepolia --verifier blockscout --verifier-url https://api-sepolia.lineascan.build/api --watch"
+                " src/CNSTokenL2.sol:CNSTokenL2 --chain linea-sepolia --watch"
             )
         );
 
@@ -121,7 +121,7 @@ contract DeployCNSContracts is Script {
             string.concat(
                 "forge verify-contract ",
                 vm.toString(proxyAddress),
-                " lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy --chain linea-sepolia --verifier blockscout --verifier-url https://api-sepolia.lineascan.build/api --constructor-args ",
+                " lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy --chain linea-sepolia --constructor-args ",
                 vm.toString(abi.encode(implementation, initCalldata)),
                 " --watch"
             )
