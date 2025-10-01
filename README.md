@@ -21,6 +21,21 @@ Key tests:
 
 - `forge test --match-contract CNSTokenL2Test`
 - `forge test --match-contract CNSTokenL1Test`
+- `forge test --match-contract CNSTokenL2V2Test`
+
+### Local Testing with Anvil
+
+Test deployments locally before deploying to testnets:
+
+```bash
+# Terminal 1: Start Anvil
+anvil
+
+# Terminal 2: Run automated test suite
+./test-local-deployment.sh
+```
+
+See [`LOCAL_TESTING_GUIDE.md`](./LOCAL_TESTING_GUIDE.md) for detailed instructions.
 
 ### Environment Variables
 
@@ -30,14 +45,43 @@ Key tests:
 - `LINEA_L2_BRIDGE`: network-specific Linea TokenBridge address.
 - `CNS_OWNER`: Safe receiving admin, pauser, allowlist, upgrader roles.
 
-Optional RPC overrides:
+Optional RPC overrides (if you want to use custom RPC endpoints):
 
-- `L1_RPC_URL`, `L2_RPC_URL`: custom endpoints for Forge scripts.
+- `ETH_MAINNET_RPC_URL`, `ETH_SEPOLIA_RPC_URL`: Ethereum L1 RPC endpoints
+- `LINEA_MAINNET_RPC_URL`, `LINEA_SEPOLIA_RPC_URL`: Linea L2 RPC endpoints
 
 Load automatically with `direnv` (`use dotenv` already in `.envrc`) or export manually before running scripts.
 
 ## Deploying to Testnets
-`forge script script/DeployCNSContracts.s.sol:DeployCNSContracts --broadcast --skip-simulation  -vvvv`
+
+### Separate L1 and L2 Deployments (Recommended)
+
+```bash
+# Deploy L1 Token on Sepolia
+forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+  --rpc-url sepolia \
+  --broadcast \
+  --verify
+
+# Set CNS_TOKEN_L1 in .env with the deployed address
+
+# Deploy L2 Token on Linea Sepolia
+forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+  --rpc-url linea_sepolia \
+  --broadcast \
+  --verify
+```
+
+See [`script/README.md`](./script/README.md) for complete deployment workflow.
+
+### Multi-Chain Deployment (Legacy)
+
+```bash
+forge script script/DeployCNSContracts.s.sol:DeployCNSContracts \
+  --broadcast \
+  --skip-simulation \
+  -vvvv
+```
 
 ## Linea Deployment Checklist
 

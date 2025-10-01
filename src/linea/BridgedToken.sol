@@ -64,8 +64,9 @@ contract BridgedToken is ERC20PermitUpgradeable {
     /**
      * @dev Overrides ERC-20 default function to support tokens with different decimals.
      * @return The number of decimal.
+     * @custom:modification Added 'virtual' modifier to allow further overriding in derived contracts (specifically to be able upgrade to use ERC20VotesUpgradeable)
      */
-    function decimals() public view override returns (uint8) {
+    function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
 }

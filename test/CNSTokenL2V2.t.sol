@@ -1,0 +1,238 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import "forge-std/Test.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "../src/CNSTokenL2.sol";
+import "../src/CNSTokenL2V2.sol";
+
+contract CNSTokenL2V2Test is Test {
+    CNSTokenL2 public tokenV1;
+    CNSTokenL2V2 public tokenV2;
+    ERC1967Proxy public proxy;
+    
+    address public admin;
+    address public bridge;
+    address public l1Token;
+    address public user1;
+    address public user2;
+    
+    string constant TOKEN_NAME = "CNS Linea Token";
+    string constant TOKEN_SYMBOL = "CNSL";
+    uint8 constant DECIMALS = 18;
+    
+    event AllowlistUpdated(address indexed account, bool allowed);
+    
+    function setUp() public {
+        admin = makeAddr("admin");
+        bridge = makeAddr("bridge");
+        l1Token = makeAddr("l1Token");
+        user1 = makeAddr("user1");
+        user2 = makeAddr("user2");
+        
+        // Deploy V1 implementation
+        tokenV1 = new CNSTokenL2();
+        
+        // Prepare initialization data
+        bytes memory initData = abi.encodeWithSelector(
+            CNSTokenL2.initialize.selector,
+            admin,
+            bridge,
+            l1Token,
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            DECIMALS
+        );
+        
+        // Deploy proxy with V1 implementation
+        proxy = new ERC1967Proxy(address(tokenV1), initData);
+    }
+    
+    function test_UpgradeToV2() public {
+        // Deploy V2 implementation
+        tokenV2 = new CNSTokenL2V2();
+        
+        // Upgrade to V2
+        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        
+        vm.prank(admin);
+        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        
+        // Verify upgrade
+        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        assertEq(upgradedProxy.name(), TOKEN_NAME);
+        assertEq(upgradedProxy.symbol(), TOKEN_SYMBOL);
+        assertEq(upgradedProxy.decimals(), DECIMALS);
+    }
+    
+    function test_VotingFunctionalityAfterUpgrade() public {
+        // Upgrade to V2
+        tokenV2 = new CNSTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        
+        vm.prank(admin);
+        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        
+        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        
+        // Add users to allowlist
+        vm.startPrank(admin);
+        upgradedProxy.setAllowlist(user1, true);
+        upgradedProxy.setAllowlist(user2, true);
+        vm.stopPrank();
+        
+        // Mint some tokens via bridge
+        uint256 mintAmount = 1000 * 10 ** DECIMALS;
+        vm.prank(bridge);
+        upgradedProxy.mint(user1, mintAmount);
+        
+        // Verify initial state - user has tokens but no voting power (needs to delegate)
+        assertEq(upgradedProxy.balanceOf(user1), mintAmount);
+        assertEq(upgradedProxy.getVotes(user1), 0);
+        
+        // User1 delegates to themselves
+        vm.prank(user1);
+        upgradedProxy.delegate(user1);
+        
+        // Verify voting power after delegation
+        assertEq(upgradedProxy.getVotes(user1), mintAmount);
+        
+        // User1 delegates to user2
+        vm.prank(user1);
+        upgradedProxy.delegate(user2);
+        
+        // Verify voting power transfer
+        assertEq(upgradedProxy.getVotes(user1), 0);
+        assertEq(upgradedProxy.getVotes(user2), mintAmount);
+    }
+    
+    function test_V2MaintainsV1Functionality() public {
+        // Upgrade to V2
+        tokenV2 = new CNSTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        
+        vm.prank(admin);
+        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        
+        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        
+        // Test pause functionality
+        vm.prank(admin);
+        upgradedProxy.pause();
+        assertTrue(upgradedProxy.paused());
+        
+        vm.prank(admin);
+        upgradedProxy.unpause();
+        assertFalse(upgradedProxy.paused());
+        
+        // Test allowlist functionality
+        assertFalse(upgradedProxy.isAllowlisted(user1));
+        
+        vm.prank(admin);
+        upgradedProxy.setAllowlist(user1, true);
+        assertTrue(upgradedProxy.isAllowlisted(user1));
+        
+        // Test batch allowlist
+        address[] memory users = new address[](2);
+        users[0] = user1;
+        users[1] = user2;
+        
+        vm.prank(admin);
+        upgradedProxy.setAllowlistBatch(users, true);
+        assertTrue(upgradedProxy.isAllowlisted(user1));
+        assertTrue(upgradedProxy.isAllowlisted(user2));
+    }
+    
+    function test_AllowlistStillEnforced() public {
+        // Upgrade to V2
+        tokenV2 = new CNSTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        
+        vm.prank(admin);
+        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        
+        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        
+        // Add user1 to allowlist only
+        vm.prank(admin);
+        upgradedProxy.setAllowlist(user1, true);
+        
+        // Mint tokens to user1
+        uint256 mintAmount = 1000 * 10 ** DECIMALS;
+        vm.prank(bridge);
+        upgradedProxy.mint(user1, mintAmount);
+        
+        // Try to transfer to user2 (not allowlisted) - should fail
+        vm.prank(user1);
+        vm.expectRevert("to not allowlisted");
+        upgradedProxy.transfer(user2, 100 * 10 ** DECIMALS);
+        
+        // Add user2 to allowlist
+        vm.prank(admin);
+        upgradedProxy.setAllowlist(user2, true);
+        
+        // Now transfer should work
+        vm.prank(user1);
+        upgradedProxy.transfer(user2, 100 * 10 ** DECIMALS);
+        
+        assertEq(upgradedProxy.balanceOf(user2), 100 * 10 ** DECIMALS);
+    }
+    
+    function test_VotePowerTracksTransfers() public {
+        // Upgrade to V2
+        tokenV2 = new CNSTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        
+        vm.prank(admin);
+        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        
+        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        
+        // Add users to allowlist
+        vm.startPrank(admin);
+        upgradedProxy.setAllowlist(user1, true);
+        upgradedProxy.setAllowlist(user2, true);
+        vm.stopPrank();
+        
+        // Mint tokens to user1
+        uint256 mintAmount = 1000 * 10 ** DECIMALS;
+        vm.prank(bridge);
+        upgradedProxy.mint(user1, mintAmount);
+        
+        // Both users delegate to themselves
+        vm.prank(user1);
+        upgradedProxy.delegate(user1);
+        
+        vm.prank(user2);
+        upgradedProxy.delegate(user2);
+        
+        // Verify initial voting power
+        assertEq(upgradedProxy.getVotes(user1), mintAmount);
+        assertEq(upgradedProxy.getVotes(user2), 0);
+        
+        // Transfer tokens
+        uint256 transferAmount = 300 * 10 ** DECIMALS;
+        vm.prank(user1);
+        upgradedProxy.transfer(user2, transferAmount);
+        
+        // Verify voting power updated
+        assertEq(upgradedProxy.getVotes(user1), mintAmount - transferAmount);
+        assertEq(upgradedProxy.getVotes(user2), transferAmount);
+    }
+    
+    function test_ClockModeIsBlock() public {
+        // Upgrade to V2
+        tokenV2 = new CNSTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        
+        vm.prank(admin);
+        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        
+        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        
+        // ERC20Votes uses block.number by default
+        assertEq(upgradedProxy.clock(), block.number);
+        assertEq(upgradedProxy.CLOCK_MODE(), "mode=blocknumber&from=default");
+    }
+}
+

@@ -32,4 +32,19 @@ remappings = [
 fuzz = { runs = 10 }
 invariant = { runs = 10 }
 
+# RPC endpoints for different networks
+[rpc_endpoints]
+mainnet = "${ETH_MAINNET_RPC_URL}"
+sepolia = "${ETH_SEPOLIA_RPC_URL}"
+linea = "${LINEA_MAINNET_RPC_URL}"
+linea_sepolia = "${LINEA_SEPOLIA_RPC_URL}"
+local = "http://localhost:8545"
+
+# Etherscan API keys for verification
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+linea = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api.lineascan.build/api" }
+linea_sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
