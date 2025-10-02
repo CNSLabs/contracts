@@ -1,290 +1,155 @@
 # Deployment Scripts
 
-This directory contains deployment and utility scripts for the CNS token contracts.
+Deployment and utility scripts for CNS token contracts.
+
+## Scripts Overview
+
+### Deployment
+- **`1_DeployCNSTokenL1.s.sol`** - Deploy CNS token on Ethereum L1
+- **`2_DeployCNSTokenL2.s.sol`** - Deploy CNS token on Linea L2 (with proxy)
+- **`3_UpgradeCNSTokenL2ToV2.s.sol`** - Upgrade L2 token to V2 (adds governance)
+- **`DeployCNSContracts.s.sol`** - Legacy multi-chain deployment
+
+### Utilities
+- **`BaseScript.sol`** - Shared helpers for all scripts (inherit from this)
 
 ## Quick Start
 
-All scripts should inherit from `BaseScript.sol` to avoid code duplication and get access to shared utilities.
+```bash
+# Deploy L1 (Sepolia)
+forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+  --rpc-url sepolia \
+  --broadcast \
+  --verify
 
-```solidity
-import "./BaseScript.sol";
+# Deploy L2 (Linea Sepolia) - after setting CNS_TOKEN_L1
+forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+  --rpc-url linea_sepolia \
+  --broadcast \
+  --verify
 
-contract MyScript is BaseScript {
-    function run() external {
-        // Your script logic here
-    }
-}
+# Upgrade to V2 - after setting CNS_TOKEN_L2_PROXY
+forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+  --rpc-url linea_sepolia \
+  --broadcast \
+  --verify
 ```
 
-## Available Scripts
-
-### Deployment Scripts
-
-- **`1_DeployCNSTokenL1.s.sol`** - Deploy CNS Token on L1 (Ethereum)
-  ```bash
-  # Sepolia testnet
-  forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
-    --rpc-url sepolia \
-    --broadcast \
-    --verify
-  
-  # Mainnet
-  forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
-    --rpc-url mainnet \
-    --broadcast \
-    --verify \
-    --slow
-  ```
-
-- **`2_DeployCNSTokenL2.s.sol`** - Deploy CNS Token on L2 (Linea) with proxy
-  ```bash
-  # Linea Sepolia testnet
-  forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
-    --rpc-url linea_sepolia \
-    --broadcast \
-    --verify
-  
-  # Linea Mainnet
-  forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
-    --rpc-url linea \
-    --broadcast \
-    --verify \
-    --slow
-  ```
-
-- **`DeployCNSContracts.s.sol`** - (Legacy) Multi-chain deployment of both L1 and L2 tokens
-  > ⚠️ **Note**: Use the separate L1/L2 scripts above for more flexibility
-
-### Upgrade Scripts
-
-- **`3_UpgradeCNSTokenL2ToV2.s.sol`** - Upgrade L2 token from V1 to V2 (adds voting)
-  ```bash
-  # Testnet
-  forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
-    --rpc-url linea_sepolia \
-    --broadcast \
-    --verify
-  
-  # Local testing
-  forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
-    --rpc-url http://localhost:8545 \
-    --broadcast
-  ```
-
-### Utility Scripts
-
-- **`DemoV2Features.s.sol`** - Demo script showing V2 voting features
-  ```bash
-  forge script script/DemoV2Features.s.sol:DemoV2Features --rpc-url linea_sepolia
-  ```
-
-- **`verify_cns_contracts.sh`** - Bash script for verifying deployed contracts
-
 ## BaseScript Utilities
+
+All scripts inherit from `BaseScript.sol` for shared functionality:
 
 ### Network Detection
 
 ```solidity
-// Get human-readable network name
-string memory network = _getNetworkName(block.chainid);
-
-// Check network type
-bool mainnet = _isMainnet();      // true for Ethereum/Linea mainnet
-bool testnet = _isTestnet();      // true for Sepolia/Linea Sepolia
-bool local = _isLocalNetwork();   // true for Anvil/Hardhat
-
-// Get verification chain parameter
-string memory chain = _getChainParam(block.chainid); // e.g., "--chain linea-sepolia"
+_getNetworkName(block.chainid)     // "Ethereum Sepolia"
+_isMainnet()                        // true if Ethereum/Linea mainnet
+_isTestnet()                        // true if Sepolia/Linea Sepolia
+_isLocalNetwork()                   // true if Anvil/Hardhat
+_getChainParam(block.chainid)       // "--chain sepolia"
 ```
 
-### Chain ID Constants
+### Logging
 
 ```solidity
-ETHEREUM_MAINNET    // 1
-ETHEREUM_SEPOLIA    // 11155111
-LINEA_MAINNET       // 59144
-LINEA_SEPOLIA       // 59141
-ANVIL               // 31337
-HARDHAT             // 1337
+_logDeploymentHeader("Deploying MyContract")
+_logVerificationCommand(contractAddress, "src/MyContract.sol:MyContract")
+_logVerificationCommandWithArgs(address, path, constructorArgs)
 ```
 
-### Logging Helpers
+### Validation
 
 ```solidity
-// Log deployment header with network info
-_logDeploymentHeader("Deploying MyContract");
-
-// Log verification command
-_logVerificationCommand(
-    address(myContract),
-    "src/MyContract.sol:MyContract"
-);
-
-// Log verification with constructor args
-_logVerificationCommandWithArgs(
-    address(myContract),
-    "src/MyContract.sol:MyContract",
-    abi.encode(arg1, arg2)
-);
+_requireNonZeroAddress(address, "NAME")
+_requireContract(address, "NAME")
+_requireMainnetConfirmation()  // Requires MAINNET_DEPLOYMENT_ALLOWED=true
 ```
 
-### Validation Helpers
+### Environment
 
 ```solidity
-// Validate address is not zero
-_requireNonZeroAddress(ownerAddress, "OWNER");
-
-// Validate address is a contract
-_requireContract(proxyAddress, "PROXY");
-
-// Require explicit mainnet confirmation
-_requireMainnetConfirmation(); // Set MAINNET_DEPLOYMENT_ALLOWED=true in .env
+(uint256 privateKey, address deployer) = _getDeployer()
 ```
 
-### Environment Helpers
+## Full Deployment Workflow
 
-```solidity
-// Get deployer info
-(uint256 privateKey, address deployerAddress) = _getDeployer();
+### 1. Deploy L1 Token
+
+```bash
+# Set environment
+export CNS_OWNER=0xYourMultisigAddress
+
+# Deploy to Sepolia
+forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+  --rpc-url sepolia \
+  --broadcast \
+  --verify
+
+# Save deployed address
+export CNS_TOKEN_L1=0x...
 ```
 
-## Example: Creating a New Deployment Script
+### 2. Deploy L2 Token
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+```bash
+# Set L2 bridge address (network-specific)
+export LINEA_L2_BRIDGE=0x93DcAdf238932e6e6a85852caC89cBd71798F463  # Sepolia
 
-import "./BaseScript.sol";
-import "../src/MyContract.sol";
+# Deploy to Linea Sepolia
+forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+  --rpc-url linea_sepolia \
+  --broadcast \
+  --verify
 
-/**
- * @title DeployMyContract
- * @notice Deploys MyContract to any EVM network
- * 
- * Usage:
- *   forge script script/DeployMyContract.s.sol:DeployMyContract \
- *     --rpc-url <network> \
- *     --broadcast \
- *     --verify
- */
-contract DeployMyContract is BaseScript {
-    function run() external {
-        // Get deployer credentials
-        (uint256 pk, address deployer) = _getDeployer();
-        
-        // Get and validate constructor arguments
-        address owner = vm.envAddress("OWNER");
-        _requireNonZeroAddress(owner, "OWNER");
-        
-        // Log deployment info
-        _logDeploymentHeader("Deploying MyContract");
-        console.log("Owner:", owner);
-        console.log("Deployer:", deployer);
-        
-        // Safety check for mainnet
-        _requireMainnetConfirmation();
-        
-        // Deploy
-        vm.startBroadcast(pk);
-        MyContract myContract = new MyContract(owner);
-        vm.stopBroadcast();
-        
-        // Log results
-        console.log("\n=== Deployment Complete ===");
-        console.log("MyContract:", address(myContract));
-        
-        // Log verification command
-        _logVerificationCommand(
-            address(myContract),
-            "src/MyContract.sol:MyContract"
-        );
-    }
-}
+# Save proxy address
+export CNS_TOKEN_L2_PROXY=0x...
 ```
 
-## Deployment Workflow
+### 3. Test Deployment
 
-### Full Deployment (L1 + L2)
+```bash
+# Add addresses to allowlist
+cast send $CNS_TOKEN_L2_PROXY \
+  "setAllowlist(address,bool)" 0xUserAddress true \
+  --private-key $PRIVATE_KEY \
+  --rpc-url linea_sepolia
 
-1. **Deploy L1 Token on Ethereum**
-   ```bash
-   # Set environment variables
-   export CNS_OWNER=0xYourMultisigAddress
-   
-   # Deploy to Sepolia
-   forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
-     --rpc-url sepolia \
-     --broadcast \
-     --verify
-   
-   # Save the deployed L1 token address
-   export CNS_TOKEN_L1=0xDeployedL1Address
-   ```
+# Bridge tokens using Linea bridge UI
+```
 
-2. **Deploy L2 Token on Linea**
-   ```bash
-   # Make sure CNS_TOKEN_L1 is set from step 1
-   # Also set the bridge address for your network
-   export LINEA_L2_BRIDGE=0x93DcAdf238932e6e6a85852caC89cBd71798F463  # Sepolia
-   
-   # Deploy to Linea Sepolia
-   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
-     --rpc-url linea_sepolia \
-     --broadcast \
-     --verify
-   
-   # Save the deployed L2 proxy address
-   export CNS_TOKEN_L2_PROXY=0xDeployedL2ProxyAddress
-   ```
+### 4. Upgrade to V2 (Optional)
 
-3. **Test the Deployment**
-   ```bash
-   # Add addresses to allowlist
-   cast send $CNS_TOKEN_L2_PROXY \
-     "setAllowlist(address,bool)" \
-     0xUserAddress \
-     true \
-     --private-key $PRIVATE_KEY \
-     --rpc-url linea_sepolia
-   
-   # Bridge some tokens from L1 to L2 using Linea bridge UI
-   ```
-
-4. **Upgrade to V2 (Optional)**
-   ```bash
-   # Upgrade to add voting capabilities
-   forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
-     --rpc-url linea_sepolia \
-     --broadcast \
-     --verify
-   ```
+```bash
+forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+  --rpc-url linea_sepolia \
+  --broadcast \
+  --verify
+```
 
 ## Environment Variables
 
-Required variables in `.env`:
+Required in `.env`:
 
 ```bash
-# Required for all scripts
+# Always required
 PRIVATE_KEY=0x...
 CNS_OWNER=0x...
 
-# Required for L2 deployment
-CNS_TOKEN_L1=0x...                    # L1 token address (deploy L1 first)
-LINEA_L2_BRIDGE=0x...                 # Linea bridge address for your network
+# For L2 deployment
+CNS_TOKEN_L1=0x...                    # From L1 deployment
+LINEA_L2_BRIDGE=0x...                 # Sepolia: 0x93Dc... | Mainnet: 0xd19d...
 
-# Required for upgrade scripts
-CNS_TOKEN_L2_PROXY=0x...              # L2 proxy address (after L2 deployment)
+# For upgrades
+CNS_TOKEN_L2_PROXY=0x...              # From L2 deployment
 
-# Required for mainnet deployments
+# For mainnet
 MAINNET_DEPLOYMENT_ALLOWED=true
 
-# Network RPC URLs (used by foundry.toml aliases)
-ETH_MAINNET_RPC_URL=https://...
+# RPC URLs (optional, can use foundry.toml aliases)
 ETH_SEPOLIA_RPC_URL=https://...
-LINEA_MAINNET_RPC_URL=https://...
 LINEA_SEPOLIA_RPC_URL=https://...
 
-# Verification API keys
+# For verification
 ETHERSCAN_API_KEY=...
 LINEA_ETHERSCAN_API_KEY=...
 ```
@@ -294,39 +159,51 @@ LINEA_ETHERSCAN_API_KEY=...
 Defined in `foundry.toml`:
 
 ```bash
-# Use short names instead of full URLs
-forge script ... --rpc-url mainnet --broadcast
-forge script ... --rpc-url sepolia --broadcast
-forge script ... --rpc-url linea --broadcast
-forge script ... --rpc-url linea_sepolia --broadcast
-forge script ... --rpc-url local --broadcast
+--rpc-url mainnet          # Ethereum mainnet
+--rpc-url sepolia          # Ethereum Sepolia
+--rpc-url linea            # Linea mainnet
+--rpc-url linea_sepolia    # Linea Sepolia
+--rpc-url local            # http://localhost:8545
 ```
 
-## Testing Scripts Locally
+## Creating New Scripts
 
-```bash
-# Start local Anvil chain
-anvil
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
 
-# In another terminal, run script against local chain
-forge script script/YourScript.s.sol:YourScript \
-  --rpc-url http://localhost:8545 \
-  --broadcast
+import "./BaseScript.sol";
+import "../src/MyContract.sol";
+
+contract DeployMyContract is BaseScript {
+    function run() external {
+        (uint256 pk, address deployer) = _getDeployer();
+        address owner = vm.envAddress("OWNER");
+        _requireNonZeroAddress(owner, "OWNER");
+        
+        _logDeploymentHeader("Deploying MyContract");
+        _requireMainnetConfirmation();
+        
+        vm.startBroadcast(pk);
+        MyContract myContract = new MyContract(owner);
+        vm.stopBroadcast();
+        
+        console.log("MyContract:", address(myContract));
+        _logVerificationCommand(address(myContract), "src/MyContract.sol:MyContract");
+    }
+}
 ```
 
 ## Best Practices
 
-1. ✅ **Always inherit from BaseScript** instead of Script
-2. ✅ **Use `--rpc-url` parameter** for network selection
-3. ✅ **Validate all inputs** with helper functions
-4. ✅ **Test locally first** with Anvil before testnet/mainnet
-5. ✅ **Log everything important** for debugging
-6. ✅ **Add usage docs** in contract comments
-7. ✅ **Use mainnet confirmation** for production deployments
+- ✅ Always inherit from `BaseScript`
+- ✅ Validate all inputs with `_require*` helpers
+- ✅ Test locally with Anvil first
+- ✅ Use network aliases from `foundry.toml`
+- ✅ Log important info for debugging
+- ✅ Enable mainnet confirmation for production
 
 ## See Also
 
-- [`DEPLOYMENT_BEST_PRACTICES.md`](../DEPLOYMENT_BEST_PRACTICES.md) - Comprehensive deployment guide
-- [`BaseScript.sol`](./BaseScript.sol) - Source code for base script utilities
-- [Foundry Book - Scripts](https://book.getfoundry.sh/tutorials/solidity-scripting) - Official Foundry scripting guide
-
+- [LOCAL_TESTING_GUIDE.md](../LOCAL_TESTING_GUIDE.md) - Local testing with Anvil
+- [Foundry Book - Scripts](https://book.getfoundry.sh/tutorials/solidity-scripting)
