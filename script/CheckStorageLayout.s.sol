@@ -15,7 +15,7 @@ contract CheckStorageLayout is Script {
 
         // Get storage layout using forge inspect
         console.log("To generate storage layout, run:");
-        console.log("  forge inspect CNSTokenL2 storage-layout --pretty\n");
+        console.log("  forge inspect CNSTokenL2 storage-layout\n");
 
         console.log("=== Upgrade Safety Guidelines ===\n");
 
