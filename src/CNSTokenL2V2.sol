@@ -5,8 +5,10 @@ import {CustomBridgedToken} from "./linea/CustomBridgedToken.sol";
 import {BridgedToken} from "./linea/BridgedToken.sol";
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20VotesUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {ERC20VotesUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {NoncesUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/NoncesUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -65,7 +67,7 @@ contract CNSTokenL2V2 is
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
         __ERC20Votes_init(); // Initialize voting functionality
-        
+
         bridge = bridge_;
         _decimals = decimals_;
 
@@ -133,7 +135,7 @@ contract CNSTokenL2V2 is
             if (!_allowlisted[from]) revert("from not allowlisted");
             if (!_allowlisted[to]) revert("to not allowlisted");
         }
-        
+
         // Call ERC20VotesUpgradeable's _update which handles vote tracking
         super._update(from, to, value);
     }
@@ -141,12 +143,7 @@ contract CNSTokenL2V2 is
     /**
      * @dev Override required due to multiple inheritance
      */
-    function nonces(address owner)
-        public
-        view
-        override(ERC20PermitUpgradeable, NoncesUpgradeable)
-        returns (uint256)
-    {
+    function nonces(address owner) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
         return super.nonces(owner);
     }
 
@@ -159,4 +156,3 @@ contract CNSTokenL2V2 is
 
     uint256[47] private __gap;
 }
-
