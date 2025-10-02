@@ -116,11 +116,8 @@ forge test --gas-report -vvvv --match-test testTransfer
 
 #### Storage Layout Analysis
 ```bash
-# View storage layout
+# View storage layout and check for packing opportunities
 forge inspect CNSTokenL2 storage-layout
-
-# Check for packing opportunities
-forge inspect CNSTokenL2 storage-layout --pretty
 ```
 
 ### Best Practices
