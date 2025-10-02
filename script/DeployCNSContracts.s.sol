@@ -26,8 +26,8 @@ contract DeployCNSContracts is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         owner = vm.envAddress("CNS_OWNER");
 
-        string memory l1RpcUrl = vm.envString("L1_RPC_URL");
-        string memory l2RpcUrl = vm.envString("L2_RPC_URL");
+        string memory l1RpcUrl = vm.envString("ETH_SEPOLIA_RPC_URL");
+        string memory l2RpcUrl = vm.envString("LINEA_SEPOLIA_RPC_URL");
         string memory etherscanApiKey = vm.envString("ETHERSCAN_API_KEY");
         string memory lineaEtherscanApiKey = vm.envString("LINEA_ETHERSCAN_API_KEY");
 
