@@ -144,8 +144,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         }
         uint256 newPlanId;
         // Capture detailed revert reasons from createPlan
-        try IInvestorLockup(hedgeyInvestorLockup)
-            .createPlan(recipient, token, amount, start, cliff, rate, period) returns (uint256 planId_) {
+        try IInvestorLockup(hedgeyInvestorLockup).createPlan(recipient, token, amount, start, cliff, rate, period) returns (uint256 planId_) {
             newPlanId = planId_;
         } catch Error(string memory reason) {
             console.log("createPlan Error(string):", reason);
