@@ -77,6 +77,13 @@ contract MyScript is BaseScript {
     --broadcast
   ```
 
+### Hedgey Test
+
+forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
+  --rpc-url linea_sepolia \
+  --broadcast
+```
+
 ### Utility Scripts
 
 - **`DemoV2Features.s.sol`** - Demo script showing V2 voting features
