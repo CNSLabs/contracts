@@ -8,6 +8,9 @@ forge-std/
 # Gas snapshots - tracked for regression detection
 # .gas-snapshot is committed to track changes over time
 
+# Storage layouts - tracked for upgrade safety
+# layouts/*.json files committed to verify upgrade compatibility
+
 # Dependencies
 node_modules/
 package-lock.json

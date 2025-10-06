@@ -51,6 +51,12 @@ contract MyScript is BaseScript {
     --verify \
     --slow
   ```
+  
+  > 💡 **Note:** Ensure `CNS_TOKEN_L1` is set in your `.env` file before deployment.
+  > If you encounter "Replacement transaction underpriced" errors, clear the broadcast cache:
+  > ```bash
+  > rm -rf broadcast/2_DeployCNSTokenL2.s.sol/59141/
+  > ```
 
 - **`DeployCNSContracts.s.sol`** - (Legacy) Multi-chain deployment of both L1 and L2 tokens
   > ⚠️ **Note**: Use the separate L1/L2 scripts above for more flexibility
@@ -223,9 +229,8 @@ contract DeployMyContract is BaseScript {
 
 2. **Deploy L2 Token on Linea**
    ```bash
-   # Make sure CNS_TOKEN_L1 is set from step 1
-   # Also set the bridge address for your network
-   export LINEA_L2_BRIDGE=0x93DcAdf238932e6e6a85852caC89cBd71798F463  # Sepolia
+   # Make sure CNS_TOKEN_L1 is set from step 1 (or in .env)
+   # Bridge address should already be in your .env file
    
    # Deploy to Linea Sepolia
    forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
@@ -233,8 +238,8 @@ contract DeployMyContract is BaseScript {
      --broadcast \
      --verify
    
-   # Save the deployed L2 proxy address
-   export CNS_TOKEN_L2_PROXY=0xDeployedL2ProxyAddress
+   # Save the deployed L2 proxy address to .env
+   echo "CNS_TOKEN_L2_PROXY=<deployed_address>" >> .env
    ```
 
 3. **Test the Deployment**
