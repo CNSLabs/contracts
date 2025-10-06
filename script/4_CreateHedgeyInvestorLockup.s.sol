@@ -39,14 +39,10 @@ interface IInvestorLockup {
     ) external returns (uint256 newPlanId);
     function balanceOf(address owner) external view returns (uint256);
     function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
-    function plans(uint256 planId) external view returns (
-        address token,
-        uint256 amount,
-        uint256 start,
-        uint256 cliff,
-        uint256 rate,
-        uint256 period
-    );
+    function plans(uint256 planId)
+        external
+        view
+        returns (address token, uint256 amount, uint256 start, uint256 cliff, uint256 rate, uint256 period);
 }
 
 interface IERC20Minimal {
@@ -67,7 +63,6 @@ interface ICNSAllowlistAdmin {
 }
 
 contract CreateHedgeyInvestorLockup is BaseScript {
-
     address public hedgeyInvestorLockup;
 
     function run() external {
@@ -149,15 +144,8 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         }
         uint256 newPlanId;
         // Capture detailed revert reasons from createPlan
-        try IInvestorLockup(hedgeyInvestorLockup).createPlan(
-            recipient,
-            token,
-            amount,
-            start,
-            cliff,
-            rate,
-            period
-        ) returns (uint256 planId_) {
+        try IInvestorLockup(hedgeyInvestorLockup)
+            .createPlan(recipient, token, amount, start, cliff, rate, period) returns (uint256 planId_) {
             newPlanId = planId_;
         } catch Error(string memory reason) {
             console.log("createPlan Error(string):", reason);
@@ -217,5 +205,4 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         console.log("[OK] plans(planId) matches inputs");
     }
 }
-
 
