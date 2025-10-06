@@ -5,6 +5,9 @@ broadcast/
 lib/
 forge-std/
 
+# Gas snapshots - tracked for regression detection
+# .gas-snapshot is committed to track changes over time
+
 # Dependencies
 node_modules/
 package-lock.json
