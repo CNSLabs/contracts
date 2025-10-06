@@ -38,19 +38,29 @@ contract MyScript is BaseScript {
 
 - **`2_DeployCNSTokenL2.s.sol`** - Deploy CNS Token on L2 (Linea) with proxy
   ```bash
-  # Linea Sepolia testnet
+  # Linea Sepolia testnet (IMPORTANT: Use legacy transactions)
+  export CNS_TOKEN_L1=<deployed_L1_address>
   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
     --rpc-url linea_sepolia \
     --broadcast \
-    --verify
+    --legacy \
+    --with-gas-price 1000000000
   
-  # Linea Mainnet
+  # Linea Mainnet (test legacy transactions first)
+  export CNS_TOKEN_L1=<deployed_L1_address>
   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
     --rpc-url linea \
     --broadcast \
-    --verify \
+    --legacy \
+    --with-gas-price 1000000000 \
     --slow
   ```
+  
+  > ⚠️ **Linea Deployment Notes:**
+  > - Use `--legacy` flag for Type 0 transactions (more reliable on Linea)
+  > - Set explicit gas price with `--with-gas-price 1000000000` (1 gwei)
+  > - RPC aliases (`linea_sepolia`, `linea`) pull from your `.env` file via `foundry.toml`
+  > - Ensure `CNS_TOKEN_L1` and `LINEA_SEPOLIA_RPC_URL` are set in `.env`
 
 - **`DeployCNSContracts.s.sol`** - (Legacy) Multi-chain deployment of both L1 and L2 tokens
   > ⚠️ **Note**: Use the separate L1/L2 scripts above for more flexibility
@@ -223,18 +233,18 @@ contract DeployMyContract is BaseScript {
 
 2. **Deploy L2 Token on Linea**
    ```bash
-   # Make sure CNS_TOKEN_L1 is set from step 1
-   # Also set the bridge address for your network
-   export LINEA_L2_BRIDGE=0x93DcAdf238932e6e6a85852caC89cBd71798F463  # Sepolia
+   # Make sure CNS_TOKEN_L1 is set from step 1 (or in .env)
+   # Bridge address should already be in your .env file
    
-   # Deploy to Linea Sepolia
+   # Deploy to Linea Sepolia (IMPORTANT: Use legacy transactions)
    forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
      --rpc-url linea_sepolia \
      --broadcast \
-     --verify
+     --legacy \
+     --with-gas-price 1000000000
    
-   # Save the deployed L2 proxy address
-   export CNS_TOKEN_L2_PROXY=0xDeployedL2ProxyAddress
+   # Save the deployed L2 proxy address to .env
+   echo "CNS_TOKEN_L2_PROXY=<deployed_address>" >> .env
    ```
 
 3. **Test the Deployment**
