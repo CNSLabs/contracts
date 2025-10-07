@@ -14,6 +14,12 @@ import "../src/CNSTokenL2V2.sol";
  *         2. Upgrades the proxy to point to the new implementation
  *         3. Initializes V2-specific features (ERC20Votes)
  *
+ * Environment Variables Required:
+ *   - CNS_TOKEN_L2_PROXY: Address of the deployed L2 proxy contract
+ *   - CNS_OWNER_PRIVATE_KEY: Private key with UPGRADER_ROLE (preferred)
+ *   - PRIVATE_KEY: Falls back to this if CNS_OWNER_PRIVATE_KEY not set
+ *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
+ *
  * Usage:
  *   forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
  *     --rpc-url <your_rpc_url> \
@@ -30,7 +36,18 @@ contract UpgradeCNSTokenL2ToV2 is BaseScript {
     address public newImplementation;
 
     function run() external {
-        (uint256 deployerPrivateKey, address deployer) = _getDeployer();
+        // Try to get CNS_OWNER_PRIVATE_KEY first, fall back to PRIVATE_KEY
+        uint256 ownerPrivateKey;
+        address owner;
+
+        try vm.envUint("CNS_OWNER_PRIVATE_KEY") returns (uint256 key) {
+            ownerPrivateKey = key;
+            owner = vm.addr(ownerPrivateKey);
+            console.log("Using CNS_OWNER_PRIVATE_KEY");
+        } catch {
+            console.log("CNS_OWNER_PRIVATE_KEY not found, using PRIVATE_KEY");
+            (ownerPrivateKey, owner) = _getDeployer();
+        }
 
         // Get the proxy address from environment
         proxyAddress = vm.envAddress("CNS_TOKEN_L2_PROXY");
@@ -40,28 +57,28 @@ contract UpgradeCNSTokenL2ToV2 is BaseScript {
         // Log deployment info
         _logDeploymentHeader("Upgrading CNSTokenL2 to V2");
         console.log("Proxy address:", proxyAddress);
-        console.log("Upgrader address:", deployer);
+        console.log("Upgrader address:", owner);
 
         // Safety check for mainnet
         _requireMainnetConfirmation();
 
-        // Check if deployer has UPGRADER_ROLE before attempting upgrade
+        // Check if owner has UPGRADER_ROLE before attempting upgrade
         CNSTokenL2 proxyV1 = CNSTokenL2(proxyAddress);
         bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-        if (!proxyV1.hasRole(UPGRADER_ROLE, deployer)) {
+        if (!proxyV1.hasRole(UPGRADER_ROLE, owner)) {
             console.log("\n[ERROR] Account does not have UPGRADER_ROLE!");
             console.log("Required role:", vm.toString(UPGRADER_ROLE));
-            console.log("Your address:", deployer);
+            console.log("Your address:", owner);
             console.log("\nTo fix this:");
-            console.log("1. Use the private key of the account with UPGRADER_ROLE (typically CNS_OWNER)");
+            console.log("1. Set CNS_OWNER_PRIVATE_KEY env var with the private key that has UPGRADER_ROLE");
             console.log("2. Or grant UPGRADER_ROLE to your current account first");
             revert("Missing UPGRADER_ROLE");
         }
 
         console.log("[OK] Account has UPGRADER_ROLE");
 
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast(ownerPrivateKey);
 
         // 1. Deploy new V2 implementation
         console.log("\n1. Deploying CNSTokenL2V2 implementation...");
