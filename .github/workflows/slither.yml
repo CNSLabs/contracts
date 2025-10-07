@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
     
     steps:
       - name: Checkout code
@@ -46,11 +45,13 @@ jobs:
           fail-on: none
           sarif: results.sarif
 
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload SARIF as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}
-          category: slither
+          name: slither-sarif
+          path: results.sarif
+          if-no-files-found: ignore
 
       - name: Create summary
         if: always()
@@ -58,7 +59,7 @@ jobs:
           echo "## Slither Analysis Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f results.sarif ]; then
-            echo "✅ Slither analysis completed. Check the Security tab for detailed results." >> $GITHUB_STEP_SUMMARY
+            echo "✅ Slither analysis completed. SARIF results uploaded as artifact." >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Slither analysis encountered issues. Check the logs above." >> $GITHUB_STEP_SUMMARY
           fi
