@@ -39,7 +39,7 @@ contract UpgradeCNSTokenL2ToV2 is BaseScript {
         // Try to get CNS_OWNER_PRIVATE_KEY first, fall back to PRIVATE_KEY
         uint256 ownerPrivateKey;
         address owner;
-        
+
         try vm.envUint("CNS_OWNER_PRIVATE_KEY") returns (uint256 key) {
             ownerPrivateKey = key;
             owner = vm.addr(ownerPrivateKey);
