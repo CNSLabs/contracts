@@ -74,12 +74,15 @@ contract MyScript is BaseScript {
     --broadcast
   ```
 
-### Hedgey Test
-
-forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
-  --rpc-url linea_sepolia \
-  --broadcast
-```
+- **`4_CreateHedgeyInvestorLockup.s.sol`** - Create Hedgey investor lockup plan
+  ```bash
+  # Linea Sepolia testnet
+  forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
+    --rpc-url linea_sepolia \
+    --broadcast
+  ```
+  
+  > 💡 **Note:** Requires `HEDGEY_INVESTOR_LOCKUP` and other Hedgey parameters in `.env`
 
 ### Utility Scripts
 
