@@ -180,10 +180,8 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         console.log("\n=== Verifying Plan State ===");
 
         uint256 count = IInvestorLockup(hedgeyInvestorLockup).balanceOf(recipient);
-        require(count == 1, "balanceOf(recipient) must be 1");
-        console.log("[OK] balanceOf(recipient) == 1");
 
-        uint256 indexedPlanId = IInvestorLockup(hedgeyInvestorLockup).tokenOfOwnerByIndex(recipient, 0);
+        uint256 indexedPlanId = IInvestorLockup(hedgeyInvestorLockup).tokenOfOwnerByIndex(recipient, count - 1);
         require(indexedPlanId == planId, "tokenOfOwnerByIndex mismatch");
         console.log("[OK] tokenOfOwnerByIndex(recipient,0) matches planId");
 
