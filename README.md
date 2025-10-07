@@ -74,15 +74,6 @@ forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
 
 See [`script/README.md`](./script/README.md) for complete deployment workflow.
 
-### Multi-Chain Deployment (Legacy)
-
-```bash
-forge script script/DeployCNSContracts.s.sol:DeployCNSContracts \
-  --broadcast \
-  --skip-simulation \
-  -vvvv
-```
-
 ## Linea Deployment Checklist
 
 - **Pin dependencies**: Vendor `src/linea/BridgedToken.sol` and `CustomBridgedToken.sol` from Linea commit `c7bc6313a6309d31ac532ce0801d1c3ad3426842`. Record this hash in deployment notes.
