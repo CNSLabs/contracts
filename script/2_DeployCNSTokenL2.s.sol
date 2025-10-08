@@ -46,8 +46,10 @@ import "../src/CNSTokenL2.sol";
  */
 contract DeployCNSTokenL2 is BaseScript {
     // Token parameters
-    string constant L2_NAME = "CNS Linea Token";
-    string constant L2_SYMBOL = "CNSL";
+    string constant DEFAULT_L2_NAME = "CNS Linea Token";
+    string constant DEFAULT_L2_SYMBOL = "CNSL";
+    string L2_NAME = vm.envOr("TOKEN_NAME", DEFAULT_L2_NAME);
+    string L2_SYMBOL = vm.envOr("TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
     uint8 constant L2_DECIMALS = 18;
 
     // Deployed contracts
@@ -78,6 +80,13 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Bridge:", bridge);
         console.log("Deployer:", deployer);
 
+        // Pre-deployment validation
+        console.log("\n=== Pre-Deployment Validation ===");
+        require(owner != address(0), "FATAL: CNS_OWNER cannot be zero address");
+        require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
+        require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
+        console.log("[OK] All required addresses are non-zero");
+
         // Safety check for mainnet
         _requireMainnetConfirmation();
 
@@ -98,6 +107,21 @@ contract DeployCNSTokenL2 is BaseScript {
         token = CNSTokenL2(address(proxy));
         console.log("   Proxy:", address(proxy));
 
+        // CRITICAL: Verify initialization happened successfully
+        console.log("\n3. Verifying initialization...");
+        require(token.l1Token() == l1Token, "FATAL: Initialization failed - l1Token not set");
+        require(token.bridge() == bridge, "FATAL: Initialization failed - bridge not set");
+        require(
+            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, owner),
+            "FATAL: Initialization failed - owner doesn't have DEFAULT_ADMIN_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("UPGRADER_ROLE"), owner),
+            "FATAL: Initialization failed - owner doesn't have UPGRADER_ROLE"
+        );
+        console.log("   [OK] Contract initialized successfully");
+        console.log("   [OK] Owner has admin roles");
+
         vm.stopBroadcast();
 
         // Verify deployment
@@ -108,7 +132,7 @@ contract DeployCNSTokenL2 is BaseScript {
     }
 
     function _verifyDeployment(address owner, address bridge, address l1Token) internal view {
-        console.log("\n=== Verifying Deployment ===");
+        console.log("\n=== Running Additional Deployment Checks ===");
 
         // Check proxy points to implementation
         bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);

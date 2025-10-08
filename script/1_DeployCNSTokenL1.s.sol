@@ -35,8 +35,10 @@ import "../src/CNSTokenL1.sol";
  */
 contract DeployCNSTokenL1 is BaseScript {
     // Token parameters
-    string constant TOKEN_NAME = "Canonical CNS Token";
-    string constant TOKEN_SYMBOL = "CNS";
+    string constant DEFAULT_TOKEN_NAME = "Canonical CNS Token";
+    string constant DEFAULT_TOKEN_SYMBOL = "CNS";
+    string TOKEN_NAME = vm.envOr("TOKEN_NAME", DEFAULT_TOKEN_NAME);
+    string TOKEN_SYMBOL = vm.envOr("TOKEN_SYMBOL", DEFAULT_TOKEN_SYMBOL);
     uint256 constant INITIAL_SUPPLY = 100_000_000 * 10 ** 18; // 100M tokens
 
     CNSTokenL1 public token;
