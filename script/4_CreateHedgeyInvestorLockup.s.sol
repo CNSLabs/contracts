@@ -17,6 +17,7 @@ import "./BaseScript.sol";
  * Required env vars:
  *   - PRIVATE_KEY            : Deployer key for broadcasting
  *   - HEDGEY_INVESTOR_LOCKUP : Hedgey InvestorLockup contract address on target chain
+ *   - HEDGEY_BATCH_PLANNER   : Hedgey Batch Planner contract address on target chain
  *   - HEDGEY_RECIPIENT       : Recipient address for the vesting plan
  *   - HEDGEY_AMOUNT          : Total amount (uint256, base units)
  *   - HEDGEY_START           : Start timestamp (uint256)
@@ -62,16 +63,40 @@ interface ICNSAllowlistAdmin {
     function setAllowlist(address account, bool allowed) external;
 }
 
+struct Plan {
+    address recipient;
+    uint256 amount;
+    uint256 start;
+    uint256 cliff;
+    uint256 rate;
+}
+
+interface IHedgeyBatchPlanner {
+    function batchLockingPlans(
+        address locker,
+        address token,
+        uint256 totalAmount,
+        Plan[] calldata plans,
+        uint256 period,
+        uint8 mintType
+    ) external;
+}
+
 contract CreateHedgeyInvestorLockup is BaseScript {
     address public hedgeyInvestorLockup;
+    address public hedgeyBatchPlanner;
 
     function run() external {
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        // Load and validate target contract address
+        // Load and validate target contract addresses
         hedgeyInvestorLockup = vm.envAddress("HEDGEY_INVESTOR_LOCKUP");
         _requireNonZeroAddress(hedgeyInvestorLockup, "HEDGEY_INVESTOR_LOCKUP");
         _requireContract(hedgeyInvestorLockup, "HEDGEY_INVESTOR_LOCKUP");
+
+        hedgeyBatchPlanner = vm.envAddress("HEDGEY_BATCH_PLANNER");
+        _requireNonZeroAddress(hedgeyBatchPlanner, "HEDGEY_BATCH_PLANNER");
+        _requireContract(hedgeyBatchPlanner, "HEDGEY_BATCH_PLANNER");
 
         // Load parameters
         address recipient = vm.envAddress("HEDGEY_RECIPIENT");
@@ -90,8 +115,9 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         require(start <= cliff, "start must be <= cliff");
 
         // Log context
-        _logDeploymentHeader("Calling Hedgey InvestorLockup createPlan");
+        _logDeploymentHeader("Calling Hedgey Batch Planner batchlockingplans");
         console.log("InvestorLockup:", hedgeyInvestorLockup);
+        console.log("Batch Planner:", hedgeyBatchPlanner);
         console.log("Deployer:", deployer);
         console.log("Recipient:", recipient);
         console.log("Token:", token);
@@ -108,16 +134,8 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         // Execute call
         vm.startBroadcast(deployerPrivateKey);
 
-        // Check current token balance of deployer before approve/createPlan
-        // uint256 preBalance = IERC20Minimal(token).balanceOf(deployer);
-        // uint8 tokenDecimals = IERC20Minimal(token).decimals();
-        // console.log("Pre-balance (raw):", preBalance);
-        // console.log("Token decimals:", tokenDecimals);
-        // console.log(deployer, hedgeyInvestorLockup);
-        // uint256 preAllowance = IERC20Minimal(token).allowance(deployer, hedgeyInvestorLockup);
-        // console.log("Current allowance (owner=deployer -> spender=InvestorLockup):", preAllowance);
-
         // Ensure allowlist if caller can manage it and check paused state
+        // TODO: This should ideally be run by the deployment script for the L2 contract. We'd want to allowlist the proper Hedgey contracts immediately
         {
             bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
             bool canManage = ICNSAllowlistViews(token).hasRole(ALLOWLIST_ADMIN_ROLE, deployer);
@@ -126,6 +144,8 @@ contract CreateHedgeyInvestorLockup is BaseScript {
             if (canManage) {
                 bool depAllowed = ICNSAllowlistViews(token).isAllowlisted(deployer);
                 bool hedgeyAllowed = ICNSAllowlistViews(token).isAllowlisted(hedgeyInvestorLockup);
+                bool batchPlannerAllowed = ICNSAllowlistViews(token).isAllowlisted(hedgeyBatchPlanner);
+                
                 if (!depAllowed) {
                     ICNSAllowlistAdmin(token).setAllowlist(deployer, true);
                     console.log("Allowlisted deployer on CNS token");
@@ -134,56 +154,74 @@ contract CreateHedgeyInvestorLockup is BaseScript {
                     ICNSAllowlistAdmin(token).setAllowlist(hedgeyInvestorLockup, true);
                     console.log("Allowlisted Hedgey InvestorLockup on CNS token");
                 }
+                if (!batchPlannerAllowed) {
+                    ICNSAllowlistAdmin(token).setAllowlist(hedgeyBatchPlanner, true);
+                    console.log("Allowlisted Hedgey Batch Planner on CNS token");
+                }
             }
         }
 
-        // Approve token allowance to Hedgey if requested
+        // Approve token allowance to Hedgey Batch Planner if requested
         if (amount > 0) {
-            bool approved = IERC20Minimal(token).approve(hedgeyInvestorLockup, amount);
+            bool approved = IERC20Minimal(token).approve(hedgeyBatchPlanner, amount);
             require(approved, "ERC20 approve failed");
         }
-        uint256 newPlanId;
-        // Capture detailed revert reasons from createPlan
-        try IInvestorLockup(hedgeyInvestorLockup).createPlan(recipient, token, amount, start, cliff, rate, period)
-        returns (uint256 planId_) {
-            newPlanId = planId_;
+        // Prepare Plan struct for batchLockingPlans (single plan)
+        Plan[] memory plans = new Plan[](1);
+        plans[0] = Plan({
+            recipient: recipient,
+            amount: amount,
+            start: start,
+            cliff: cliff,
+            rate: rate
+        });
+        
+        // Capture detailed revert reasons from batchLockingPlans
+        try IHedgeyBatchPlanner(hedgeyBatchPlanner).batchLockingPlans(
+            hedgeyInvestorLockup, token, amount, plans, period, 0
+        ) {
+            console.log("batchLockingPlans succeeded");
         } catch Error(string memory reason) {
-            console.log("createPlan Error(string):", reason);
-            revert(string(abi.encodePacked("createPlan failed: ", reason)));
+            console.log("batchLockingPlans Error(string):", reason);
+            revert(string(abi.encodePacked("batchLockingPlans failed: ", reason)));
         } catch (bytes memory lowLevelData) {
-            console.log("createPlan low-level revert data:");
+            console.log("batchLockingPlans low-level revert data:");
             console.logBytes(lowLevelData);
-            revert("createPlan failed (low-level)");
+            revert("batchLockingPlans failed (low-level)");
         }
         vm.stopBroadcast();
 
         // Summary
-        console.log("\n=== Hedgey createPlan submitted ===");
+        console.log("\n=== Hedgey batchLockingPlans submitted ===");
         console.log("Network:", _getNetworkName(block.chainid));
         console.log("InvestorLockup:", hedgeyInvestorLockup);
-        // console.log("New Plan ID:", newPlanId);
+        console.log("Batch Planner:", hedgeyBatchPlanner);
+        console.log("Locker (InvestorLockup):", hedgeyInvestorLockup);
+        console.log("Recipient:", recipient);
+        console.log("Amount:", amount);
 
-        // Post-call verification
-        _verifyPlan(recipient, token, amount, start, cliff, rate, period, newPlanId);
+        // Post-call verification (skip plan ID verification since function doesn't return it)
+        _verifyPlanCreated(recipient, token, amount, start, cliff, rate, period);
     }
 
-    function _verifyPlan(
+    function _verifyPlanCreated(
         address recipient,
         address token,
         uint256 amount,
         uint256 start,
         uint256 cliff,
         uint256 rate,
-        uint256 period,
-        uint256 planId
+        uint256 period
     ) internal view {
-        console.log("\n=== Verifying Plan State ===");
+        console.log("\n=== Verifying Plan Created ===");
 
         uint256 count = IInvestorLockup(hedgeyInvestorLockup).balanceOf(recipient);
+        require(count > 0, "No plans found for recipient");
+        console.log("[OK] Recipient has", count, "plan(s)");
 
-        uint256 indexedPlanId = IInvestorLockup(hedgeyInvestorLockup).tokenOfOwnerByIndex(recipient, count - 1);
-        require(indexedPlanId == planId, "tokenOfOwnerByIndex mismatch");
-        console.log("[OK] tokenOfOwnerByIndex(recipient,0) matches planId");
+        // Get the most recent plan (last one created)
+        uint256 latestPlanId = IInvestorLockup(hedgeyInvestorLockup).tokenOfOwnerByIndex(recipient, count - 1);
+        console.log("[OK] Latest plan ID:", latestPlanId);
 
         (
             address plansToken,
@@ -192,7 +230,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
             uint256 plansCliff,
             uint256 plansRate,
             uint256 plansPeriod
-        ) = IInvestorLockup(hedgeyInvestorLockup).plans(planId);
+        ) = IInvestorLockup(hedgeyInvestorLockup).plans(latestPlanId);
 
         require(plansToken == token, "plans.token mismatch");
         require(plansAmount == amount, "plans.amount mismatch");
@@ -200,6 +238,6 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         require(plansCliff == cliff, "plans.cliff mismatch");
         require(plansRate == rate, "plans.rate mismatch");
         require(plansPeriod == period, "plans.period mismatch");
-        console.log("[OK] plans(planId) matches inputs");
+        console.log("[OK] Latest plan matches inputs");
     }
 }
