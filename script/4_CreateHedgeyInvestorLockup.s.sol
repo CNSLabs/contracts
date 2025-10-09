@@ -145,7 +145,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
                 bool depAllowed = ICNSAllowlistViews(token).isAllowlisted(deployer);
                 bool hedgeyAllowed = ICNSAllowlistViews(token).isAllowlisted(hedgeyInvestorLockup);
                 bool batchPlannerAllowed = ICNSAllowlistViews(token).isAllowlisted(hedgeyBatchPlanner);
-                
+
                 if (!depAllowed) {
                     ICNSAllowlistAdmin(token).setAllowlist(deployer, true);
                     console.log("Allowlisted deployer on CNS token");
@@ -168,14 +168,8 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         }
         // Prepare Plan struct for batchLockingPlans (single plan)
         Plan[] memory plans = new Plan[](1);
-        plans[0] = Plan({
-            recipient: recipient,
-            amount: amount,
-            start: start,
-            cliff: cliff,
-            rate: rate
-        });
-        
+        plans[0] = Plan({recipient: recipient, amount: amount, start: start, cliff: cliff, rate: rate});
+
         // Capture detailed revert reasons from batchLockingPlans
         try IHedgeyBatchPlanner(hedgeyBatchPlanner).batchLockingPlans(
             hedgeyInvestorLockup, token, amount, plans, period, 0
