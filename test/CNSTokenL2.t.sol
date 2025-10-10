@@ -169,6 +169,31 @@ contract CNSTokenL2Test is Test {
         token.transfer(user2, 1 ether);
     }
 
+    function testAllowlistOnlyAppliesToSenderNotRecipient() public {
+        vm.prank(bridge);
+        token.mint(user1, INITIAL_BRIDGE_MINT);
+
+        // Allowlist user1 as sender only
+        vm.prank(admin);
+        token.setSenderAllowed(user1, true);
+
+        // user2 is NOT allowlisted as sender
+        assertFalse(token.isSenderAllowlisted(user2));
+
+        // Transfer FROM user1 (allowlisted) TO user2 (not allowlisted) - should succeed
+        vm.prank(user1);
+        token.transfer(user2, 100 ether);
+        assertEq(token.balanceOf(user2), 100 ether);
+
+        // Now try transfer FROM user2 (not allowlisted) TO user1 (allowlisted) - should fail
+        vm.prank(user2);
+        vm.expectRevert("sender not allowlisted");
+        token.transfer(user1, 50 ether);
+
+        // Verify user2's balance is unchanged
+        assertEq(token.balanceOf(user2), 100 ether);
+    }
+
     function testUpgradeByUpgraderSucceeds() public {
         CNSTokenL2MockV2 newImplementation = new CNSTokenL2MockV2();
 
