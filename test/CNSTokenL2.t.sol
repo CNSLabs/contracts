@@ -52,9 +52,10 @@ contract CNSTokenL2Test is Test {
         assertTrue(token.hasRole(token.ALLOWLIST_ADMIN_ROLE(), admin));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), admin));
 
-        assertTrue(token.isAllowlisted(address(token)));
-        assertTrue(token.isAllowlisted(bridge));
-        assertTrue(token.isAllowlisted(admin));
+        assertTrue(token.senderAllowlistEnabled());
+        assertTrue(token.isSenderAllowlisted(address(token)));
+        assertTrue(token.isSenderAllowlisted(bridge));
+        assertTrue(token.isSenderAllowlisted(admin));
     }
 
     function testInitializeRevertsOnZeroAddresses() public {
@@ -84,7 +85,7 @@ contract CNSTokenL2Test is Test {
         assertEq(token.balanceOf(user1), INITIAL_BRIDGE_MINT);
 
         vm.prank(user1);
-        vm.expectRevert("from not allowlisted");
+        vm.expectRevert("sender not allowlisted");
         token.transfer(user2, 1 ether);
     }
 
@@ -93,10 +94,7 @@ contract CNSTokenL2Test is Test {
         token.mint(user1, INITIAL_BRIDGE_MINT);
 
         vm.prank(admin);
-        token.setAllowlist(user1, true);
-
-        vm.prank(admin);
-        token.setAllowlist(user2, true);
+        token.setSenderAllowed(user1, true);
 
         vm.prank(user1);
         token.transfer(user2, 100 ether);
@@ -109,9 +107,7 @@ contract CNSTokenL2Test is Test {
         token.mint(user1, INITIAL_BRIDGE_MINT);
 
         vm.prank(admin);
-        token.setAllowlist(user1, true);
-        vm.prank(admin);
-        token.setAllowlist(user2, true);
+        token.setSenderAllowed(user1, true);
 
         vm.prank(admin);
         token.pause();
@@ -133,7 +129,7 @@ contract CNSTokenL2Test is Test {
         token.mint(user1, INITIAL_BRIDGE_MINT);
 
         vm.prank(admin);
-        token.setAllowlist(user1, true);
+        token.setSenderAllowed(user1, true);
 
         vm.prank(user1);
         token.approve(bridge, INITIAL_BRIDGE_MINT);
@@ -143,6 +139,34 @@ contract CNSTokenL2Test is Test {
 
         assertEq(token.balanceOf(user1), 0);
         assertEq(token.totalSupply(), 0);
+    }
+
+    function testDisableSenderAllowlist() public {
+        vm.prank(bridge);
+        token.mint(user1, INITIAL_BRIDGE_MINT);
+
+        // user1 is not allowlisted, transfer should fail
+        vm.prank(user1);
+        vm.expectRevert("sender not allowlisted");
+        token.transfer(user2, 1 ether);
+
+        // Disable sender allowlist
+        vm.prank(admin);
+        token.setSenderAllowlistEnabled(false);
+
+        // Now transfer should work without allowlist
+        vm.prank(user1);
+        token.transfer(user2, 1 ether);
+        assertEq(token.balanceOf(user2), 1 ether);
+
+        // Re-enable allowlist
+        vm.prank(admin);
+        token.setSenderAllowlistEnabled(true);
+
+        // Transfer should fail again
+        vm.prank(user1);
+        vm.expectRevert("sender not allowlisted");
+        token.transfer(user2, 1 ether);
     }
 
     function testUpgradeByUpgraderSucceeds() public {

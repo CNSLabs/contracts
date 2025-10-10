@@ -54,13 +54,14 @@ interface IERC20Minimal {
 }
 
 interface ICNSAllowlistViews {
-    function isAllowlisted(address account) external view returns (bool);
+    function isSenderAllowlisted(address account) external view returns (bool);
+    function senderAllowlistEnabled() external view returns (bool);
     function hasRole(bytes32 role, address account) external view returns (bool);
     function paused() external view returns (bool);
 }
 
 interface ICNSAllowlistAdmin {
-    function setAllowlist(address account, bool allowed) external;
+    function setSenderAllowed(address account, bool allowed) external;
 }
 
 struct Plan {
@@ -140,22 +141,23 @@ contract CreateHedgeyInvestorLockup is BaseScript {
             bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
             bool canManage = ICNSAllowlistViews(token).hasRole(ALLOWLIST_ADMIN_ROLE, deployer);
             bool isPaused = ICNSAllowlistViews(token).paused();
+            bool allowlistEnabled = ICNSAllowlistViews(token).senderAllowlistEnabled();
             console.log("Token paused:", isPaused);
-            if (canManage) {
-                bool depAllowed = ICNSAllowlistViews(token).isAllowlisted(deployer);
-                bool hedgeyAllowed = ICNSAllowlistViews(token).isAllowlisted(hedgeyInvestorLockup);
-                bool batchPlannerAllowed = ICNSAllowlistViews(token).isAllowlisted(hedgeyBatchPlanner);
-
+            console.log("Sender allowlist enabled:", allowlistEnabled);
+            if (canManage && allowlistEnabled) {
+                bool depAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(deployer);
+                bool hedgeyAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(hedgeyInvestorLockup);
+                bool batchPlannerAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(hedgeyBatchPlanner);
                 if (!depAllowed) {
-                    ICNSAllowlistAdmin(token).setAllowlist(deployer, true);
+                    ICNSAllowlistAdmin(token).setSenderAllowed(deployer, true);
                     console.log("Allowlisted deployer on CNS token");
                 }
                 if (!hedgeyAllowed) {
-                    ICNSAllowlistAdmin(token).setAllowlist(hedgeyInvestorLockup, true);
+                    ICNSAllowlistAdmin(token).setSenderAllowed(hedgeyInvestorLockup, true);
                     console.log("Allowlisted Hedgey InvestorLockup on CNS token");
                 }
                 if (!batchPlannerAllowed) {
-                    ICNSAllowlistAdmin(token).setAllowlist(hedgeyBatchPlanner, true);
+                    ICNSAllowlistAdmin(token).setSenderAllowed(hedgeyBatchPlanner, true);
                     console.log("Allowlisted Hedgey Batch Planner on CNS token");
                 }
             }

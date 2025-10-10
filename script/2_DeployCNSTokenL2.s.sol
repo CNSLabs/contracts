@@ -160,10 +160,11 @@ contract DeployCNSTokenL2 is BaseScript {
         require(token.hasRole(UPGRADER_ROLE, owner), "Owner missing UPGRADER_ROLE");
         console.log("[OK] Owner has all required roles");
 
-        // Check allowlist
-        require(token.isAllowlisted(address(token)), "Token not allowlisted");
-        require(token.isAllowlisted(bridge), "Bridge not allowlisted");
-        require(token.isAllowlisted(owner), "Owner not allowlisted");
+        // Check sender allowlist
+        require(token.isSenderAllowlisted(address(token)), "Token not allowlisted");
+        require(token.isSenderAllowlisted(bridge), "Bridge not allowlisted");
+        require(token.isSenderAllowlisted(owner), "Owner not allowlisted");
+        require(token.senderAllowlistEnabled(), "Sender allowlist not enabled");
         console.log("[OK] Default addresses allowlisted");
 
         console.log("\n[SUCCESS] All deployment checks passed!");
@@ -188,10 +189,11 @@ contract DeployCNSTokenL2 is BaseScript {
 
         console.log("\n=== Access Control ===");
         console.log("Owner (has all roles):", owner);
-        console.log("Allowlisted:");
-        console.log("  - Token contract:", token.isAllowlisted(address(token)));
-        console.log("  - Bridge:", token.isAllowlisted(bridge));
-        console.log("  - Owner:", token.isAllowlisted(owner));
+        console.log("Sender Allowlist Enabled:", token.senderAllowlistEnabled());
+        console.log("Sender Allowlisted:");
+        console.log("  - Token contract:", token.isSenderAllowlisted(address(token)));
+        console.log("  - Bridge:", token.isSenderAllowlisted(bridge));
+        console.log("  - Owner:", token.isSenderAllowlisted(owner));
 
         // Log verification commands
         _logVerificationCommands(initCalldata);
@@ -199,10 +201,11 @@ contract DeployCNSTokenL2 is BaseScript {
         // Log next steps
         console.log("\n=== Next Steps ===");
         console.log("1. Verify contracts (see commands below)");
-        console.log("2. Add addresses to allowlist: token.setAllowlist(address, true)");
-        console.log("3. Bridge tokens from L1 using Linea bridge");
-        console.log("4. Test transfers between allowlisted addresses");
-        console.log("5. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol");
+        console.log("2. Add addresses to sender allowlist: token.setSenderAllowed(address, true)");
+        console.log("3. Optionally disable allowlist: token.setSenderAllowlistEnabled(false)");
+        console.log("4. Bridge tokens from L1 using Linea bridge");
+        console.log("5. Test transfers between allowlisted addresses");
+        console.log("6. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol");
     }
 
     function _logVerificationCommands(bytes memory initCalldata) internal view {
