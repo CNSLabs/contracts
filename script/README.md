@@ -58,9 +58,6 @@ contract MyScript is BaseScript {
   > rm -rf broadcast/2_DeployCNSTokenL2.s.sol/59141/
   > ```
 
-- **`DeployCNSContracts.s.sol`** - (Legacy) Multi-chain deployment of both L1 and L2 tokens
-  > ⚠️ **Note**: Use the separate L1/L2 scripts above for more flexibility
-
 ### Upgrade Scripts
 
 - **`3_UpgradeCNSTokenL2ToV2.s.sol`** - Upgrade L2 token from V1 to V2 (adds voting)
@@ -77,14 +74,22 @@ contract MyScript is BaseScript {
     --broadcast
   ```
 
+- **`4_CreateHedgeyInvestorLockup.s.sol`** - Create Hedgey investor lockup plan
+  ```bash
+  # Linea Sepolia testnet
+  forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
+    --rpc-url linea_sepolia \
+    --broadcast
+  ```
+  
+  > 💡 **Note:** Requires `HEDGEY_INVESTOR_LOCKUP` and other Hedgey parameters in `.env`
+
 ### Utility Scripts
 
 - **`DemoV2Features.s.sol`** - Demo script showing V2 voting features
   ```bash
   forge script script/DemoV2Features.s.sol:DemoV2Features --rpc-url linea_sepolia
   ```
-
-- **`verify_cns_contracts.sh`** - Bash script for verifying deployed contracts
 
 ## BaseScript Utilities
 
