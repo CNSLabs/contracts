@@ -34,10 +34,12 @@ contract CNSTokenL2V2 is
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     address public l1Token;
-    mapping(address => bool) private _allowlisted;
+    mapping(address => bool) private _senderAllowlisted;
+    bool private _senderAllowlistEnabled;
 
-    event AllowlistUpdated(address indexed account, bool allowed);
-    event AllowlistBatchUpdated(address[] accounts, bool allowed);
+    event SenderAllowlistUpdated(address indexed account, bool allowed);
+    event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
+    event SenderAllowlistEnabledUpdated(bool enabled);
 
     constructor() {
         _disableInitializers();
@@ -78,9 +80,10 @@ contract CNSTokenL2V2 is
         _grantRole(ALLOWLIST_ADMIN_ROLE, admin_);
         _grantRole(UPGRADER_ROLE, admin_);
 
-        _setAllowlist(address(this), true);
-        _setAllowlist(bridge_, true);
-        _setAllowlist(admin_, true);
+        _senderAllowlistEnabled = true;
+        _setSenderAllowlist(address(this), true);
+        _setSenderAllowlist(bridge_, true);
+        _setSenderAllowlist(admin_, true);
     }
 
     /**
@@ -98,8 +101,12 @@ contract CNSTokenL2V2 is
         return _decimals;
     }
 
-    function isAllowlisted(address account) external view returns (bool) {
-        return _allowlisted[account];
+    function isSenderAllowlisted(address account) external view returns (bool) {
+        return _senderAllowlisted[account];
+    }
+
+    function senderAllowlistEnabled() external view returns (bool) {
+        return _senderAllowlistEnabled;
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
@@ -110,30 +117,34 @@ contract CNSTokenL2V2 is
         _unpause();
     }
 
-    function setAllowlist(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        _setAllowlist(account, allowed);
+    function setSenderAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        _setSenderAllowlist(account, allowed);
     }
 
-    function setAllowlistBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+    function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
         for (uint256 i; i < accounts.length; ++i) {
-            _setAllowlist(accounts[i], allowed);
+            _setSenderAllowlist(accounts[i], allowed);
         }
-        emit AllowlistBatchUpdated(accounts, allowed);
+        emit SenderAllowlistBatchUpdated(accounts, allowed);
+    }
+
+    function setSenderAllowlistEnabled(bool enabled) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        _senderAllowlistEnabled = enabled;
+        emit SenderAllowlistEnabledUpdated(enabled);
     }
 
     /**
      * @dev Override required for ERC20VotesUpgradeable to track voting power on transfers
-     *      Also enforces pause and allowlist restrictions from V1
+     *      Also enforces pause and sender allowlist restrictions from V1
      */
     function _update(address from, address to, uint256 value)
         internal
         override(ERC20Upgradeable, ERC20VotesUpgradeable)
         whenNotPaused
     {
-        // Enforce allowlist (skip for mint/burn operations)
-        if (from != address(0) && to != address(0)) {
-            if (!_allowlisted[from]) revert("from not allowlisted");
-            if (!_allowlisted[to]) revert("to not allowlisted");
+        // Enforce sender allowlist only if enabled (skip for mint/burn operations)
+        if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
+            if (!_senderAllowlisted[from]) revert("sender not allowlisted");
         }
 
         // Call ERC20VotesUpgradeable's _update which handles vote tracking
@@ -149,10 +160,10 @@ contract CNSTokenL2V2 is
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
-    function _setAllowlist(address account, bool allowed) internal {
-        _allowlisted[account] = allowed;
-        emit AllowlistUpdated(account, allowed);
+    function _setSenderAllowlist(address account, bool allowed) internal {
+        _senderAllowlisted[account] = allowed;
+        emit SenderAllowlistUpdated(account, allowed);
     }
 
-    uint256[47] private __gap;
+    uint256[46] private __gap;
 }

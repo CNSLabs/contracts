@@ -41,8 +41,8 @@ contract CNSTokenL2UpgradeTest is Test {
         vm.stopPrank();
 
         vm.startPrank(admin);
-        token.setAllowlist(user1, true);
-        token.setAllowlist(user2, true);
+        token.setSenderAllowed(user1, true);
+        token.setSenderAllowed(user2, true);
         vm.stopPrank();
     }
 
@@ -62,8 +62,8 @@ contract CNSTokenL2UpgradeTest is Test {
         uint256 totalSupplyBefore = token.totalSupply();
         address bridgeBefore = token.bridge();
         address l1TokenBefore = token.l1Token();
-        bool user1AllowlistedBefore = token.isAllowlisted(user1);
-        bool user2AllowlistedBefore = token.isAllowlisted(user2);
+        bool user1AllowlistedBefore = token.isSenderAllowlisted(user1);
+        bool user2AllowlistedBefore = token.isSenderAllowlisted(user2);
 
         // Upgrade to V2
         CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
@@ -77,8 +77,8 @@ contract CNSTokenL2UpgradeTest is Test {
         assertEq(upgradedToken.totalSupply(), totalSupplyBefore, "Total supply not preserved");
         assertEq(upgradedToken.bridge(), bridgeBefore, "Bridge not preserved");
         assertEq(upgradedToken.l1Token(), l1TokenBefore, "L1 token not preserved");
-        assertEq(upgradedToken.isAllowlisted(user1), user1AllowlistedBefore, "User1 allowlist not preserved");
-        assertEq(upgradedToken.isAllowlisted(user2), user2AllowlistedBefore, "User2 allowlist not preserved");
+        assertEq(upgradedToken.isSenderAllowlisted(user1), user1AllowlistedBefore, "User1 allowlist not preserved");
+        assertEq(upgradedToken.isSenderAllowlisted(user2), user2AllowlistedBefore, "User2 allowlist not preserved");
 
         // Verify roles preserved
         assertTrue(upgradedToken.hasRole(upgradedToken.DEFAULT_ADMIN_ROLE(), admin), "Admin role not preserved");
@@ -98,7 +98,7 @@ contract CNSTokenL2UpgradeTest is Test {
         // Create complex state before upgrade
         vm.startPrank(admin);
         token.pause();
-        token.setAllowlist(address(this), true);
+        token.setSenderAllowed(address(this), true);
         vm.stopPrank();
 
         bool pausedBefore = token.paused();
@@ -112,7 +112,7 @@ contract CNSTokenL2UpgradeTest is Test {
 
         // Verify paused state preserved
         assertEq(upgradedToken.paused(), pausedBefore, "Paused state not preserved");
-        assertTrue(upgradedToken.isAllowlisted(address(this)), "New allowlist entry not preserved");
+        assertTrue(upgradedToken.isSenderAllowlisted(address(this)), "New allowlist entry not preserved");
     }
 
     function testUpgradedContractFunctionality() public {

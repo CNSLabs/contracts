@@ -21,7 +21,7 @@ contract CNSTokenL2V2Test is Test {
     string constant TOKEN_SYMBOL = "CNSL";
     uint8 constant DECIMALS = 18;
 
-    event AllowlistUpdated(address indexed account, bool allowed);
+    event SenderAllowlistUpdated(address indexed account, bool allowed);
 
     function setUp() public {
         admin = makeAddr("admin");
@@ -71,8 +71,8 @@ contract CNSTokenL2V2Test is Test {
 
         // Add users to allowlist
         vm.startPrank(admin);
-        upgradedProxy.setAllowlist(user1, true);
-        upgradedProxy.setAllowlist(user2, true);
+        upgradedProxy.setSenderAllowed(user1, true);
+        upgradedProxy.setSenderAllowed(user2, true);
         vm.stopPrank();
 
         // Mint some tokens via bridge
@@ -120,11 +120,11 @@ contract CNSTokenL2V2Test is Test {
         assertFalse(upgradedProxy.paused());
 
         // Test allowlist functionality
-        assertFalse(upgradedProxy.isAllowlisted(user1));
+        assertFalse(upgradedProxy.isSenderAllowlisted(user1));
 
         vm.prank(admin);
-        upgradedProxy.setAllowlist(user1, true);
-        assertTrue(upgradedProxy.isAllowlisted(user1));
+        upgradedProxy.setSenderAllowed(user1, true);
+        assertTrue(upgradedProxy.isSenderAllowlisted(user1));
 
         // Test batch allowlist
         address[] memory users = new address[](2);
@@ -132,9 +132,9 @@ contract CNSTokenL2V2Test is Test {
         users[1] = user2;
 
         vm.prank(admin);
-        upgradedProxy.setAllowlistBatch(users, true);
-        assertTrue(upgradedProxy.isAllowlisted(user1));
-        assertTrue(upgradedProxy.isAllowlisted(user2));
+        upgradedProxy.setSenderAllowedBatch(users, true);
+        assertTrue(upgradedProxy.isSenderAllowlisted(user1));
+        assertTrue(upgradedProxy.isSenderAllowlisted(user2));
     }
 
     function test_AllowlistStillEnforced() public {
@@ -147,25 +147,16 @@ contract CNSTokenL2V2Test is Test {
 
         CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
 
-        // Add user1 to allowlist only
+        // Add user1 to sender allowlist only
         vm.prank(admin);
-        upgradedProxy.setAllowlist(user1, true);
+        upgradedProxy.setSenderAllowed(user1, true);
 
         // Mint tokens to user1
         uint256 mintAmount = 1000 * 10 ** DECIMALS;
         vm.prank(bridge);
         upgradedProxy.mint(user1, mintAmount);
 
-        // Try to transfer to user2 (not allowlisted) - should fail
-        vm.prank(user1);
-        vm.expectRevert("to not allowlisted");
-        upgradedProxy.transfer(user2, 100 * 10 ** DECIMALS);
-
-        // Add user2 to allowlist
-        vm.prank(admin);
-        upgradedProxy.setAllowlist(user2, true);
-
-        // Now transfer should work
+        // Transfer to user2 (not allowlisted as sender) - should succeed now
         vm.prank(user1);
         upgradedProxy.transfer(user2, 100 * 10 ** DECIMALS);
 
@@ -184,8 +175,8 @@ contract CNSTokenL2V2Test is Test {
 
         // Add users to allowlist
         vm.startPrank(admin);
-        upgradedProxy.setAllowlist(user1, true);
-        upgradedProxy.setAllowlist(user2, true);
+        upgradedProxy.setSenderAllowed(user1, true);
+        upgradedProxy.setSenderAllowed(user2, true);
         vm.stopPrank();
 
         // Mint tokens to user1
