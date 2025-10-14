@@ -99,7 +99,7 @@ contract CNSTokenL2 is
     }
 
     function _update(address from, address to, uint256 value) internal override(ERC20Upgradeable) whenNotPaused {
-        // Enforce sender allowlist only if enabled (skip for mint/burn operations)
+        // Enforce sender allowlist only if enabled
         if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
             if (!_senderAllowlisted[from]) revert("sender not allowlisted");
         }
