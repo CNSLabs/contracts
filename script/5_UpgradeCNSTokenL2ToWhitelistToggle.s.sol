@@ -156,7 +156,7 @@ contract UpgradeCNSTokenL2ToWhitelistToggle is BaseScript {
         }
     }
 
-    function _handleSafeUpgrade() internal {
+    function _handleSafeUpgrade() internal view {
         console.log("\n=== Safe Upgrade Detected ===");
         console.log("Preparing transaction data for Safe execution...");
 
@@ -215,7 +215,7 @@ contract UpgradeCNSTokenL2ToWhitelistToggle is BaseScript {
         }
     }
 
-    function _estimateGas(address target, bytes memory data) external view returns (uint256) {
+    function _estimateGas(address, /* target */ bytes memory /* data */ ) external pure returns (uint256) {
         // This would be implemented to estimate gas for the upgrade transaction
         // For now, return a reasonable estimate
         return 500000;
