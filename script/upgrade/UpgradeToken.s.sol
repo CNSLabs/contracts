@@ -323,8 +323,92 @@ contract UpgradeToken is BaseScript {
             console.log("  - New:", newImplementation);
         }
 
-        _printStepSuccess("New implementation deployed");
+        // Verify contract on block explorer
+        _verifyImplementation();
+
+        _printStepSuccess("New implementation deployed and verified");
         _printProgress();
+    }
+
+    function _verifyImplementation() internal {
+        console.log("");
+        console.log("Verifying contract on block explorer...");
+
+        // Get API key based on chain
+        string memory apiKey;
+        string memory verifierUrl;
+
+        if (block.chainid == 1) {
+            // Ethereum Mainnet
+            try vm.envString("ETHERSCAN_API_KEY") returns (string memory key) {
+                apiKey = key;
+                verifierUrl = "https://api.etherscan.io/api";
+            } catch {
+                console.log("INFO: ETHERSCAN_API_KEY not set, skipping verification");
+                return;
+            }
+        } else if (block.chainid == 11155111) {
+            // Ethereum Sepolia
+            try vm.envString("ETHERSCAN_API_KEY") returns (string memory key) {
+                apiKey = key;
+                verifierUrl = "https://api-sepolia.etherscan.io/api";
+            } catch {
+                console.log("INFO: ETHERSCAN_API_KEY not set, skipping verification");
+                return;
+            }
+        } else if (block.chainid == 59144) {
+            // Linea Mainnet
+            try vm.envString("LINEA_ETHERSCAN_API_KEY") returns (string memory key) {
+                apiKey = key;
+                verifierUrl = "https://api.lineascan.build/api";
+            } catch {
+                console.log("INFO: LINEA_ETHERSCAN_API_KEY not set, skipping verification");
+                return;
+            }
+        } else if (block.chainid == 59141) {
+            // Linea Sepolia
+            try vm.envString("LINEA_ETHERSCAN_API_KEY") returns (string memory key) {
+                apiKey = key;
+                verifierUrl = "https://api-sepolia.lineascan.build/api";
+            } catch {
+                console.log("INFO: LINEA_ETHERSCAN_API_KEY not set, skipping verification");
+                return;
+            }
+        } else {
+            console.log("INFO: No verifier configured for this network, skipping verification");
+            return;
+        }
+
+        if (bytes(apiKey).length == 0) {
+            console.log("INFO: API key is empty, skipping verification");
+            return;
+        }
+
+        console.log("Submitting verification request...");
+        console.log("  - Contract:", newImplementation);
+        console.log("  - Verifier:", verifierUrl);
+
+        // Construct verification command using forge verify-contract
+        string[] memory inputs = new string[](8);
+        inputs[0] = "forge";
+        inputs[1] = "verify-contract";
+        inputs[2] = vm.toString(newImplementation);
+        inputs[3] = "src/CNSTokenL2.sol:CNSTokenL2";
+        inputs[4] = "--verifier-url";
+        inputs[5] = verifierUrl;
+        inputs[6] = "--etherscan-api-key";
+        inputs[7] = apiKey;
+
+        try vm.ffi(inputs) {
+            console.log("SUCCESS: Contract verification submitted");
+            console.log("Note: Verification may take a few minutes to complete");
+        } catch {
+            console.log("WARNING: Verification submission failed");
+            console.log("You can verify manually using:");
+            console.log("forge verify-contract", newImplementation, "src/CNSTokenL2.sol:CNSTokenL2");
+            console.log("  --verifier-url", verifierUrl);
+            console.log("  --etherscan-api-key <your_key>");
+        }
     }
 
     // STEP 6: Prepare Upgrade Transaction
