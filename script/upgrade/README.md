@@ -1,143 +1,123 @@
-# CNS Token L2 Upgrade Scripts
+# CNS Token L2 Upgrade Script
 
-This folder contains scripts for upgrading the CNS Token L2 contract to include whitelist toggle functionality.
+This folder contains a single, comprehensive upgrade script that handles the complete upgrade process for CNS Token L2 with whitelist toggle functionality.
 
-## Quick Start: All-in-One Script
-
-For a streamlined upgrade experience, use the all-in-one script that runs all steps sequentially with visual progress indicators:
+## Quick Start
 
 ```bash
-# Load environment variables
-source script/upgrade/0_input_params.env
+# 1. Configure your parameters
+source script/upgrade/input_params.env
 
-# Run the complete upgrade process
-forge script script/upgrade/AllInOne_UpgradeCNSTokenL2.s.sol:AllInOne_UpgradeCNSTokenL2 --rpc-url $RPC_URL --broadcast
+# 2. Run the upgrade script
+forge script script/upgrade/UpgradeToken.s.sol:UpgradeToken --rpc-url $RPC_URL --broadcast
 ```
 
-This script will:
-- ✅ Validate all inputs
-- ✅ Check target contract
-- ✅ Verify upgrader permissions
-- ✅ Detect upgrader type (Safe/EOA)
-- ✅ Deploy new implementation
-- ✅ Generate upgrade transaction data
-- ✅ Provide execution instructions
+That's it! The script handles everything automatically with clear visual progress indicators.
 
-**Progress tracking**: Shows percentage completion and step-by-step progress (e.g., "Overall Progress: 57% (4/7 steps)")
+## What This Script Does
 
-## Modular Approach
+The `UpgradeToken.s.sol` script performs all upgrade steps in sequence:
 
-Alternatively, the upgrade process is broken down into 7 individual scripts for more control:
+1. ✅ **Validate Input Parameters** - Checks all required environment variables
+2. ✅ **Validate Target Contract** - Verifies the target is a valid UUPS proxy
+3. ✅ **Check Upgrader Permissions** - Ensures upgrader has UPGRADER_ROLE
+4. ✅ **Detect Upgrader Type** - Determines if upgrader is Safe or EOA
+5. ✅ **Deploy New Implementation** - Deploys the new contract with whitelist toggle
+6. ✅ **Prepare Upgrade Transaction** - Generates transaction data for execution
+7. ✅ **Provide Execution Instructions** - Shows how to complete the upgrade
 
-1. **Validate Inputs** - Check that all required parameters are provided
-2. **Validate Target Contract** - Verify the target is a valid UUPS proxy
-3. **Check Upgrader Permissions** - Ensure upgrader has UPGRADER_ROLE
-4. **Detect Upgrader Type** - Determine if upgrader is Safe or EOA
-5. **Deploy Implementation** - Deploy new implementation with whitelist toggle
-6. **Prepare Upgrade Transaction** - Generate transaction data for execution
-7. **Execute Upgrade** - Execute the upgrade (EOA only)
+## Configuration
 
-## Setup
-
-1. **Copy and configure the environment file:**
-   ```bash
-   cp upgrade/0_input_params.env upgrade/my_upgrade.env
-   # Edit my_upgrade.env with your specific values
-   ```
-
-2. **Set your parameters in the environment file:**
-   ```bash
-   # Required parameters
-   TARGET_CONTRACT=0xe666C12f3C6Cba29350146A883131cAc5659758F
-   UPGRADER_ADDRESS=0xD7C8FD8F38683110B15771392Eb74209c15495ac
-   RPC_URL=https://rpc.sepolia.linea.build
-   
-   # Optional parameters
-   GAS_LIMIT=500000
-   NEW_IMPLEMENTATION=0x...  # Set after Step 5
-   ```
-
-## Usage
-
-### For Safe Upgraders (Recommended)
-
-Run steps 1-6 to prepare the upgrade, then execute via Safe UI:
+Edit `input_params.env` with your deployment details:
 
 ```bash
-# Load your environment
-source upgrade/my_upgrade.env
+# Target contract (proxy) to upgrade
+TARGET_CONTRACT=0xe666C12f3C6Cba29350146A883131cAc5659758F
 
-# Run validation steps
-forge script upgrade/1_ValidateInputs.s.sol:Step1_ValidateInputs --rpc-url $RPC_URL
-forge script upgrade/2_ValidateTargetContract.s.sol:Step2_ValidateTargetContract --rpc-url $RPC_URL
-forge script upgrade/3_CheckUpgraderPermissions.s.sol:Step3_CheckUpgraderPermissions --rpc-url $RPC_URL
-forge script upgrade/4_DetectUpgraderType.s.sol:Step4_DetectUpgraderType --rpc-url $RPC_URL
+# Upgrader address (must have UPGRADER_ROLE)
+UPGRADER_ADDRESS=0xD7C8FD8F38683110B15771392Eb74209c15495ac
 
-# Deploy new implementation
-forge script upgrade/5_DeployImplementation.s.sol:Step5_DeployImplementation --rpc-url $RPC_URL --broadcast
+# Network RPC URL
+RPC_URL=https://rpc.sepolia.linea.build
 
-# Prepare upgrade transaction (add NEW_IMPLEMENTATION to env file first)
-forge script upgrade/6_PrepareUpgradeTransaction.s.sol:Step6_PrepareUpgradeTransaction --rpc-url $RPC_URL
-
-# Execute via Safe UI using the transaction data from Step 6
+# Gas limit for upgrade transaction
+GAS_LIMIT=500000
 ```
 
-### For EOA Upgraders
+## Visual Progress Tracking
 
-Run all steps including the execution:
+The script provides beautiful visual feedback throughout the process:
+
+```
+################################################################
+##                                                            ##
+##         CNS TOKEN L2 UPGRADE - ALL-IN-ONE SCRIPT           ##
+##                                                            ##
+################################################################
+
+================================================================
+  STEP 1 of 7: VALIDATE INPUT PARAMETERS
+================================================================
+
+[SUCCESS] Input parameters validated
+Progress: 1/7 steps completed
+
+----------------------------------------------------------------
+Overall Progress: 14% (1/7 steps)
+----------------------------------------------------------------
+```
+
+Each step shows:
+- Clear step headers with step number
+- Success/error indicators
+- Current progress (e.g., "1/7 steps completed")
+- Overall percentage completion (e.g., "14%")
+
+## For Safe Upgraders
+
+If your upgrader is a Gnosis Safe, the script will:
+1. Deploy the new implementation
+2. Generate Safe transaction data
+3. Provide step-by-step Safe UI instructions
+
+Example output:
+```
+SAFE EXECUTION REQUIRED
+
+Execute the upgrade via Safe UI:
+
+1. Go to: https://app.safe.global/
+2. Select Safe: 0xD7C8FD8F38683110B15771392Eb74209c15495ac
+3. New Transaction -> Contract Interaction
+4. Contract address: 0xe666C12f3C6Cba29350146A883131cAc5659758F
+5. Transaction data: 0x4f1ef286...
+6. Gas limit: 500000
+7. Review and submit for signatures
+```
+
+## For EOA Upgraders
+
+If your upgrader is an EOA (Externally Owned Account), the script will provide instructions for direct execution using `cast` or other methods.
+
+**Note**: For safety, the script does NOT automatically execute upgrades. You must manually execute using the provided transaction data.
+
+## Complete Example
 
 ```bash
-# Load your environment
-source upgrade/my_upgrade.env
+# Step 1: Load your configuration
+source script/upgrade/input_params.env
 
-# Run all steps
-forge script upgrade/1_ValidateInputs.s.sol:Step1_ValidateInputs --rpc-url $RPC_URL
-forge script upgrade/2_ValidateTargetContract.s.sol:Step2_ValidateTargetContract --rpc-url $RPC_URL
-forge script upgrade/3_CheckUpgraderPermissions.s.sol:Step3_CheckUpgraderPermissions --rpc-url $RPC_URL
-forge script upgrade/4_DetectUpgraderType.s.sol:Step4_DetectUpgraderType --rpc-url $RPC_URL
-forge script upgrade/5_DeployImplementation.s.sol:Step5_DeployImplementation --rpc-url $RPC_URL --broadcast
+# Step 2: Run the upgrade script
+forge script script/upgrade/UpgradeToken.s.sol:UpgradeToken \
+  --rpc-url $RPC_URL \
+  --broadcast
 
-# Add NEW_IMPLEMENTATION to your env file, then:
-forge script upgrade/6_PrepareUpgradeTransaction.s.sol:Step6_PrepareUpgradeTransaction --rpc-url $RPC_URL
-forge script upgrade/7_ExecuteUpgrade.s.sol:Step7_ExecuteUpgrade --rpc-url $RPC_URL --broadcast
+# Step 3: Follow the on-screen instructions to complete the upgrade
+# - For Safe: Use Safe UI with the provided transaction data
+# - For EOA: Use cast or execute manually
 ```
 
-## Script Details
-
-### Step 1: Validate Inputs
-- Checks that all required environment variables are set
-- Validates address formats
-- Displays parameter summary
-
-### Step 2: Validate Target Contract
-- Verifies contract exists at target address
-- Confirms it's a proxy with implementation
-- Checks implementation is UUPS upgradeable
-
-### Step 3: Check Upgrader Permissions
-- Verifies upgrader has UPGRADER_ROLE
-- Provides instructions if role is missing
-
-### Step 4: Detect Upgrader Type
-- Determines if upgrader is Safe or EOA
-- Provides appropriate guidance for each type
-
-### Step 5: Deploy Implementation
-- Deploys new CNSTokenL2 implementation
-- Includes whitelist toggle functionality
-- Saves implementation address for next steps
-
-### Step 6: Prepare Upgrade Transaction
-- Generates upgradeToAndCall transaction data
-- Provides Safe UI instructions
-- Provides EOA execution instructions
-
-### Step 7: Execute Upgrade (EOA Only)
-- Executes the upgrade transaction
-- Verifies upgrade success
-- Provides post-upgrade verification commands
-
-## Verification
+## Post-Upgrade Verification
 
 After successful upgrade, verify the new functionality:
 
@@ -145,26 +125,105 @@ After successful upgrade, verify the new functionality:
 # Check if whitelist toggle function exists
 cast call $TARGET_CONTRACT "senderAllowlistEnabled()" --rpc-url $RPC_URL
 
-# Test setting whitelist toggle (requires appropriate role)
-cast send $TARGET_CONTRACT "setSenderAllowlistEnabled(bool)" true --private-key <key> --rpc-url $RPC_URL
+# Expected output: 0x0000000000000000000000000000000000000000000000000000000000000001 (true)
+```
+
+Test the whitelist toggle:
+```bash
+# Toggle the whitelist (requires ALLOWLIST_ADMIN_ROLE)
+cast send $TARGET_CONTRACT \
+  "setSenderAllowlistEnabled(bool)" \
+  false \
+  --private-key <admin_key> \
+  --rpc-url $RPC_URL
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Missing UPGRADER_ROLE**: Run Step 3 to get instructions for granting the role
-2. **Contract not found**: Verify TARGET_CONTRACT address is correct
-3. **Not a proxy**: Ensure target contract is a UUPS proxy
-4. **Private key mismatch**: Ensure private key matches UPGRADER_ADDRESS
+**1. Missing UPGRADER_ROLE**
+```
+ERROR: Upgrader does not have UPGRADER_ROLE
+```
+Solution: Grant the role to your upgrader address. The script will show the exact command to run.
 
-### Getting Help
+**2. Contract Not Found**
+```
+ERROR: No contract found at target address
+```
+Solution: Verify `TARGET_CONTRACT` address is correct in `input_params.env`
 
-Each script provides detailed error messages and instructions. If a step fails, check the error message and follow the suggested actions.
+**3. Not a Proxy**
+```
+ERROR: Target contract is not a proxy
+```
+Solution: Ensure `TARGET_CONTRACT` points to the proxy, not the implementation
+
+**4. Environment Variables Not Set**
+```
+ERROR: TARGET_CONTRACT not set
+```
+Solution: Make sure you ran `source script/upgrade/input_params.env`
+
+### Debug Tips
+
+1. **Check your current configuration**:
+   ```bash
+   echo $TARGET_CONTRACT
+   echo $UPGRADER_ADDRESS
+   echo $RPC_URL
+   ```
+
+2. **Verify the upgrader has the correct role**:
+   ```bash
+   UPGRADER_ROLE=$(cast keccak "UPGRADER_ROLE")
+   cast call $TARGET_CONTRACT \
+     "hasRole(bytes32,address)(bool)" \
+     $UPGRADER_ROLE \
+     $UPGRADER_ADDRESS \
+     --rpc-url $RPC_URL
+   ```
+
+3. **Check current implementation**:
+   ```bash
+   cast implementation $TARGET_CONTRACT --rpc-url $RPC_URL
+   ```
+
+## What Gets Deployed
+
+The script deploys a new implementation of `CNSTokenL2` with these new features:
+
+- **`setSenderAllowlistEnabled(bool)`** - Toggle the sender allowlist on/off
+- **`senderAllowlistEnabled()`** - Check if the allowlist is currently enabled
+- Enhanced allowlist control for better flexibility
+
+The existing functionality remains unchanged:
+- Minting, burning, pausing
+- Access control roles
+- Bridge functionality
+- All existing allowlist functions
 
 ## Security Notes
 
-- Always verify contract addresses before executing
-- Test on testnet before mainnet deployment
-- Use Safe for production upgrades when possible
-- Keep private keys secure and never commit them to version control
+- ✅ Always test on testnet before mainnet
+- ✅ Verify all contract addresses before executing
+- ✅ Use Safe for production upgrades when possible
+- ✅ Keep private keys secure and never commit them to version control
+- ✅ The script does NOT automatically execute upgrades - you maintain full control
+
+## Script Output Files
+
+After running, the script creates:
+- `broadcast/UpgradeToken.s.sol/<chain_id>/run-latest.json` - Transaction details
+- `cache/UpgradeToken.s.sol/<chain_id>/run-latest.json` - Sensitive data (gitignored)
+
+These files contain the deployment transaction data and can be used for verification.
+
+## Need Help?
+
+The script provides detailed error messages and instructions at each step. If something fails:
+1. Read the error message carefully
+2. Follow the suggested actions
+3. Check the troubleshooting section above
+4. Verify your configuration in `input_params.env`

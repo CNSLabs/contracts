@@ -7,7 +7,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 /**
- * @title AllInOne_UpgradeCNSTokenL2
+ * @title UpgradeToken
  * @dev Complete upgrade process in a single script with visual progress indicators
  *
  * This script performs all upgrade steps sequentially:
@@ -19,16 +19,16 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
  * 6. Prepare Upgrade Transaction
  * 7. Execute Upgrade (if EOA) or provide Safe instructions
  *
- * Required Environment Variables (from 0_input_params.env):
+ * Required Environment Variables (from input_params.env):
  * - TARGET_CONTRACT: The proxy contract to upgrade
  * - UPGRADER_ADDRESS: The address that will perform the upgrade
  * - RPC_URL: Network RPC URL
  *
  * Usage:
- * source script/upgrade/0_input_params.env
- * forge script script/upgrade/AllInOne_UpgradeCNSTokenL2.s.sol:AllInOne_UpgradeCNSTokenL2 --rpc-url $RPC_URL --broadcast
+ * source script/upgrade/input_params.env
+ * forge script script/upgrade/UpgradeToken.s.sol:UpgradeToken --rpc-url $RPC_URL --broadcast
  */
-contract AllInOne_UpgradeCNSTokenL2 is BaseScript {
+contract UpgradeToken is BaseScript {
     // Parameters
     address public targetContract;
     address public upgrader;
@@ -388,9 +388,8 @@ contract AllInOne_UpgradeCNSTokenL2 is BaseScript {
             console.log("  Data: 0x");
             console.log("  Options: --private-key <key> --rpc-url $RPC_URL");
             console.log("");
-            console.log("Option 2 - Run execution script:");
-            console.log("forge script script/upgrade/7_ExecuteUpgrade.s.sol:Step7_ExecuteUpgrade \\");
-            console.log("  --rpc-url $RPC_URL --broadcast");
+            console.log("Option 2 - Run this script with execution:");
+            console.log("Use cast send (shown above) or Safe UI for manual execution");
         }
 
         console.log("");
