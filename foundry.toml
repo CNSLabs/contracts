@@ -6,7 +6,7 @@ solc = "0.8.25"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+via_ir = true
 verbosity = 2
 extra_output = ["storageLayout", "metadata"]
 
