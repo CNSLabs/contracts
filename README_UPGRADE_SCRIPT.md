@@ -1,7 +1,3 @@
-# Enhanced Upgrade Script Usage
-
-The `5_UpgradeCNSTokenL2ToWhitelistToggle.s.sol` script has been enhanced to support both EOA and Safe upgraders with command line input.
-
 ## Features
 
 - **Command Line Input**: Accepts target contract address via environment variable
