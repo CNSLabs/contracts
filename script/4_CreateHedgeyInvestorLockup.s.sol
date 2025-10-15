@@ -137,31 +137,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
 
         // Ensure allowlist if caller can manage it and check paused state
         // TODO: This should ideally be run by the deployment script for the L2 contract. We'd want to allowlist the proper Hedgey contracts immediately
-        {
-            bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
-            bool canManage = ICNSAllowlistViews(token).hasRole(ALLOWLIST_ADMIN_ROLE, deployer);
-            bool isPaused = ICNSAllowlistViews(token).paused();
-            bool allowlistEnabled = ICNSAllowlistViews(token).senderAllowlistEnabled();
-            console.log("Token paused:", isPaused);
-            console.log("Sender allowlist enabled:", allowlistEnabled);
-            if (canManage && allowlistEnabled) {
-                bool depAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(deployer);
-                bool hedgeyAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(hedgeyInvestorLockup);
-                bool batchPlannerAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(hedgeyBatchPlanner);
-                if (!depAllowed) {
-                    ICNSAllowlistAdmin(token).setSenderAllowed(deployer, true);
-                    console.log("Allowlisted deployer on CNS token");
-                }
-                if (!hedgeyAllowed) {
-                    ICNSAllowlistAdmin(token).setSenderAllowed(hedgeyInvestorLockup, true);
-                    console.log("Allowlisted Hedgey InvestorLockup on CNS token");
-                }
-                if (!batchPlannerAllowed) {
-                    ICNSAllowlistAdmin(token).setSenderAllowed(hedgeyBatchPlanner, true);
-                    console.log("Allowlisted Hedgey Batch Planner on CNS token");
-                }
-            }
-        }
+        _ensureAllowlisted(token, deployer, hedgeyInvestorLockup, hedgeyBatchPlanner);
 
         // Approve token allowance to Hedgey Batch Planner if requested
         if (amount > 0) {
@@ -235,5 +211,30 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         require(plansRate == rate, "plans.rate mismatch");
         require(plansPeriod == period, "plans.period mismatch");
         console.log("[OK] Latest plan matches inputs");
+    }
+
+    function _ensureAllowlisted(address token, address deployer, address investorLockup, address batchPlanner)
+        internal
+    {
+        bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
+        bool canManage = ICNSAllowlistViews(token).hasRole(ALLOWLIST_ADMIN_ROLE, deployer);
+        bool isPaused = ICNSAllowlistViews(token).paused();
+        bool allowlistEnabled = ICNSAllowlistViews(token).senderAllowlistEnabled();
+
+        console.log("Token paused:", isPaused);
+        console.log("Sender allowlist enabled:", allowlistEnabled);
+
+        if (canManage && allowlistEnabled) {
+            _allowlistIfNeeded(token, deployer, "deployer");
+            _allowlistIfNeeded(token, investorLockup, "Hedgey InvestorLockup");
+            _allowlistIfNeeded(token, batchPlanner, "Hedgey Batch Planner");
+        }
+    }
+
+    function _allowlistIfNeeded(address token, address account, string memory label) internal {
+        if (!ICNSAllowlistViews(token).isSenderAllowlisted(account)) {
+            ICNSAllowlistAdmin(token).setSenderAllowed(account, true);
+            console.log(string(abi.encodePacked("Allowlisted ", label, " on CNS token")));
+        }
     }
 }
