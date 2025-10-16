@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
+import "./ConfigLoader.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../src/CNSTokenL2.sol";
 
@@ -15,56 +16,55 @@ import "../src/CNSTokenL2.sol";
  *      - UUPS upgradeability
  *
  * Usage:
- *   # Linea Sepolia testnet
+ *   # Default (dev): infer config from ENV
  *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
  *     --rpc-url linea_sepolia \
  *     --broadcast \
  *     --verify
  *
- *   # Linea Mainnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   # Explicit non-default environment via ENV
+ *   ENV=production forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
  *     --rpc-url linea \
  *     --broadcast \
- *     --verify \
- *     --slow
+ *     --verify
  *
- *   # Local testing
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
- *     --rpc-url local \
- *     --broadcast
+ *   # Config file path is fixed: config/<ENV>.json
  *
  * Environment Variables Required:
- *   - PRIVATE_KEY: Deployer private key
- *   - CNS_OWNER: Address that will have admin roles
- *   - CNS_TOKEN_L1: Address of the L1 token (deployed first)
- *   - LINEA_L2_BRIDGE: Linea L2 bridge address
+ *   - PRIVATE_KEY: Deployer private key (from your shell env)
+ *   - ENV: Select public config JSON
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
- *
- * Bridge Addresses:
- *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
- *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
 contract DeployCNSTokenL2 is BaseScript {
-    // Token parameters
-    string constant DEFAULT_L2_NAME = "CNS Linea Token";
-    string constant DEFAULT_L2_SYMBOL = "CNSL";
-    string L2_NAME = vm.envOr("TOKEN_NAME", DEFAULT_L2_NAME);
-    string L2_SYMBOL = vm.envOr("TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
-    uint8 constant L2_DECIMALS = 18;
+    // Token parameters now loaded from config JSON
+    string L2_NAME;
+    string L2_SYMBOL;
+    uint8 L2_DECIMALS;
 
     // Deployed contracts
     CNSTokenL2 public implementation;
     ERC1967Proxy public proxy;
     CNSTokenL2 public token;
 
-    function run() external {
+    function run(string memory env, string memory /* chain */ ) external {
+        EnvConfig memory cfg = _loadEnvConfig(env);
+        L2_NAME = cfg.l2.name;
+        L2_SYMBOL = cfg.l2.symbol;
+        L2_DECIMALS = uint8(cfg.l2.decimals);
         // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
         // Get and validate required addresses
-        address owner = vm.envAddress("CNS_OWNER");
-        address l1Token = vm.envAddress("CNS_TOKEN_L1");
-        address bridge = vm.envAddress("LINEA_L2_BRIDGE");
+        address owner = cfg.l2.roles.admin;
+        address l1Token = cfg.l2.l1Token;
+        if (l1Token == address(0)) {
+            address inferred = _inferL1TokenFromBroadcast(cfg.l1.chain.chainId);
+            if (inferred != address(0)) {
+                console.log("[Info] Using L1 token from broadcast artifacts:", inferred);
+                l1Token = inferred;
+            }
+        }
+        address bridge = cfg.l2.bridge;
 
         _requireNonZeroAddress(owner, "CNS_OWNER");
         _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
@@ -130,6 +130,85 @@ contract DeployCNSTokenL2 is BaseScript {
         // Log deployment results
         _logDeploymentResults(owner, bridge, l1Token, initCalldata);
     }
+
+    // Convenience no-arg entrypoint: infer config path
+    function run() external {
+        EnvConfig memory cfg = _loadEnvConfig();
+
+        L2_NAME = cfg.l2.name;
+        L2_SYMBOL = cfg.l2.symbol;
+        L2_DECIMALS = uint8(cfg.l2.decimals);
+
+        (uint256 deployerPrivateKey, address deployer) = _getDeployer();
+
+        address owner = cfg.l2.roles.admin;
+        address l1Token = cfg.l2.l1Token;
+        if (l1Token == address(0)) {
+            address inferred = _inferL1TokenFromBroadcast(cfg.l1.chain.chainId);
+            if (inferred != address(0)) {
+                console.log("[Info] Using L1 token from broadcast artifacts:", inferred);
+                l1Token = inferred;
+            }
+        }
+        address bridge = cfg.l2.bridge;
+
+        _requireNonZeroAddress(owner, "CNS_OWNER");
+        _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
+        _requireNonZeroAddress(bridge, "LINEA_L2_BRIDGE");
+
+        _logDeploymentHeader("Deploying CNS Token L2");
+        console.log("Token Name:", L2_NAME);
+        console.log("Token Symbol:", L2_SYMBOL);
+        console.log("Decimals:", L2_DECIMALS);
+        console.log("Owner (Admin):", owner);
+        console.log("L1 Token:", l1Token);
+        console.log("Bridge:", bridge);
+        console.log("Deployer:", deployer);
+
+        console.log("\n=== Pre-Deployment Validation ===");
+        require(owner != address(0), "FATAL: CNS_OWNER cannot be zero address");
+        require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
+        require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
+        console.log("[OK] All required addresses are non-zero");
+
+        _requireMainnetConfirmation();
+
+        vm.startBroadcast(deployerPrivateKey);
+        console.log("\n1. Deploying CNSTokenL2 implementation...");
+        implementation = new CNSTokenL2();
+        console.log("   Implementation:", address(implementation));
+
+        bytes memory initCalldata = abi.encodeWithSelector(
+            CNSTokenL2.initialize.selector, owner, bridge, l1Token, L2_NAME, L2_SYMBOL, L2_DECIMALS
+        );
+
+        console.log("\n2. Deploying ERC1967 proxy...");
+        proxy = new ERC1967Proxy(address(implementation), initCalldata);
+        token = CNSTokenL2(address(proxy));
+        console.log("   Proxy:", address(proxy));
+
+        console.log("\n3. Verifying initialization...");
+        require(token.l1Token() == l1Token, "FATAL: Initialization failed - l1Token not set");
+        require(token.bridge() == bridge, "FATAL: Initialization failed - bridge not set");
+        require(
+            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, owner),
+            "FATAL: Initialization failed - owner doesn't have DEFAULT_ADMIN_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("UPGRADER_ROLE"), owner),
+            "FATAL: Initialization failed - owner doesn't have UPGRADER_ROLE"
+        );
+        console.log("   [OK] Contract initialized successfully");
+        console.log("   [OK] Owner has admin roles");
+
+        vm.stopBroadcast();
+
+        _verifyDeployment(owner, bridge, l1Token);
+
+        _logDeploymentResults(owner, bridge, l1Token, initCalldata);
+    }
+
+    // Removed local inference: use BaseScript helpers
 
     function _verifyDeployment(address owner, address bridge, address l1Token) internal view {
         console.log("\n=== Running Additional Deployment Checks ===");

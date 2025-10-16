@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
+import "./ConfigLoader.sol";
 
 /**
  * @title CreateHedgeyInvestorLockup
@@ -9,21 +10,25 @@ import "./BaseScript.sol";
  * @dev Uses a typed interface for `createPlan` and takes parameters from env
  *      variables to avoid raw calldata in configuration.
  *
- * Usage (Linea Sepolia example):
+ * Usage:
+ *   # Default (dev)
  *   forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
  *     --rpc-url linea_sepolia \
  *     --broadcast
  *
- * Required env vars:
- *   - PRIVATE_KEY            : Deployer key for broadcasting
- *   - HEDGEY_INVESTOR_LOCKUP : Hedgey InvestorLockup contract address on target chain
- *   - HEDGEY_BATCH_PLANNER   : Hedgey Batch Planner contract address on target chain
- *   - HEDGEY_RECIPIENT       : Recipient address for the vesting plan
- *   - HEDGEY_AMOUNT          : Total amount (uint256, base units)
- *   - HEDGEY_START           : Start timestamp (uint256)
- *   - HEDGEY_CLIFF           : Cliff timestamp (uint256)
- *   - HEDGEY_RATE            : Release rate per period (uint256)
- *   - HEDGEY_PERIOD          : Period length in seconds (uint256)
+ *   # Explicit non-default environment via ENV
+ *   ENV=production forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
+ *     --rpc-url linea \
+ *     --broadcast
+ *
+ * Environment Variables:
+ *   - PRIVATE_KEY: Deployer key for broadcasting
+ *   - ENV: Select public config JSON
+ *   - Optional overrides (only if not set in config):
+ *       HEDGEY_INVESTOR_LOCKUP, HEDGEY_BATCH_PLANNER,
+ *       HEDGEY_RECIPIENT, HEDGEY_AMOUNT, HEDGEY_START,
+ *       HEDGEY_CLIFF, HEDGEY_RATE, HEDGEY_PERIOD,
+ *       CNS_TOKEN_L2_PROXY
  *
  * Notes:
  *   - Configure the parameters above in your `.env` or export them in shell.
@@ -88,25 +93,43 @@ contract CreateHedgeyInvestorLockup is BaseScript {
     address public hedgeyBatchPlanner;
 
     function run() external {
+        EnvConfig memory cfg = _loadEnvConfig();
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        // Load and validate target contract addresses
-        hedgeyInvestorLockup = vm.envAddress("HEDGEY_INVESTOR_LOCKUP");
+        // Load and validate target contract addresses (prefer config, fallback env)
+        hedgeyInvestorLockup = cfg.hedgey.investorLockup;
+        if (hedgeyInvestorLockup == address(0)) {
+            hedgeyInvestorLockup = vm.envAddress("HEDGEY_INVESTOR_LOCKUP");
+        }
         _requireNonZeroAddress(hedgeyInvestorLockup, "HEDGEY_INVESTOR_LOCKUP");
         _requireContract(hedgeyInvestorLockup, "HEDGEY_INVESTOR_LOCKUP");
 
-        hedgeyBatchPlanner = vm.envAddress("HEDGEY_BATCH_PLANNER");
+        hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
+        if (hedgeyBatchPlanner == address(0)) {
+            hedgeyBatchPlanner = vm.envAddress("HEDGEY_BATCH_PLANNER");
+        }
         _requireNonZeroAddress(hedgeyBatchPlanner, "HEDGEY_BATCH_PLANNER");
         _requireContract(hedgeyBatchPlanner, "HEDGEY_BATCH_PLANNER");
 
-        // Load parameters
-        address recipient = vm.envAddress("HEDGEY_RECIPIENT");
-        address token = vm.envAddress("CNS_TOKEN_L2_PROXY");
-        uint256 amount = vm.envUint("HEDGEY_AMOUNT");
-        uint256 start = vm.envUint("HEDGEY_START");
-        uint256 cliff = vm.envUint("HEDGEY_CLIFF");
-        uint256 rate = vm.envUint("HEDGEY_RATE");
-        uint256 period = vm.envUint("HEDGEY_PERIOD");
+        // Load parameters (prefer config, fallback env)
+        address recipient = cfg.hedgey.recipient;
+        if (recipient == address(0)) {
+            recipient = vm.envAddress("HEDGEY_RECIPIENT");
+        }
+        address token = cfg.l2.proxy;
+        if (token == address(0)) {
+            // fallback: env variable or broadcast inference used in other scripts
+            try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+                token = a;
+            } catch {
+                token = _inferL2ProxyFromBroadcast(block.chainid);
+            }
+        }
+        uint256 amount = cfg.hedgey.amount != 0 ? cfg.hedgey.amount : vm.envUint("HEDGEY_AMOUNT");
+        uint256 start = cfg.hedgey.start != 0 ? cfg.hedgey.start : vm.envUint("HEDGEY_START");
+        uint256 cliff = cfg.hedgey.cliff != 0 ? cfg.hedgey.cliff : vm.envUint("HEDGEY_CLIFF");
+        uint256 rate = cfg.hedgey.rate != 0 ? cfg.hedgey.rate : vm.envUint("HEDGEY_RATE");
+        uint256 period = cfg.hedgey.period != 0 ? cfg.hedgey.period : vm.envUint("HEDGEY_PERIOD");
 
         _requireNonZeroAddress(recipient, "HEDGEY_RECIPIENT");
         _requireNonZeroAddress(token, "CNS_TOKEN_L2_PROXY");
