@@ -14,28 +14,35 @@ import "../src/CNSTokenL2V2.sol";
  *         2. Upgrades the proxy to point to the new implementation
  *         3. Initializes V2-specific features (ERC20Votes)
  *
- * Environment Variables Required:
- *   - CNS_TOKEN_L2_PROXY: Address of the deployed L2 proxy contract
- *   - CNS_OWNER_PRIVATE_KEY: Private key with UPGRADER_ROLE (preferred)
- *   - PRIVATE_KEY: Falls back to this if CNS_OWNER_PRIVATE_KEY not set
+ * Environment Variables:
+ *   - PRIVATE_KEY or CNS_OWNER_PRIVATE_KEY: Upgrader key (must have UPGRADER_ROLE)
+ *   - ENV: Select public config JSON (optional if using artifact inference)
+ *   - CNS_TOKEN_L2_PROXY: Optional override for proxy (else use config l2.proxy or broadcast inference)
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
  *
  * Usage:
- *   forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
- *     --rpc-url <your_rpc_url> \
- *     --broadcast \
- *     --verify
- *
- *   Or use network aliases from foundry.toml:
+ *   # Default (dev)
  *   forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
  *     --rpc-url linea_sepolia \
  *     --broadcast
+ *
+ *   # Explicit non-default environment via ENV
+ *   ENV=production forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+ *     --rpc-url linea \
+ *     --broadcast
+ *
+ * Proxy resolution:
+ *   - If CNS_TOKEN_L2_PROXY is not set, this script will try to infer it from
+ *     broadcast/2_DeployCNSTokenL2.s.sol/<chainId>/run-latest.json by selecting
+ *     the ERC1967Proxy address from the last deployment run on the current chain.
  */
 contract UpgradeCNSTokenL2ToV2 is BaseScript {
     address public proxyAddress;
     address public newImplementation;
 
     function run() external {
+        // Optionally load env config to allow proxy resolution via config
+        EnvConfig memory cfg = _loadEnvConfig();
         // Try to get CNS_OWNER_PRIVATE_KEY first, fall back to PRIVATE_KEY
         uint256 ownerPrivateKey;
         address owner;
@@ -49,10 +56,10 @@ contract UpgradeCNSTokenL2ToV2 is BaseScript {
             (ownerPrivateKey, owner) = _getDeployer();
         }
 
-        // Get the proxy address from environment
-        proxyAddress = vm.envAddress("CNS_TOKEN_L2_PROXY");
-        _requireNonZeroAddress(proxyAddress, "CNS_TOKEN_L2_PROXY");
-        _requireContract(proxyAddress, "CNS_TOKEN_L2_PROXY");
+        // Resolve the proxy address from (priority): env var -> config -> broadcast
+        proxyAddress = _resolveProxyAddress(cfg);
+        _requireNonZeroAddress(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
+        _requireContract(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
 
         // Log deployment info
         _logDeploymentHeader("Upgrading CNSTokenL2 to V2");
@@ -143,4 +150,23 @@ contract UpgradeCNSTokenL2ToV2 is BaseScript {
         // Use BaseScript's verification helper
         _logVerificationCommand(newImplementation, "src/CNSTokenL2V2.sol:CNSTokenL2V2");
     }
+
+    function _resolveProxyAddress(EnvConfig memory cfg) internal view returns (address) {
+        // 1) Try environment variable first
+        address fromEnv = address(0);
+        try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+            fromEnv = a;
+        } catch {}
+        if (fromEnv != address(0)) return fromEnv;
+
+        // 2) Try config file if provided
+        if (cfg.l2.proxy != address(0)) {
+            return cfg.l2.proxy;
+        }
+
+        // 3) Fallback: infer from broadcast artifacts for current chain id
+        address fromArtifacts = _inferL2ProxyFromBroadcast(block.chainid);
+        return fromArtifacts;
+    }
+    // Removed local inference: use BaseScript helpers
 }

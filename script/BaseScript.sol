@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
+import "./ConfigLoader.sol";
 
 /**
  * @title BaseScript
@@ -204,5 +205,123 @@ abstract contract BaseScript is Script {
     function _getDeployer() internal view returns (uint256 privateKey, address deployerAddress) {
         privateKey = vm.envUint("PRIVATE_KEY");
         deployerAddress = vm.addr(privateKey);
+    }
+
+    /**
+     * @notice Resolve environment name for config selection.
+     * @dev Uses ENV; defaults to "dev".
+     */
+    function _getEnvName() internal view returns (string memory) {
+        string memory fromEnv = vm.envOr("ENV", string(""));
+        if (bytes(fromEnv).length != 0) return fromEnv;
+        return "dev";
+    }
+
+    /**
+     * @notice Resolve config file path as config/<ENV>.json where ENV from _getEnvName().
+     */
+    function _resolveConfigPath() internal view returns (string memory) {
+        string memory envName = _getEnvName();
+        return string.concat("config/", envName, ".json");
+    }
+
+    /**
+     * @notice Load EnvConfig from resolved path or a provided env name
+     */
+    function _loadEnvConfig() internal view returns (EnvConfig memory cfg) {
+        string memory path = _resolveConfigPath();
+        return ConfigLoader.loadFromPath(vm, path);
+    }
+
+    function _loadEnvConfig(string memory envName) internal view returns (EnvConfig memory cfg) {
+        if (bytes(envName).length != 0) {
+            return ConfigLoader.loadEnv(vm, envName);
+        }
+        return _loadEnvConfig();
+    }
+
+    // ============================================
+    // Broadcast Artifacts Helpers
+    // ============================================
+
+    /**
+     * @notice Extract simple contract name from a possibly fully-qualified name (e.g., path:Name -> Name)
+     */
+    function _simpleContractName(string memory name) internal pure returns (string memory) {
+        bytes memory b = bytes(name);
+        int256 lastColon = -1;
+        for (uint256 i = 0; i < b.length; i++) {
+            if (b[i] == ":") {
+                lastColon = int256(uint256(i));
+            }
+        }
+        if (lastColon < 0) {
+            return name;
+        }
+        uint256 start = uint256(lastColon) + 1;
+        uint256 len = b.length - start;
+        bytes memory out = new bytes(len);
+        for (uint256 j = 0; j < len; j++) {
+            out[j] = b[start + j];
+        }
+        return string(out);
+    }
+
+    /**
+     * @notice Generic reader for Foundry broadcast run-latest.json to fetch the last deployed address for a contract
+     * @param chainId The chain id subdirectory to look under
+     * @param scriptBasename The script basename under broadcast/ (e.g., "1_DeployCNSTokenL1.s.sol")
+     * @param desiredContractName The simple contract name to look for (e.g., "CNSTokenL1" or "ERC1967Proxy")
+     */
+    function _inferFromBroadcast(uint256 chainId, string memory scriptBasename, string memory desiredContractName)
+        internal
+        view
+        returns (address)
+    {
+        if (chainId == 0) return address(0);
+        string memory path = string.concat(
+            "broadcast/",
+            scriptBasename,
+            "/",
+            vm.toString(chainId),
+            "/run-latest.json"
+        );
+        string memory json;
+        try vm.readFile(path) returns (string memory contents) {
+            json = contents;
+        } catch {
+            return address(0);
+        }
+
+        bytes32 desired = keccak256(bytes(desiredContractName));
+        address found = address(0);
+        for (uint256 i = 0; i < 256; i++) {
+            string memory idx = vm.toString(i);
+            string memory nameKey = string.concat(".transactions[", idx, "].contractName");
+            string memory rawName;
+            try vm.parseJsonString(json, nameKey) returns (string memory s) {
+                rawName = s;
+            } catch {
+                break; // no more entries
+            }
+            string memory simple = _simpleContractName(rawName);
+            if (keccak256(bytes(simple)) == desired) {
+                string memory addrKey = string.concat(".transactions[", idx, "].contractAddress");
+                try vm.parseJsonAddress(json, addrKey) returns (address deployed) {
+                    if (deployed != address(0)) {
+                        found = deployed; // keep last match
+                    }
+                } catch {}
+            }
+        }
+        return found;
+    }
+
+    function _inferL1TokenFromBroadcast(uint256 l1ChainId) internal view returns (address) {
+        return _inferFromBroadcast(l1ChainId, "1_DeployCNSTokenL1.s.sol", "CNSTokenL1");
+    }
+
+    function _inferL2ProxyFromBroadcast(uint256 l2ChainId) internal view returns (address) {
+        return _inferFromBroadcast(l2ChainId, "2_DeployCNSTokenL2.s.sol", "ERC1967Proxy");
     }
 }
