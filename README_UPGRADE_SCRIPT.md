@@ -1,14 +1,14 @@
 # Enhanced Upgrade Script Usage
 
-The `5_UpgradeCNSTokenL2ToWhitelistToggle.s.sol` script has been enhanced to support both EOA and Safe upgraders with command line input.
+The upgrade scripts support both EOA and Safe upgraders with command line input.
 
 ## Features
 
-- **Command Line Input**: Accepts target contract address via environment variable
-- **Safe Detection**: Automatically detects if upgrader is a Safe contract
-- **Safe Support**: Generates transaction data for Safe execution
+- **Command Line Input**: Target contract address via environment variable
+- **Safe Detection**: Auto-detects Gnosis Safe upgraders
+- **Safe Support**: Generates transaction data for Safe UI execution
 - **EOA Support**: Direct execution for EOA upgraders
-- **Validation**: Comprehensive validation of target contract and permissions
+- **Validation**: Validates target contract and upgrader permissions
 
 ## Usage
 
@@ -20,7 +20,7 @@ export TARGET_CONTRACT=0x1234567890123456789012345678901234567890
 export CNS_OWNER_PRIVATE_KEY=0x...
 
 # Run upgrade script
-forge script script/5_UpgradeCNSTokenL2ToWhitelistToggle.s.sol:UpgradeCNSTokenL2ToWhitelistToggle \
+forge script script/upgrade/UpgradeToken.s.sol:UpgradeToken \
   --rpc-url <your_rpc_url> \
   --broadcast
 ```
@@ -34,7 +34,7 @@ export CNS_OWNER_PRIVATE_KEY=0x...  # Any private key for gas estimation
 export PREPARE_SAFE_TX=true
 
 # Run upgrade script (generates transaction data)
-forge script script/5_UpgradeCNSTokenL2ToWhitelistToggle.s.sol:UpgradeCNSTokenL2ToWhitelistToggle \
+forge script script/upgrade/UpgradeToken.s.sol:UpgradeToken \
   --rpc-url <your_rpc_url>
 ```
 
@@ -74,14 +74,14 @@ safe-cli transaction create \
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `TARGET_CONTRACT` | Yes | Address of the contract to upgrade |
+| `TARGET_CONTRACT` | Yes | Proxy contract address to upgrade |
 | `CNS_OWNER_PRIVATE_KEY` | No* | Private key with UPGRADER_ROLE |
-| `PRIVATE_KEY` | No* | Fallback private key |
-| `PREPARE_SAFE_TX` | No | Set to `true` to prepare Safe transaction |
-| `MAINNET_DEPLOYMENT_ALLOWED` | Yes** | Set to `true` for mainnet |
+| `PRIVATE_KEY` | No* | Alternative private key variable |
+| `PREPARE_SAFE_TX` | No | Set `true` for Safe transaction prep |
+| `MAINNET_DEPLOYMENT_ALLOWED` | Yes** | Must be `true` for mainnet |
 
-*One of `CNS_OWNER_PRIVATE_KEY` or `PRIVATE_KEY` is required  
-**Required for mainnet deployments
+*One private key variable required  
+**Required for mainnet only
 
 ## Validation
 
