@@ -14,8 +14,12 @@ if [ ! -d ".git" ]; then
     exit 1
 fi
 
-# Check if forge is available
-if ! command -v forge &> /dev/null; then
+# Resolve Foundry forge path explicitly to avoid Node 'forge' shim
+if [ -x "$HOME/.foundry/bin/forge" ]; then
+    FORGE_BIN="$HOME/.foundry/bin/forge"
+elif command -v forge &> /dev/null; then
+    FORGE_BIN="$(command -v forge)"
+else
     echo "❌ Foundry (forge) is not installed or not in PATH"
     echo "Please install Foundry: https://book.getfoundry.sh/getting-started/installation"
     exit 1
@@ -34,8 +38,12 @@ set -e
 
 echo "🔍 Running pre-commit checks..."
 
-# Check if forge is available
-if ! command -v forge &> /dev/null; then
+# Resolve Foundry forge path explicitly to avoid Node 'forge' shim
+if [ -x "$HOME/.foundry/bin/forge" ]; then
+    FORGE_BIN="$HOME/.foundry/bin/forge"
+elif command -v forge &> /dev/null; then
+    FORGE_BIN="$(command -v forge)"
+else
     echo "❌ Foundry (forge) is not installed or not in PATH"
     echo "Please install Foundry: https://book.getfoundry.sh/getting-started/installation"
     exit 1
@@ -51,13 +59,13 @@ fi
 echo "🔍 Checking Solidity code formatting..."
 
 # Run forge fmt --check
-if ! forge fmt --check; then
+if ! "$FORGE_BIN" fmt --check; then
     echo ""
     echo "❌ Code formatting check failed!"
     echo ""
-    echo "Please run 'forge fmt' to fix formatting issues before committing."
+    echo "Please run '"$FORGE_BIN" fmt' to fix formatting issues before committing."
     echo ""
-    echo "You can also run 'forge fmt --check' to see what needs to be fixed."
+    echo "You can also run '"$FORGE_BIN" fmt --check' to see what needs to be fixed."
     echo ""
     exit 1
 fi
