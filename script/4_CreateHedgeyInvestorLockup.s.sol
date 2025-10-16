@@ -149,9 +149,8 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         plans[0] = Plan({recipient: recipient, amount: amount, start: start, cliff: cliff, rate: rate});
 
         // Capture detailed revert reasons from batchLockingPlans
-        try IHedgeyBatchPlanner(hedgeyBatchPlanner).batchLockingPlans(
-            hedgeyInvestorLockup, token, amount, plans, period, 0
-        ) {
+        try IHedgeyBatchPlanner(hedgeyBatchPlanner)
+            .batchLockingPlans(hedgeyInvestorLockup, token, amount, plans, period, 0) {
             console.log("batchLockingPlans succeeded");
         } catch Error(string memory reason) {
             console.log("batchLockingPlans Error(string):", reason);
