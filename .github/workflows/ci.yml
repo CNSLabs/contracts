@@ -111,3 +111,37 @@ jobs:
             .gas-snapshot.new
           retention-days: 30
 
+  storage-layout:
+    name: Storage Layout Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run Forge build
+        run: forge build
+
+      - name: Validate storage layouts
+        run: ./script/validate-storage-layout.sh
+
+      - name: Upload storage layouts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storage-layouts
+          path: |
+            layouts/*.json
+            out/CNSTokenL2.sol/CNSTokenL2.json
+            out/CNSTokenL2V2.sol/CNSTokenL2V2.json
+          retention-days: 30
+
