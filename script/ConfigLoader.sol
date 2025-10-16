@@ -95,11 +95,7 @@ library ConfigLoader {
         }
     }
 
-    function loadFromPath(Vm vm_, string memory path)
-        internal
-        view
-        returns (EnvConfig memory cfg)
-    {
+    function loadFromPath(Vm vm_, string memory path) internal view returns (EnvConfig memory cfg) {
         string memory json = vm_.readFile(path);
 
         cfg.env = _readString(vm_, json, ".env", "");
@@ -141,14 +137,8 @@ library ConfigLoader {
         cfg.hedgey.period = _readUint(vm_, json, ".hedgey.period", 0);
     }
 
-    function loadEnv(Vm vm_, string memory envName)
-        internal
-        view
-        returns (EnvConfig memory cfg)
-    {
+    function loadEnv(Vm vm_, string memory envName) internal view returns (EnvConfig memory cfg) {
         string memory path = string.concat("config/", envName, ".json");
         return loadFromPath(vm_, path);
     }
 }
-
-
