@@ -38,7 +38,12 @@ contract DeployCNSTokenL1 is BaseScript {
 
     CNSTokenL1 public token;
 
-    function run(string memory env, string memory /* chain */ ) external {
+    function run(
+        string memory env,
+        string memory /* chain */
+    )
+        external
+    {
         EnvConfig memory cfg = _loadEnvConfig(env);
         _runWithConfig(cfg);
     }

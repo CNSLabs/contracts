@@ -46,7 +46,12 @@ contract DeployCNSTokenL2 is BaseScript {
     ERC1967Proxy public proxy;
     CNSTokenL2 public token;
 
-    function run(string memory env, string memory /* chain */ ) external {
+    function run(
+        string memory env,
+        string memory /* chain */
+    )
+        external
+    {
         EnvConfig memory cfg = _loadEnvConfig(env);
         L2_NAME = cfg.l2.name;
         L2_SYMBOL = cfg.l2.symbol;
