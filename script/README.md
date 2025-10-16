@@ -22,6 +22,12 @@ contract MyScript is BaseScript {
 
 - **`1_DeployCNSTokenL1.s.sol`** - Deploy CNS Token on L1 (Ethereum)
   ```bash
+  # New: zero-arg run() with inferred config
+  # Select env via ENV (default: dev)
+  forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+    --rpc-url sepolia \
+    --broadcast --verify
+
   # Sepolia testnet
   forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
     --rpc-url sepolia \
@@ -38,6 +44,12 @@ contract MyScript is BaseScript {
 
 - **`2_DeployCNSTokenL2.s.sol`** - Deploy CNS Token on L2 (Linea) with proxy
   ```bash
+  # New: zero-arg run() with inferred config
+  # Select env via ENV (default: dev)
+  forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+    --rpc-url linea_sepolia \
+    --broadcast --verify
+
   # Linea Sepolia testnet
   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
     --rpc-url linea_sepolia \

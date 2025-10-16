@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
+import "./ConfigLoader.sol";
 import "../src/CNSTokenL1.sol";
 
 /**
@@ -10,45 +11,53 @@ import "../src/CNSTokenL1.sol";
  * @dev This is a simple ERC20 with ERC20Permit, designed to be bridged to L2
  *
  * Usage:
- *   # Sepolia testnet
+ *   # Default (dev): infer config from ENV
  *   forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
  *     --rpc-url sepolia \
  *     --broadcast \
  *     --verify
  *
- *   # Mainnet
- *   forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+ *   # Explicit non-default environment via ENV
+ *   ENV=production forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
  *     --rpc-url mainnet \
  *     --broadcast \
- *     --verify \
- *     --slow
+ *     --verify
  *
- *   # Local testing
- *   forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
- *     --rpc-url local \
- *     --broadcast
+ *   # Config file path is fixed: config/<ENV>.json
  *
  * Environment Variables Required:
- *   - PRIVATE_KEY: Deployer private key
- *   - CNS_OWNER: Address that will receive initial token supply
+ *   - PRIVATE_KEY: Deployer private key (from your shell env)
+ *   - ENV: Select public config JSON
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
  */
 contract DeployCNSTokenL1 is BaseScript {
     // Token parameters
-    string constant DEFAULT_TOKEN_NAME = "Canonical CNS Token";
-    string constant DEFAULT_TOKEN_SYMBOL = "CNS";
-    string TOKEN_NAME = vm.envOr("TOKEN_NAME", DEFAULT_TOKEN_NAME);
-    string TOKEN_SYMBOL = vm.envOr("TOKEN_SYMBOL", DEFAULT_TOKEN_SYMBOL);
+    string TOKEN_NAME;
+    string TOKEN_SYMBOL;
     uint256 constant INITIAL_SUPPLY = 100_000_000 * 10 ** 18; // 100M tokens
 
     CNSTokenL1 public token;
 
+    function run(string memory env, string memory /* chain */ ) external {
+        EnvConfig memory cfg = _loadEnvConfig(env);
+        _runWithConfig(cfg);
+    }
+
+    // Convenience no-arg entrypoint: infer config path
     function run() external {
+        EnvConfig memory cfg = _loadEnvConfig();
+        _runWithConfig(cfg);
+    }
+
+    function _runWithConfig(EnvConfig memory cfg) internal {
+        TOKEN_NAME = cfg.l1.name;
+        TOKEN_SYMBOL = cfg.l1.symbol;
+
         // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        // Get and validate owner address
-        address owner = vm.envAddress("CNS_OWNER");
+        // Owner comes from config (admin field)
+        address owner = cfg.l1.roles.admin;
         _requireNonZeroAddress(owner, "CNS_OWNER");
 
         // Log deployment info

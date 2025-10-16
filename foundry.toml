@@ -9,6 +9,10 @@ via_ir = true
 verbosity = 2
 build_info = true
 extra_output = ["storageLayout", "metadata"]
+fs_permissions = [
+    { access = "read", path = "config" },
+    { access = "read", path = "broadcast" }
+]
 
 # Gas reporting
 gas_reports = ["*"]
@@ -44,7 +48,7 @@ optimizer_runs = 200
 mainnet = "${ETH_MAINNET_RPC_URL}"
 sepolia = "${ETH_SEPOLIA_RPC_URL}"
 linea = "${LINEA_MAINNET_RPC_URL}"
-linea_sepolia = "${LINEA_SEPOLIA_RPC_URL}"
+linea-sepolia = "${LINEA_SEPOLIA_RPC_URL}"
 local = "http://localhost:8545"
 
 # Etherscan API keys for verification
@@ -52,7 +56,7 @@ local = "http://localhost:8545"
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
 linea = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api.lineascan.build/api" }
-linea_sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
+linea-sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
 
 # Formatter configuration
 [fmt]
