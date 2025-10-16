@@ -10,7 +10,7 @@ import "../src/CNSTokenL2.sol";
  * @dev Run with: forge script script/CheckStorageLayout.s.sol
  */
 contract CheckStorageLayout is Script {
-    function run() external view {
+    function run() external pure {
         console.log("=== CNSTokenL2 Storage Layout Analysis ===\n");
 
         // Get storage layout using forge inspect
