@@ -279,13 +279,7 @@ abstract contract BaseScript is Script {
         returns (address)
     {
         if (chainId == 0) return address(0);
-        string memory path = string.concat(
-            "broadcast/",
-            scriptBasename,
-            "/",
-            vm.toString(chainId),
-            "/run-latest.json"
-        );
+        string memory path = string.concat("broadcast/", scriptBasename, "/", vm.toString(chainId), "/run-latest.json");
         string memory json;
         try vm.readFile(path) returns (string memory contents) {
             json = contents;
