@@ -28,6 +28,7 @@ contract CNSTokenL2 is
     event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
     event SenderAllowlistEnabledUpdated(bool enabled);
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }

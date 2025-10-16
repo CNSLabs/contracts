@@ -125,23 +125,9 @@ jobs:
         with:
           version: nightly
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
       - name: Run Forge build
         run: forge build
 
-      - name: Validate storage layouts
-        run: ./script/validate-storage-layout.sh
-
-      - name: Upload storage layouts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: storage-layouts
-          path: |
-            layouts/*.json
-            out/CNSTokenL2.sol/CNSTokenL2.json
-            out/CNSTokenL2V2.sol/CNSTokenL2V2.json
-          retention-days: 30
+      - name: Validate storage layouts with OpenZeppelin
+        run: npx @openzeppelin/upgrades-core validate out/build-info --unsafeAllow missing-initializer
 
