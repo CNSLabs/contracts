@@ -42,6 +42,7 @@ contract CNSTokenL2 is
     ) external initializer {
         require(admin_ != address(0), "admin=0");
         require(bridge_ != address(0), "bridge=0");
+        require(bridge_.code.length > 0, "bridge must be contract");
         require(l1Token_ != address(0), "l1Token=0");
 
         __Pausable_init();
