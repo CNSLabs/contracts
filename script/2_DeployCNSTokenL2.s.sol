@@ -7,12 +7,13 @@ import "../src/CNSTokenL2.sol";
 
 /**
  * @title DeployCNSTokenL2
- * @notice Deploys CNS Token on L2 (Linea) as a bridged token with proxy pattern
- * @dev Deploys implementation + ERC1967 proxy with:
+ * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
+ * @dev This script deploys CNSTokenL2 with:
+ *      - Role separation (multisig, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
- *      - Pausability
- *      - Allowlist controls
+ *      - Pausability and allowlist controls
  *      - UUPS upgradeability
+ *      - Atomic initialization for security
  *
  * Usage:
  *   # Linea Sepolia testnet
@@ -34,23 +35,33 @@ import "../src/CNSTokenL2.sol";
  *     --broadcast
  *
  * Environment Variables Required:
- *   - PRIVATE_KEY: Deployer private key
- *   - CNS_OWNER: Address that will have admin roles
- *   - CNS_TOKEN_L1: Address of the L1 token (deployed first)
- *   - LINEA_L2_BRIDGE: Linea L2 bridge address
+ *   - PRIVATE_KEY: Deployer private key (secret)
+ *   - CNS_MULTISIG: Gnosis Safe multisig address for critical roles
+ *   - CNS_TOKEN_L1: L1 canonical token address
+ *   - LINEA_L2_BRIDGE: Linea L2 bridge contract address
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
+ *
+ * Optional Configuration (with defaults):
+ *   - L2_TOKEN_NAME: Token name (default: "CNS Linea Token")
+ *   - L2_TOKEN_SYMBOL: Token symbol (default: "CNSL")
+ *   - L2_TOKEN_DECIMALS: Token decimals (default: 18)
+ *   - CNS_PAUSER: Emergency pause address (defaults to CNS_MULTISIG)
+ *   - CNS_ALLOWLIST_ADMIN: Allowlist manager address (defaults to CNS_MULTISIG)
  *
  * Bridge Addresses:
  *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
  *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
 contract DeployCNSTokenL2 is BaseScript {
-    // Token parameters
+    // Token configuration defaults (can be overridden via environment)
     string constant DEFAULT_L2_NAME = "CNS Linea Token";
     string constant DEFAULT_L2_SYMBOL = "CNSL";
-    string L2_NAME = vm.envOr("TOKEN_NAME", DEFAULT_L2_NAME);
-    string L2_SYMBOL = vm.envOr("TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
-    uint8 constant L2_DECIMALS = 18;
+    uint8 constant DEFAULT_L2_DECIMALS = 18;
+
+    // Configuration with environment overrides
+    string L2_NAME = vm.envOr("L2_TOKEN_NAME", DEFAULT_L2_NAME);
+    string L2_SYMBOL = vm.envOr("L2_TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
+    uint8 L2_DECIMALS = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(DEFAULT_L2_DECIMALS)));
 
     // Deployed contracts
     CNSTokenL2 public implementation;
