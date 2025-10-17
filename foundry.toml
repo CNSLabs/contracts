@@ -58,10 +58,4 @@ sepolia = { key = "${ETHERSCAN_API_KEY}" }
 linea = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api.lineascan.build/api" }
 linea-sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
 
-# Formatter configuration
-[fmt]
-tab_width = 4
-bracket_spacing = false
-int_types = "long"
-
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
