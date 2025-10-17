@@ -6,8 +6,9 @@ solc = "0.8.25"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+via_ir = true
 verbosity = 2
+build_info = true
 extra_output = ["storageLayout", "metadata"]
 
 # Additional compiler profiles for different EVM versions
@@ -30,15 +31,11 @@ gas_reports_ignore = []
 fuzz = { runs = 256 }
 invariant = { runs = 256, depth = 15, fail_on_revert = false, call_override = false }
 
-# Formatter configuration
-formatter = { tab_width = 4, bracket_spacing = true, int_types = "long" }
-
-# Compiler configuration
-[profile.default.solc_config]
+# Remappings
 remappings = [
     "forge-std/=lib/forge-std/src/",
-    "@openzeppelin/=lib/openzeppelin-contracts/contracts/",
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
 ]
 
 # CI profile for faster builds
@@ -63,5 +60,11 @@ mainnet = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
 linea = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api.lineascan.build/api" }
 linea_sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
+
+# Formatter configuration
+[fmt]
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

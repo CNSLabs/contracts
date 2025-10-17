@@ -23,6 +23,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
  * @dev Adds ERC20VotesUpgradeable to enable delegation and voting power tracking.
  *      Maintains all v1 functionality: bridging, pausing, and allowlist controls.
  */
+/// @custom:oz-upgrades-from src/CNSTokenL2.sol:CNSTokenL2
 contract CNSTokenL2V2 is
     Initializable,
     CustomBridgedToken,
@@ -43,6 +44,7 @@ contract CNSTokenL2V2 is
     event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
     event SenderAllowlistEnabledUpdated(bool enabled);
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
