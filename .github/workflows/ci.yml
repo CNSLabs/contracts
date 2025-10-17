@@ -131,3 +131,14 @@ jobs:
       - name: Validate storage layouts with OpenZeppelin
         run: npx @openzeppelin/upgrades-core validate out/build-info --unsafeAllow missing-initializer
 
+      - name: Upload storage layouts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storage-layouts
+          path: |
+            layouts/*.json
+            out/CNSTokenL2.sol/CNSTokenL2.json
+            out/CNSTokenL2V2.sol/CNSTokenL2V2.json
+          retention-days: 30
+

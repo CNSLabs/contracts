@@ -8,8 +8,8 @@ Storage layout validation is **automatically checked in CI** to prevent breaking
 
 On every PR, the CI will:
 1. Build the contracts
-2. Extract storage layouts from build artifacts
-3. Compare against baselines in this directory
+2. Run OpenZeppelin's storage layout validation: `npx @openzeppelin/upgrades-core validate out/build-info --unsafeAllow missing-initializer`
+3. Upload storage layout artifacts for reference
 4. Fail if incompatible changes are detected
 
 ## Baseline Files
@@ -19,7 +19,9 @@ On every PR, the CI will:
 
 ## Updating Baselines
 
-If you need to intentionally make breaking changes (e.g., for a new major version):
+These baseline files are kept for reference and documentation purposes. The actual validation is handled by OpenZeppelin's tool.
+
+If you need to update these reference files:
 
 ```bash
 # Build contracts
@@ -31,10 +33,14 @@ cat out/CNSTokenL2.sol/CNSTokenL2.json | jq '.storageLayout.storage' > layouts/C
 
 ## Manual Validation
 
-You can run the validation script locally:
+You can run the OpenZeppelin validation locally:
 
 ```bash
-./script/validate-storage-layout.sh
+# Build contracts first
+forge build
+
+# Run OpenZeppelin validation
+npx @openzeppelin/upgrades-core validate out/build-info --unsafeAllow missing-initializer
 ```
 
 ## Understanding Storage Layouts
