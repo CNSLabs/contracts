@@ -3,24 +3,15 @@ src = "src"
 out = "out"
 libs = ["lib"]
 solc = "0.8.25"
-evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
 via_ir = true
 verbosity = 2
 build_info = true
 extra_output = ["storageLayout", "metadata"]
-
-# Additional compiler profiles for different EVM versions
-additional_compiler_profiles = [
-    { name = "london", evm_version = "london" }
-]
-
-# Compilation restrictions for different EVM versions
-compilation_restrictions = [
-    { paths = "./src/CNSTokenL2.sol", evm_version = "london" },
-    { paths = "./src/CNSTokenL2V2.sol", evm_version = "london" },
-    { paths = "./src/linea/**/*.sol", evm_version = "london" },
+fs_permissions = [
+    { access = "read", path = "config" },
+    { access = "read", path = "broadcast" }
 ]
 
 # Gas reporting
@@ -38,6 +29,12 @@ remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
 ]
 
+# Formatter configuration
+[fmt]
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+
 # CI profile for faster builds
 [profile.ci]
 fuzz = { runs = 10 }
@@ -51,7 +48,7 @@ optimizer_runs = 200
 mainnet = "${ETH_MAINNET_RPC_URL}"
 sepolia = "${ETH_SEPOLIA_RPC_URL}"
 linea = "${LINEA_MAINNET_RPC_URL}"
-linea_sepolia = "${LINEA_SEPOLIA_RPC_URL}"
+linea-sepolia = "${LINEA_SEPOLIA_RPC_URL}"
 local = "http://localhost:8545"
 
 # Etherscan API keys for verification
@@ -59,12 +56,6 @@ local = "http://localhost:8545"
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
 linea = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api.lineascan.build/api" }
-linea_sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
-
-# Formatter configuration
-[fmt]
-tab_width = 4
-bracket_spacing = false
-int_types = "long"
+linea-sepolia = { key = "${LINEA_ETHERSCAN_API_KEY}", url = "https://api-sepolia.lineascan.build/api" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

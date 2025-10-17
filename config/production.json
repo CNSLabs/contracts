@@ -1,0 +1,44 @@
+{
+  "env": "production",
+  "l1": {
+    "name": "Canonical CNS Token",
+    "symbol": "CNS",
+    "decimals": 18,
+    "initialSupply": 100000000000000000000000000,
+    "roles": {
+      "admin": "0x42f04534d384673a884227b8a347598916003270",
+      "allowlistAdmin": "0x42f04534d384673a884227b8a347598916003270",
+      "upgrader": "0x42f04534d384673a884227b8a347598916003270",
+      "pauser": "0x42f04534d384673a884227b8a347598916003270"
+    },
+    "chain": { "name": "mainnet", "chainId": 1 }
+  },
+  "l2": {
+    "name": "CNS Linea Token",
+    "symbol": "CNSL",
+    "decimals": 18,
+    "bridge": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
+    "l1Token": "0x0000000000000000000000000000000000000000",
+    "proxy": "0x0000000000000000000000000000000000000000",
+    "roles": {
+      "admin": "0x42f04534d384673a884227b8a347598916003270",
+      "allowlistAdmin": "0x42f04534d384673a884227b8a347598916003270",
+      "upgrader": "0x42f04534d384673a884227b8a347598916003270",
+      "pauser": "0x42f04534d384673a884227b8a347598916003270"
+    },
+    "chain": { "name": "linea", "chainId": 59144 }
+  }
+  ,
+  "hedgey": {
+    "investorLockup": "0x0000000000000000000000000000000000000000",
+    "batchPlanner": "0x0000000000000000000000000000000000000000",
+    "recipient": "0x0000000000000000000000000000000000000000",
+    "amount": 0,
+    "start": 0,
+    "cliff": 0,
+    "rate": 0,
+    "period": 0
+  }
+}
+
+

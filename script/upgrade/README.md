@@ -1,6 +1,6 @@
-# CNS Token L2 Upgrade Script
+# UUPS Proxy Upgrade Script
 
-This folder contains a single, comprehensive upgrade script that handles the complete upgrade process for CNS Token L2 with whitelist toggle functionality.
+Comprehensive upgrade script for UUPS upgradeable contracts with Safe support.
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ The `UpgradeToken.s.sol` script performs all upgrade steps in sequence:
 2. ✅ **Validate Target Contract** - Verifies the target is a valid UUPS proxy
 3. ✅ **Check Upgrader Permissions** - Ensures upgrader has UPGRADER_ROLE
 4. ✅ **Detect Upgrader Type** - Determines if upgrader is Safe or EOA
-5. ✅ **Deploy New Implementation** - Deploys the new contract with whitelist toggle
+5. ✅ **Deploy New Implementation** - Deploys the new contract
 6. ✅ **Prepare Upgrade Transaction** - Generates transaction data for execution
 7. ✅ **Provide Execution Instructions** - Shows how to complete the upgrade
 
@@ -49,12 +49,6 @@ GAS_LIMIT=500000
 The script provides beautiful visual feedback throughout the process:
 
 ```
-################################################################
-##                                                            ##
-##         CNS TOKEN L2 UPGRADE - ALL-IN-ONE SCRIPT           ##
-##                                                            ##
-################################################################
-
 ================================================================
   STEP 1 of 7: VALIDATE INPUT PARAMETERS
 ================================================================
@@ -122,20 +116,11 @@ forge script script/upgrade/UpgradeToken.s.sol:UpgradeToken \
 After successful upgrade, verify the new functionality:
 
 ```bash
-# Check if whitelist toggle function exists
-cast call $TARGET_CONTRACT "senderAllowlistEnabled()" --rpc-url $RPC_URL
+# Check new implementation
+cast implementation $TARGET_CONTRACT --rpc-url $RPC_URL
 
-# Expected output: 0x0000000000000000000000000000000000000000000000000000000000000001 (true)
-```
-
-Test the whitelist toggle:
-```bash
-# Toggle the whitelist (requires ALLOWLIST_ADMIN_ROLE)
-cast send $TARGET_CONTRACT \
-  "setSenderAllowlistEnabled(bool)" \
-  false \
-  --private-key <admin_key> \
-  --rpc-url $RPC_URL
+# Test new functionality (if applicable)
+cast call $TARGET_CONTRACT "newFunction()" --rpc-url $RPC_URL
 ```
 
 ## Troubleshooting
@@ -189,20 +174,6 @@ Solution: Make sure you ran `source script/upgrade/input_params.env`
    ```bash
    cast implementation $TARGET_CONTRACT --rpc-url $RPC_URL
    ```
-
-## What Gets Deployed
-
-The script deploys a new implementation of `CNSTokenL2` with these new features:
-
-- **`setSenderAllowlistEnabled(bool)`** - Toggle the sender allowlist on/off
-- **`senderAllowlistEnabled()`** - Check if the allowlist is currently enabled
-- Enhanced allowlist control for better flexibility
-
-The existing functionality remains unchanged:
-- Minting, burning, pausing
-- Access control roles
-- Bridge functionality
-- All existing allowlist functions
 
 ## Security Notes
 
