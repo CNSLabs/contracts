@@ -25,7 +25,9 @@ contract CNSTokenL2V2Test is Test {
 
     function setUp() public {
         admin = makeAddr("admin");
-        bridge = makeAddr("bridge");
+        // Deploy a mock bridge contract
+        MockBridge mockBridge = new MockBridge();
+        bridge = address(mockBridge);
         l1Token = makeAddr("l1Token");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
@@ -220,3 +222,9 @@ contract CNSTokenL2V2Test is Test {
         assertEq(upgradedProxy.CLOCK_MODE(), "mode=blocknumber&from=default");
     }
 }
+
+// Mock bridge contract for testing
+contract MockBridge {
+    // Empty contract that just needs to exist
+
+    }

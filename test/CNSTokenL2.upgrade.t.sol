@@ -28,7 +28,9 @@ contract CNSTokenL2UpgradeTest is Test {
 
     function setUp() public {
         admin = makeAddr("admin");
-        bridge = makeAddr("bridge");
+        // Deploy a mock bridge contract
+        MockBridge mockBridge = new MockBridge();
+        bridge = address(mockBridge);
         l1Token = makeAddr("l1Token");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
@@ -280,3 +282,9 @@ contract NonUUPSContract {
     // Not a UUPS contract, should fail upgrade
     uint256 public dummy;
 }
+
+// Mock bridge contract for testing
+contract MockBridge {
+    // Empty contract that just needs to exist
+
+    }

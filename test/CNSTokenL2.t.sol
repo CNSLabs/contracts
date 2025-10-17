@@ -24,7 +24,9 @@ contract CNSTokenL2Test is Test {
 
     function setUp() public {
         admin = makeAddr("admin");
-        bridge = makeAddr("bridge");
+        // Deploy a mock bridge contract
+        MockBridge mockBridge = new MockBridge();
+        bridge = address(mockBridge);
         l1Token = makeAddr("l1Token");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
@@ -222,6 +224,14 @@ contract CNSTokenL2Test is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         return CNSTokenL2(address(proxy));
     }
+
+    function testInitializeRevertsIfBridgeIsEOA() public {
+        CNSTokenL2 fresh = _deployProxy();
+        address eoa = makeAddr("eoa");
+
+        vm.expectRevert("bridge must be contract");
+        fresh.initialize(admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
+    }
 }
 
 contract CNSTokenL2MockV2 is CNSTokenL2 {
@@ -229,3 +239,9 @@ contract CNSTokenL2MockV2 is CNSTokenL2 {
         return 2;
     }
 }
+
+// Mock bridge contract for testing
+contract MockBridge {
+    // Empty contract that just needs to exist
+
+    }
