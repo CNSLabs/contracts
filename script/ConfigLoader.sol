@@ -16,6 +16,14 @@ struct ChainConfig {
     uint256 chainId;
 }
 
+struct TimelockConfig {
+    uint256 minDelay;
+    address admin;
+    address[] proposers;
+    address[] executors;
+    address addr; // optional: deployed timelock address
+}
+
 struct L1Config {
     string name;
     string symbol;
@@ -34,6 +42,7 @@ struct L2Config {
     address proxy;
     RolesConfig roles;
     ChainConfig chain;
+    TimelockConfig timelock;
 }
 
 struct HedgeyConfig {
@@ -95,6 +104,15 @@ library ConfigLoader {
         }
     }
 
+    function _readAddressArray(Vm vm_, string memory json, string memory key) private pure returns (address[] memory) {
+        try vm_.parseJson(json, key) returns (bytes memory raw) {
+            if (raw.length == 0) return new address[](0);
+            return abi.decode(raw, (address[]));
+        } catch {
+            return new address[](0);
+        }
+    }
+
     function loadFromPath(Vm vm_, string memory path) internal view returns (EnvConfig memory cfg) {
         string memory json = vm_.readFile(path);
 
@@ -125,6 +143,13 @@ library ConfigLoader {
         cfg.l2.roles.pauser = _readAddress(vm_, json, ".l2.roles.pauser", address(0));
         cfg.l2.chain.name = _readString(vm_, json, ".l2.chain.name", "");
         cfg.l2.chain.chainId = _readUint(vm_, json, ".l2.chain.chainId", 0);
+
+        // L2 Timelock (optional)
+        cfg.l2.timelock.minDelay = _readUint(vm_, json, ".l2.timelock.minDelay", 0);
+        cfg.l2.timelock.admin = _readAddress(vm_, json, ".l2.timelock.admin", address(0));
+        cfg.l2.timelock.proposers = _readAddressArray(vm_, json, ".l2.timelock.proposers");
+        cfg.l2.timelock.executors = _readAddressArray(vm_, json, ".l2.timelock.executors");
+        cfg.l2.timelock.addr = _readAddress(vm_, json, ".l2.timelock.address", address(0));
 
         // Hedgey (optional)
         cfg.hedgey.investorLockup = _readAddress(vm_, json, ".hedgey.investorLockup", address(0));

@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./BaseScript.sol";
 import "./ConfigLoader.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import "../src/CNSTokenL2.sol";
 
 /**
@@ -45,6 +46,7 @@ contract DeployCNSTokenL2 is BaseScript {
     CNSTokenL2 public implementation;
     ERC1967Proxy public proxy;
     CNSTokenL2 public token;
+    TimelockController public timelock;
 
     // Convenience no-arg entrypoint: infer config path
     function run() external {
@@ -120,6 +122,9 @@ contract DeployCNSTokenL2 is BaseScript {
 
         _verifyDeployment(owner, bridge, l1Token);
 
+        // Optionally deploy or attach to a TimelockController and assign UPGRADER_ROLE
+        _setupTimelock(cfg, deployerPrivateKey, owner);
+
         _logDeploymentResults(owner, bridge, l1Token, initCalldata);
     }
 
@@ -164,6 +169,39 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("\n[SUCCESS] All deployment checks passed!");
     }
 
+    function _setupTimelock(EnvConfig memory cfg, uint256 deployerPrivateKey, address owner) internal {
+        uint256 minDelay = cfg.l2.timelock.minDelay;
+        address tlAdmin = cfg.l2.timelock.admin;
+        address[] memory proposers = cfg.l2.timelock.proposers;
+        address[] memory executors = cfg.l2.timelock.executors;
+
+        console.log("\n=== Timelock Setup ===");
+        require(minDelay > 0, "timelock minDelay=0");
+        require(tlAdmin != address(0), "timelock admin=0");
+
+        vm.startBroadcast(deployerPrivateKey);
+        timelock = new TimelockController(minDelay, proposers, executors, tlAdmin);
+        vm.stopBroadcast();
+        console.log("Deployed TimelockController:", address(timelock));
+        console.log("Min delay:", timelock.getMinDelay());
+
+        // Assign roles using the owner (DEFAULT_ADMIN_ROLE) key
+        bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+        bytes32 DEFAULT_ADMIN_ROLE = 0x00;
+
+        uint256 adminPrivateKey = vm.envUint("CNS_OWNER_PRIVATE_KEY");
+        address adminActor = vm.addr(adminPrivateKey);
+        require(adminActor == owner, "CNS_OWNER_PRIVATE_KEY != owner");
+        require(token.hasRole(DEFAULT_ADMIN_ROLE, adminActor), "owner lacks DEFAULT_ADMIN_ROLE");
+
+        vm.startBroadcast(adminPrivateKey);
+        token.grantRole(UPGRADER_ROLE, address(timelock));
+        token.revokeRole(UPGRADER_ROLE, owner);
+        vm.stopBroadcast();
+        console.log("Granted UPGRADER_ROLE to TimelockController");
+        console.log("Revoked UPGRADER_ROLE from owner");
+    }
+
     function _logDeploymentResults(address owner, address bridge, address l1Token, bytes memory initCalldata)
         internal
         view
@@ -172,6 +210,10 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Network:", _getNetworkName(block.chainid));
         console.log("Implementation:", address(implementation));
         console.log("Proxy (Token):", address(token));
+        if (address(timelock) != address(0)) {
+            console.log("Timelock:", address(timelock));
+            console.log("MinDelay:", timelock.getMinDelay());
+        }
 
         console.log("\n=== Token Configuration ===");
         console.log("Name:", token.name());
