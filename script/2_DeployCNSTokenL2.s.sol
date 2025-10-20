@@ -68,7 +68,7 @@ contract DeployCNSTokenL2 is BaseScript {
             }
         }
         address bridge = cfg.l2.bridge;
-        
+
         // Load Hedgey addresses from config
         address hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
         address hedgeyTokenVestingPlans = cfg.hedgey.tokenVestingPlans;
@@ -92,16 +92,16 @@ contract DeployCNSTokenL2 is BaseScript {
         require(owner != address(0), "FATAL: CNS_OWNER cannot be zero address");
         require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
         require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
-        
+
         // Validate Hedgey addresses - required
         require(hedgeyBatchPlanner != address(0), "FATAL: HEDGEY_BATCH_PLANNER must be set");
         require(hedgeyBatchPlanner.code.length > 0, "FATAL: HEDGEY_BATCH_PLANNER is not a contract");
         console.log("[OK] Hedgey Batch Planner is a valid contract");
-        
+
         require(hedgeyTokenVestingPlans != address(0), "FATAL: HEDGEY_TOKEN_VESTING_PLANS must be set");
         require(hedgeyTokenVestingPlans.code.length > 0, "FATAL: HEDGEY_TOKEN_VESTING_PLANS is not a contract");
         console.log("[OK] Hedgey Token Vesting Plans is a valid contract");
-        
+
         console.log("[OK] All required addresses are non-zero");
 
         _requireMainnetConfirmation();
@@ -139,7 +139,7 @@ contract DeployCNSTokenL2 is BaseScript {
         address[] memory hedgeyAddresses = new address[](2);
         hedgeyAddresses[0] = hedgeyBatchPlanner;
         hedgeyAddresses[1] = hedgeyTokenVestingPlans;
-        
+
         token.setSenderAllowedBatch(hedgeyAddresses, true);
         console.log("   [OK] Hedgey Batch Planner allowlisted:", hedgeyBatchPlanner);
         console.log("   [OK] Hedgey Token Vesting Plans allowlisted:", hedgeyTokenVestingPlans);
@@ -156,7 +156,13 @@ contract DeployCNSTokenL2 is BaseScript {
 
     // Removed local inference: use BaseScript helpers
 
-    function _verifyDeployment(address owner, address bridge, address l1Token, address hedgeyBatchPlanner, address hedgeyTokenVestingPlans) internal view {
+    function _verifyDeployment(
+        address owner,
+        address bridge,
+        address l1Token,
+        address hedgeyBatchPlanner,
+        address hedgeyTokenVestingPlans
+    ) internal view {
         console.log("\n=== Running Additional Deployment Checks ===");
 
         // Check proxy points to implementation
@@ -191,11 +197,11 @@ contract DeployCNSTokenL2 is BaseScript {
         require(token.isSenderAllowlisted(owner), "Owner not allowlisted");
         require(token.senderAllowlistEnabled(), "Sender allowlist not enabled");
         console.log("[OK] Default addresses allowlisted");
-        
+
         // Check Hedgey addresses (required)
         require(token.isSenderAllowlisted(hedgeyBatchPlanner), "Hedgey Batch Planner not allowlisted");
         console.log("[OK] Hedgey Batch Planner allowlisted");
-        
+
         require(token.isSenderAllowlisted(hedgeyTokenVestingPlans), "Hedgey Token Vesting Plans not allowlisted");
         console.log("[OK] Hedgey Token Vesting Plans allowlisted");
 
@@ -235,10 +241,14 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Revoked UPGRADER_ROLE from owner");
     }
 
-    function _logDeploymentResults(address owner, address bridge, address l1Token, bytes memory initCalldata, address hedgeyBatchPlanner, address hedgeyTokenVestingPlans)
-        internal
-        view
-    {
+    function _logDeploymentResults(
+        address owner,
+        address bridge,
+        address l1Token,
+        bytes memory initCalldata,
+        address hedgeyBatchPlanner,
+        address hedgeyTokenVestingPlans
+    ) internal view {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
         console.log("Implementation:", address(implementation));
