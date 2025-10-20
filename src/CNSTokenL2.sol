@@ -19,6 +19,7 @@ contract CNSTokenL2 is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    uint256 public constant MAX_BATCH_SIZE = 200;
 
     address public l1Token;
     mapping(address => bool) private _senderAllowlisted;
@@ -104,6 +105,9 @@ contract CNSTokenL2 is
     }
 
     function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        require(accounts.length > 0, "empty batch");
+        require(accounts.length <= MAX_BATCH_SIZE, "batch too large");
+
         for (uint256 i; i < accounts.length; ++i) {
             _setSenderAllowlist(accounts[i], allowed);
         }
