@@ -27,6 +27,16 @@ contract CNSTokenL2 is
     event SenderAllowlistUpdated(address indexed account, bool allowed);
     event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
     event SenderAllowlistEnabledUpdated(bool enabled);
+    event BridgeSet(address indexed bridge);
+    event L1TokenSet(address indexed l1Token);
+    event Initialized(
+        address indexed admin,
+        address indexed bridge,
+        address indexed l1Token,
+        string name,
+        string symbol,
+        uint8 decimals
+    );
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -53,9 +63,12 @@ contract CNSTokenL2 is
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
         bridge = bridge_;
+        emit BridgeSet(bridge_);
+
         _decimals = decimals_;
 
         l1Token = l1Token_;
+        emit L1TokenSet(l1Token_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(PAUSER_ROLE, admin_);
@@ -66,6 +79,8 @@ contract CNSTokenL2 is
         _setSenderAllowlist(address(this), true);
         _setSenderAllowlist(bridge_, true);
         _setSenderAllowlist(admin_, true);
+
+        emit Initialized(admin_, bridge_, l1Token_, name_, symbol_, decimals_);
     }
 
     function isSenderAllowlisted(address account) external view returns (bool) {

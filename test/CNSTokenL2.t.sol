@@ -232,6 +232,26 @@ contract CNSTokenL2Test is Test {
         vm.expectRevert("bridge must be contract");
         fresh.initialize(admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
     }
+
+    function testInitializationEmitsEvents() public {
+        CNSTokenL2 impl = new CNSTokenL2();
+        MockBridge mockBridge = new MockBridge();
+        address testBridge = address(mockBridge);
+
+        bytes memory initData =
+            abi.encodeWithSelector(CNSTokenL2.initialize.selector, admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS);
+
+        vm.expectEmit(true, false, false, true);
+        emit CNSTokenL2.BridgeSet(testBridge);
+
+        vm.expectEmit(true, false, false, true);
+        emit CNSTokenL2.L1TokenSet(l1Token);
+
+        vm.expectEmit(true, true, true, true);
+        emit CNSTokenL2.Initialized(admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS);
+
+        new ERC1967Proxy(address(impl), initData);
+    }
 }
 
 contract CNSTokenL2MockV2 is CNSTokenL2 {
