@@ -285,6 +285,27 @@ contract CNSTokenL2Test is Test {
         vm.prank(admin);
         token.setSenderAllowedBatch(accounts, true);
     }
+
+    function testCannotAllowlistZeroAddress() public {
+        vm.expectRevert("zero address");
+        vm.prank(admin);
+        token.setSenderAllowed(address(0), true);
+    }
+
+    function testBatchCannotIncludeZeroAddress() public {
+        address[] memory accounts = new address[](3);
+        accounts[0] = makeAddr("user1");
+        accounts[1] = address(0); // Zero address in middle
+        accounts[2] = makeAddr("user2");
+
+        vm.expectRevert("zero address");
+        vm.prank(admin);
+        token.setSenderAllowedBatch(accounts, true);
+
+        // Verify none were added (transaction reverted)
+        assertFalse(token.isSenderAllowlisted(accounts[0]));
+        assertFalse(token.isSenderAllowlisted(accounts[2]));
+    }
 }
 
 contract CNSTokenL2MockV2 is CNSTokenL2 {

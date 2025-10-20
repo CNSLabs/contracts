@@ -101,6 +101,7 @@ contract CNSTokenL2 is
     }
 
     function setSenderAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        require(account != address(0), "zero address");
         _setSenderAllowlist(account, allowed);
     }
 
@@ -109,6 +110,7 @@ contract CNSTokenL2 is
         require(accounts.length <= MAX_BATCH_SIZE, "batch too large");
 
         for (uint256 i; i < accounts.length; ++i) {
+            require(accounts[i] != address(0), "zero address");
             _setSenderAllowlist(accounts[i], allowed);
         }
         emit SenderAllowlistBatchUpdated(accounts, allowed);
