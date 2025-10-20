@@ -7,12 +7,13 @@ import "../src/CNSTokenL2.sol";
 
 /**
  * @title DeployCNSTokenL2
- * @notice Deploys CNS Token on L2 (Linea) as a bridged token with proxy pattern
- * @dev Deploys implementation + ERC1967 proxy with:
+ * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
+ * @dev This script deploys CNSTokenL2 with:
+ *      - Role separation (multisig, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
- *      - Pausability
- *      - Allowlist controls
+ *      - Pausability and allowlist controls
  *      - UUPS upgradeability
+ *      - Atomic initialization for security
  *
  * Usage:
  *   # Linea Sepolia testnet
@@ -34,23 +35,33 @@ import "../src/CNSTokenL2.sol";
  *     --broadcast
  *
  * Environment Variables Required:
- *   - PRIVATE_KEY: Deployer private key
- *   - CNS_OWNER: Address that will have admin roles
- *   - CNS_TOKEN_L1: Address of the L1 token (deployed first)
- *   - LINEA_L2_BRIDGE: Linea L2 bridge address
+ *   - PRIVATE_KEY: Deployer private key (secret)
+ *   - CNS_MULTISIG: Gnosis Safe multisig address for critical roles
+ *   - CNS_TOKEN_L1: L1 canonical token address
+ *   - LINEA_L2_BRIDGE: Linea L2 bridge contract address
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
+ *
+ * Optional Configuration (with defaults):
+ *   - L2_TOKEN_NAME: Token name (default: "CNS Linea Token")
+ *   - L2_TOKEN_SYMBOL: Token symbol (default: "CNSL")
+ *   - L2_TOKEN_DECIMALS: Token decimals (default: 18)
+ *   - CNS_PAUSER: Emergency pause address (defaults to CNS_MULTISIG)
+ *   - CNS_ALLOWLIST_ADMIN: Allowlist manager address (defaults to CNS_MULTISIG)
  *
  * Bridge Addresses:
  *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
  *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
 contract DeployCNSTokenL2 is BaseScript {
-    // Token parameters
+    // Token configuration defaults (can be overridden via environment)
     string constant DEFAULT_L2_NAME = "CNS Linea Token";
     string constant DEFAULT_L2_SYMBOL = "CNSL";
-    string L2_NAME = vm.envOr("TOKEN_NAME", DEFAULT_L2_NAME);
-    string L2_SYMBOL = vm.envOr("TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
-    uint8 constant L2_DECIMALS = 18;
+    uint8 constant DEFAULT_L2_DECIMALS = 18;
+
+    // Configuration with environment overrides
+    string L2_NAME = vm.envOr("L2_TOKEN_NAME", DEFAULT_L2_NAME);
+    string L2_SYMBOL = vm.envOr("L2_TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
+    uint8 L2_DECIMALS = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(DEFAULT_L2_DECIMALS)));
 
     // Deployed contracts
     CNSTokenL2 public implementation;
@@ -62,30 +73,42 @@ contract DeployCNSTokenL2 is BaseScript {
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
         // Get and validate required addresses
-        address owner = vm.envAddress("CNS_OWNER");
+        address multisig = vm.envAddress("CNS_MULTISIG");
+        address pauser = vm.envOr("CNS_PAUSER", multisig); // Defaults to multisig if not set
+        address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", multisig); // Defaults to multisig if not set
         address l1Token = vm.envAddress("CNS_TOKEN_L1");
         address bridge = vm.envAddress("LINEA_L2_BRIDGE");
 
-        _requireNonZeroAddress(owner, "CNS_OWNER");
+        _requireNonZeroAddress(multisig, "CNS_MULTISIG");
+        _requireNonZeroAddress(pauser, "CNS_PAUSER");
+        _requireNonZeroAddress(allowlistAdmin, "CNS_ALLOWLIST_ADMIN");
         _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
         _requireNonZeroAddress(bridge, "LINEA_L2_BRIDGE");
 
         // Log deployment info
-        _logDeploymentHeader("Deploying CNS Token L2");
+        _logDeploymentHeader("Deploying CNS Token L2 with Role Separation");
         console.log("Token Name:", L2_NAME);
         console.log("Token Symbol:", L2_SYMBOL);
         console.log("Decimals:", L2_DECIMALS);
-        console.log("Owner (Admin):", owner);
+        console.log("\n=== Role Assignment ===");
+        console.log("Multisig (Admin + Upgrader):", multisig);
+        console.log("Pauser:", pauser);
+        console.log("Allowlist Admin:", allowlistAdmin);
+        console.log("\n=== Contract Addresses ===");
         console.log("L1 Token:", l1Token);
         console.log("Bridge:", bridge);
         console.log("Deployer:", deployer);
 
         // Pre-deployment validation
         console.log("\n=== Pre-Deployment Validation ===");
-        require(owner != address(0), "FATAL: CNS_OWNER cannot be zero address");
+        require(multisig != address(0), "FATAL: CNS_MULTISIG cannot be zero address");
+        require(pauser != address(0), "FATAL: CNS_PAUSER cannot be zero address");
+        require(allowlistAdmin != address(0), "FATAL: CNS_ALLOWLIST_ADMIN cannot be zero address");
         require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
         require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
         console.log("[OK] All required addresses are non-zero");
+        console.log("[INFO] Using multisig for critical roles (DEFAULT_ADMIN + UPGRADER)");
+        console.log("[INFO] Multisig will also have backup access to operational roles");
 
         // Safety check for mainnet
         _requireMainnetConfirmation();
@@ -99,7 +122,15 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Prepare initialization data
         bytes memory initCalldata = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector, owner, bridge, l1Token, L2_NAME, L2_SYMBOL, L2_DECIMALS
+            CNSTokenL2.initialize.selector,
+            multisig,
+            pauser,
+            allowlistAdmin,
+            bridge,
+            l1Token,
+            L2_NAME,
+            L2_SYMBOL,
+            L2_DECIMALS
         );
 
         console.log("\n2. Deploying ERC1967 proxy...");
@@ -112,26 +143,40 @@ contract DeployCNSTokenL2 is BaseScript {
         require(token.l1Token() == l1Token, "FATAL: Initialization failed - l1Token not set");
         require(token.bridge() == bridge, "FATAL: Initialization failed - bridge not set");
         require(
-            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, owner),
-            "FATAL: Initialization failed - owner doesn't have DEFAULT_ADMIN_ROLE"
+            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, multisig),
+            "FATAL: Initialization failed - multisig doesn't have DEFAULT_ADMIN_ROLE"
         );
         require(
-            token.hasRole(keccak256("UPGRADER_ROLE"), owner),
-            "FATAL: Initialization failed - owner doesn't have UPGRADER_ROLE"
+            token.hasRole(keccak256("UPGRADER_ROLE"), multisig),
+            "FATAL: Initialization failed - multisig doesn't have UPGRADER_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("PAUSER_ROLE"), pauser),
+            "FATAL: Initialization failed - pauser doesn't have PAUSER_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("ALLOWLIST_ADMIN_ROLE"), allowlistAdmin),
+            "FATAL: Initialization failed - allowlistAdmin doesn't have ALLOWLIST_ADMIN_ROLE"
         );
         console.log("   [OK] Contract initialized successfully");
-        console.log("   [OK] Owner has admin roles");
+        console.log("   [OK] All roles assigned correctly");
 
         vm.stopBroadcast();
 
         // Verify deployment
-        _verifyDeployment(owner, bridge, l1Token);
+        _verifyDeployment(multisig, pauser, allowlistAdmin, bridge, l1Token);
 
         // Log deployment results
-        _logDeploymentResults(owner, bridge, l1Token, initCalldata);
+        _logDeploymentResults(multisig, pauser, allowlistAdmin, bridge, l1Token, initCalldata);
     }
 
-    function _verifyDeployment(address owner, address bridge, address l1Token) internal view {
+    function _verifyDeployment(
+        address multisig,
+        address pauser,
+        address allowlistAdmin,
+        address bridge,
+        address l1Token
+    ) internal view {
         console.log("\n=== Running Additional Deployment Checks ===");
 
         // Check proxy points to implementation
@@ -154,26 +199,39 @@ contract DeployCNSTokenL2 is BaseScript {
         bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
         bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-        require(token.hasRole(DEFAULT_ADMIN_ROLE, owner), "Owner missing DEFAULT_ADMIN_ROLE");
-        require(token.hasRole(PAUSER_ROLE, owner), "Owner missing PAUSER_ROLE");
-        require(token.hasRole(ALLOWLIST_ADMIN_ROLE, owner), "Owner missing ALLOWLIST_ADMIN_ROLE");
-        require(token.hasRole(UPGRADER_ROLE, owner), "Owner missing UPGRADER_ROLE");
-        console.log("[OK] Owner has all required roles");
+        // Verify multisig has critical roles
+        require(token.hasRole(DEFAULT_ADMIN_ROLE, multisig), "Multisig missing DEFAULT_ADMIN_ROLE");
+        require(token.hasRole(UPGRADER_ROLE, multisig), "Multisig missing UPGRADER_ROLE");
+        console.log("[OK] Multisig has critical roles (DEFAULT_ADMIN + UPGRADER)");
+
+        // Verify operational roles
+        require(token.hasRole(PAUSER_ROLE, pauser), "Pauser missing PAUSER_ROLE");
+        require(token.hasRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin), "AllowlistAdmin missing ALLOWLIST_ADMIN_ROLE");
+        console.log("[OK] Operational roles assigned correctly");
+
+        // Verify multisig has backup access to operational roles
+        require(token.hasRole(PAUSER_ROLE, multisig), "Multisig missing backup PAUSER_ROLE");
+        require(token.hasRole(ALLOWLIST_ADMIN_ROLE, multisig), "Multisig missing backup ALLOWLIST_ADMIN_ROLE");
+        console.log("[OK] Multisig has backup access to operational roles");
 
         // Check sender allowlist
         require(token.isSenderAllowlisted(address(token)), "Token not allowlisted");
         require(token.isSenderAllowlisted(bridge), "Bridge not allowlisted");
-        require(token.isSenderAllowlisted(owner), "Owner not allowlisted");
+        require(token.isSenderAllowlisted(multisig), "Multisig not allowlisted");
         require(token.senderAllowlistEnabled(), "Sender allowlist not enabled");
         console.log("[OK] Default addresses allowlisted");
 
         console.log("\n[SUCCESS] All deployment checks passed!");
     }
 
-    function _logDeploymentResults(address owner, address bridge, address l1Token, bytes memory initCalldata)
-        internal
-        view
-    {
+    function _logDeploymentResults(
+        address multisig,
+        address pauser,
+        address allowlistAdmin,
+        address bridge,
+        address l1Token,
+        bytes memory initCalldata
+    ) internal view {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
         console.log("Implementation:", address(implementation));
@@ -187,13 +245,19 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Bridge:", bridge);
         console.log("Paused:", token.paused());
 
-        console.log("\n=== Access Control ===");
-        console.log("Owner (has all roles):", owner);
-        console.log("Sender Allowlist Enabled:", token.senderAllowlistEnabled());
+        console.log("\n=== Access Control (Role Separation) ===");
+        console.log("Multisig (DEFAULT_ADMIN + UPGRADER):", multisig);
+        console.log("  - Controls: Role management, Contract upgrades");
+        console.log("  - Backup for: Pause/Unpause, Allowlist management");
+        console.log("Pauser:", pauser);
+        console.log("  - Controls: Emergency pause/unpause");
+        console.log("Allowlist Admin:", allowlistAdmin);
+        console.log("  - Controls: Sender allowlist management");
+        console.log("\nSender Allowlist Enabled:", token.senderAllowlistEnabled());
         console.log("Sender Allowlisted:");
         console.log("  - Token contract:", token.isSenderAllowlisted(address(token)));
         console.log("  - Bridge:", token.isSenderAllowlisted(bridge));
-        console.log("  - Owner:", token.isSenderAllowlisted(owner));
+        console.log("  - Multisig:", token.isSenderAllowlisted(multisig));
 
         // Log verification commands
         _logVerificationCommands(initCalldata);
