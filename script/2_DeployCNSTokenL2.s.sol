@@ -122,7 +122,7 @@ contract DeployCNSTokenL2 is BaseScript {
 
         _verifyDeployment(owner, bridge, l1Token);
 
-        // Optionally deploy or attach to a TimelockController and assign UPGRADER_ROLE
+        // Deploy or attach to a TimelockController and assign UPGRADER_ROLE
         _setupTimelock(cfg, deployerPrivateKey, owner);
 
         _logDeploymentResults(owner, bridge, l1Token, initCalldata);
