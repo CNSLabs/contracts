@@ -252,6 +252,39 @@ contract CNSTokenL2Test is Test {
 
         new ERC1967Proxy(address(impl), initData);
     }
+
+    function testBatchAllowlistRevertsIfTooLarge() public {
+        address[] memory accounts = new address[](300);
+        for (uint256 i = 0; i < 300; i++) {
+            accounts[i] = address(uint160(i + 1));
+        }
+
+        vm.prank(admin);
+        vm.expectRevert("batch too large");
+        token.setSenderAllowedBatch(accounts, true);
+    }
+
+    function testBatchAllowlistSucceedsWithinLimit() public {
+        address[] memory accounts = new address[](200);
+        for (uint256 i = 0; i < 200; i++) {
+            accounts[i] = address(uint160(i + 1));
+        }
+
+        vm.prank(admin);
+        token.setSenderAllowedBatch(accounts, true);
+
+        // Verify first and last were added
+        assertTrue(token.isSenderAllowlisted(accounts[0]));
+        assertTrue(token.isSenderAllowlisted(accounts[199]));
+    }
+
+    function testBatchRevertsIfEmpty() public {
+        address[] memory accounts = new address[](0);
+
+        vm.expectRevert("empty batch");
+        vm.prank(admin);
+        token.setSenderAllowedBatch(accounts, true);
+    }
 }
 
 contract CNSTokenL2MockV2 is CNSTokenL2 {
