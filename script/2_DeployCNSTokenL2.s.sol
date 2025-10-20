@@ -134,17 +134,10 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("   [OK] Contract initialized successfully");
         console.log("   [OK] Owner has admin roles");
 
-        // Add Hedgey addresses to allowlist using batch function
-        console.log("\n4. Adding Hedgey addresses to allowlist...");
-        address[] memory hedgeyAddresses = new address[](2);
-        hedgeyAddresses[0] = hedgeyBatchPlanner;
-        hedgeyAddresses[1] = hedgeyTokenVestingPlans;
-
-        token.setSenderAllowedBatch(hedgeyAddresses, true);
-        console.log("   [OK] Hedgey Batch Planner allowlisted:", hedgeyBatchPlanner);
-        console.log("   [OK] Hedgey Token Vesting Plans allowlisted:", hedgeyTokenVestingPlans);
-
         vm.stopBroadcast();
+
+        // Setup allowlist using owner's private key
+        _setupAllowlist(hedgeyBatchPlanner, hedgeyTokenVestingPlans, owner);
 
         _verifyDeployment(owner, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans);
 
@@ -239,6 +232,30 @@ contract DeployCNSTokenL2 is BaseScript {
         vm.stopBroadcast();
         console.log("Granted UPGRADER_ROLE to TimelockController");
         console.log("Revoked UPGRADER_ROLE from owner");
+    }
+
+    function _setupAllowlist(address hedgeyBatchPlanner, address hedgeyTokenVestingPlans, address owner) internal {
+        console.log("\n=== Allowlist Setup ===");
+
+        // Get owner's private key for allowlist operations
+        bytes32 DEFAULT_ADMIN_ROLE = 0x00;
+
+        uint256 adminPrivateKey = vm.envUint("CNS_OWNER_PRIVATE_KEY");
+        address adminActor = vm.addr(adminPrivateKey);
+        require(adminActor == owner, "CNS_OWNER_PRIVATE_KEY != owner");
+        require(token.hasRole(DEFAULT_ADMIN_ROLE, adminActor), "owner lacks DEFAULT_ADMIN_ROLE");
+
+        console.log("Adding Hedgey addresses to allowlist...");
+        address[] memory hedgeyAddresses = new address[](2);
+        hedgeyAddresses[0] = hedgeyBatchPlanner;
+        hedgeyAddresses[1] = hedgeyTokenVestingPlans;
+
+        vm.startBroadcast(adminPrivateKey);
+        token.setSenderAllowedBatch(hedgeyAddresses, true);
+        vm.stopBroadcast();
+
+        console.log("   [OK] Hedgey Batch Planner allowlisted:", hedgeyBatchPlanner);
+        console.log("   [OK] Hedgey Token Vesting Plans allowlisted:", hedgeyTokenVestingPlans);
     }
 
     function _logDeploymentResults(
