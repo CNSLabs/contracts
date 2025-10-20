@@ -68,6 +68,10 @@ contract DeployCNSTokenL2 is BaseScript {
             }
         }
         address bridge = cfg.l2.bridge;
+        
+        // Load Hedgey addresses from config
+        address hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
+        address hedgeyTokenVestingPlans = cfg.hedgey.tokenVestingPlans;
 
         _requireNonZeroAddress(owner, "CNS_OWNER");
         _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
@@ -81,11 +85,23 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("L1 Token:", l1Token);
         console.log("Bridge:", bridge);
         console.log("Deployer:", deployer);
+        console.log("Hedgey Batch Planner:", hedgeyBatchPlanner);
+        console.log("Hedgey Token Vesting Plans:", hedgeyTokenVestingPlans);
 
         console.log("\n=== Pre-Deployment Validation ===");
         require(owner != address(0), "FATAL: CNS_OWNER cannot be zero address");
         require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
         require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
+        
+        // Validate Hedgey addresses - required
+        require(hedgeyBatchPlanner != address(0), "FATAL: HEDGEY_BATCH_PLANNER must be set");
+        require(hedgeyBatchPlanner.code.length > 0, "FATAL: HEDGEY_BATCH_PLANNER is not a contract");
+        console.log("[OK] Hedgey Batch Planner is a valid contract");
+        
+        require(hedgeyTokenVestingPlans != address(0), "FATAL: HEDGEY_TOKEN_VESTING_PLANS must be set");
+        require(hedgeyTokenVestingPlans.code.length > 0, "FATAL: HEDGEY_TOKEN_VESTING_PLANS is not a contract");
+        console.log("[OK] Hedgey Token Vesting Plans is a valid contract");
+        
         console.log("[OK] All required addresses are non-zero");
 
         _requireMainnetConfirmation();
@@ -118,19 +134,29 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("   [OK] Contract initialized successfully");
         console.log("   [OK] Owner has admin roles");
 
+        // Add Hedgey addresses to allowlist using batch function
+        console.log("\n4. Adding Hedgey addresses to allowlist...");
+        address[] memory hedgeyAddresses = new address[](2);
+        hedgeyAddresses[0] = hedgeyBatchPlanner;
+        hedgeyAddresses[1] = hedgeyTokenVestingPlans;
+        
+        token.setSenderAllowedBatch(hedgeyAddresses, true);
+        console.log("   [OK] Hedgey Batch Planner allowlisted:", hedgeyBatchPlanner);
+        console.log("   [OK] Hedgey Token Vesting Plans allowlisted:", hedgeyTokenVestingPlans);
+
         vm.stopBroadcast();
 
-        _verifyDeployment(owner, bridge, l1Token);
+        _verifyDeployment(owner, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans);
 
         // Optionally deploy or attach to a TimelockController and assign UPGRADER_ROLE
         _setupTimelock(cfg, deployerPrivateKey, owner);
 
-        _logDeploymentResults(owner, bridge, l1Token, initCalldata);
+        _logDeploymentResults(owner, bridge, l1Token, initCalldata, hedgeyBatchPlanner, hedgeyTokenVestingPlans);
     }
 
     // Removed local inference: use BaseScript helpers
 
-    function _verifyDeployment(address owner, address bridge, address l1Token) internal view {
+    function _verifyDeployment(address owner, address bridge, address l1Token, address hedgeyBatchPlanner, address hedgeyTokenVestingPlans) internal view {
         console.log("\n=== Running Additional Deployment Checks ===");
 
         // Check proxy points to implementation
@@ -165,6 +191,13 @@ contract DeployCNSTokenL2 is BaseScript {
         require(token.isSenderAllowlisted(owner), "Owner not allowlisted");
         require(token.senderAllowlistEnabled(), "Sender allowlist not enabled");
         console.log("[OK] Default addresses allowlisted");
+        
+        // Check Hedgey addresses (required)
+        require(token.isSenderAllowlisted(hedgeyBatchPlanner), "Hedgey Batch Planner not allowlisted");
+        console.log("[OK] Hedgey Batch Planner allowlisted");
+        
+        require(token.isSenderAllowlisted(hedgeyTokenVestingPlans), "Hedgey Token Vesting Plans not allowlisted");
+        console.log("[OK] Hedgey Token Vesting Plans allowlisted");
 
         console.log("\n[SUCCESS] All deployment checks passed!");
     }
@@ -202,7 +235,7 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Revoked UPGRADER_ROLE from owner");
     }
 
-    function _logDeploymentResults(address owner, address bridge, address l1Token, bytes memory initCalldata)
+    function _logDeploymentResults(address owner, address bridge, address l1Token, bytes memory initCalldata, address hedgeyBatchPlanner, address hedgeyTokenVestingPlans)
         internal
         view
     {
@@ -230,6 +263,8 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("  - Token contract:", token.isSenderAllowlisted(address(token)));
         console.log("  - Bridge:", token.isSenderAllowlisted(bridge));
         console.log("  - Owner:", token.isSenderAllowlisted(owner));
+        console.log("  - Hedgey Batch Planner:", token.isSenderAllowlisted(hedgeyBatchPlanner));
+        console.log("  - Hedgey Token Vesting Plans:", token.isSenderAllowlisted(hedgeyTokenVestingPlans));
 
         // Log verification commands
         _logVerificationCommands(initCalldata);
@@ -237,11 +272,12 @@ contract DeployCNSTokenL2 is BaseScript {
         // Log next steps
         console.log("\n=== Next Steps ===");
         console.log("1. Verify contracts (see commands below)");
-        console.log("2. Add addresses to sender allowlist: token.setSenderAllowed(address, true)");
+        console.log("2. Add additional addresses to sender allowlist: token.setSenderAllowed(address, true)");
         console.log("3. Optionally disable allowlist: token.setSenderAllowlistEnabled(false)");
         console.log("4. Bridge tokens from L1 using Linea bridge");
         console.log("5. Test transfers between allowlisted addresses");
-        console.log("6. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol");
+        console.log("6. Test Hedgey integration with allowlisted addresses");
+        console.log("7. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol");
     }
 
     function _logVerificationCommands(bytes memory initCalldata) internal view {
