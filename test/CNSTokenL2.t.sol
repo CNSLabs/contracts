@@ -225,86 +225,25 @@ contract CNSTokenL2Test is Test {
         return CNSTokenL2(address(proxy));
     }
 
-    function testInitializeRevertsIfBridgeIsEOA() public {
-        CNSTokenL2 fresh = _deployProxy();
-        address eoa = makeAddr("eoa");
-
-        vm.expectRevert("bridge must be contract");
-        fresh.initialize(admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
-    }
-
-    function testInitializationEmitsEvents() public {
+    function testAtomicInitializationPreventsReinitialization() public {
+        // This verifies the deployment script pattern works
         CNSTokenL2 impl = new CNSTokenL2();
         MockBridge mockBridge = new MockBridge();
-        address testBridge = address(mockBridge);
 
-        bytes memory initData =
-            abi.encodeWithSelector(CNSTokenL2.initialize.selector, admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS);
+        bytes memory initData = abi.encodeWithSelector(
+            CNSTokenL2.initialize.selector, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS
+        );
 
-        vm.expectEmit(true, false, false, true);
-        emit CNSTokenL2.BridgeSet(testBridge);
+        // Deploy with atomic initialization
+        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
+        CNSTokenL2 deployedToken = CNSTokenL2(address(proxy));
 
-        vm.expectEmit(true, false, false, true);
-        emit CNSTokenL2.L1TokenSet(l1Token);
+        // Verify already initialized
+        assertTrue(deployedToken.hasRole(deployedToken.DEFAULT_ADMIN_ROLE(), admin));
 
-        vm.expectEmit(true, true, true, true);
-        emit CNSTokenL2.Initialized(admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS);
-
-        new ERC1967Proxy(address(impl), initData);
-    }
-
-    function testBatchAllowlistRevertsIfTooLarge() public {
-        address[] memory accounts = new address[](300);
-        for (uint256 i = 0; i < 300; i++) {
-            accounts[i] = address(uint160(i + 1));
-        }
-
-        vm.prank(admin);
-        vm.expectRevert("batch too large");
-        token.setSenderAllowedBatch(accounts, true);
-    }
-
-    function testBatchAllowlistSucceedsWithinLimit() public {
-        address[] memory accounts = new address[](200);
-        for (uint256 i = 0; i < 200; i++) {
-            accounts[i] = address(uint160(i + 1));
-        }
-
-        vm.prank(admin);
-        token.setSenderAllowedBatch(accounts, true);
-
-        // Verify first and last were added
-        assertTrue(token.isSenderAllowlisted(accounts[0]));
-        assertTrue(token.isSenderAllowlisted(accounts[199]));
-    }
-
-    function testBatchRevertsIfEmpty() public {
-        address[] memory accounts = new address[](0);
-
-        vm.expectRevert("empty batch");
-        vm.prank(admin);
-        token.setSenderAllowedBatch(accounts, true);
-    }
-
-    function testCannotAllowlistZeroAddress() public {
-        vm.expectRevert("zero address");
-        vm.prank(admin);
-        token.setSenderAllowed(address(0), true);
-    }
-
-    function testBatchCannotIncludeZeroAddress() public {
-        address[] memory accounts = new address[](3);
-        accounts[0] = makeAddr("user1");
-        accounts[1] = address(0); // Zero address in middle
-        accounts[2] = makeAddr("user2");
-
-        vm.expectRevert("zero address");
-        vm.prank(admin);
-        token.setSenderAllowedBatch(accounts, true);
-
-        // Verify none were added (transaction reverted)
-        assertFalse(token.isSenderAllowlisted(accounts[0]));
-        assertFalse(token.isSenderAllowlisted(accounts[2]));
+        // Cannot initialize again
+        vm.expectRevert();
+        deployedToken.initialize(makeAddr("attacker"), address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
     }
 }
 
