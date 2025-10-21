@@ -28,8 +28,6 @@ contract CNSTokenL2 is
     event SenderAllowlistUpdated(address indexed account, bool allowed);
     event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
     event SenderAllowlistEnabledUpdated(bool enabled);
-    event BridgeSet(address indexed bridge);
-    event L1TokenSet(address indexed l1Token);
     event Initialized(
         address indexed admin,
         address indexed bridge,
@@ -80,12 +78,10 @@ contract CNSTokenL2 is
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
         bridge = bridge_;
-        emit BridgeSet(bridge_);
 
         _decimals = decimals_;
 
         l1Token = l1Token_;
-        emit L1TokenSet(l1Token_);
 
         // Grant critical roles
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
