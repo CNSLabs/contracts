@@ -46,11 +46,22 @@ abstract contract BaseScript is Script {
      * @return The --chain parameter for forge verify-contract
      */
     function _getChainParam(uint256 chainId) internal pure returns (string memory) {
-        if (chainId == ETHEREUM_MAINNET) return "--chain mainnet";
-        if (chainId == ETHEREUM_SEPOLIA) return "--chain sepolia";
-        if (chainId == LINEA_MAINNET) return "--chain linea";
-        if (chainId == LINEA_SEPOLIA) return "--chain linea-sepolia";
-        return ""; // No automatic verification for unknown chains
+        string memory rpcName = _getRpcEndpointName(chainId);
+        if (bytes(rpcName).length == 0) return "";
+        return string.concat("--chain ", rpcName);
+    }
+
+    /**
+     * @notice Get RPC endpoint name for the given chain ID
+     * @param chainId The chain ID to look up
+     * @return The RPC endpoint name (e.g., "linea-sepolia", "mainnet")
+     */
+    function _getRpcEndpointName(uint256 chainId) internal pure returns (string memory) {
+        if (chainId == ETHEREUM_MAINNET) return "mainnet";
+        if (chainId == ETHEREUM_SEPOLIA) return "sepolia";
+        if (chainId == LINEA_MAINNET) return "linea";
+        if (chainId == LINEA_SEPOLIA) return "linea-sepolia";
+        return "";
     }
 
     /**
@@ -317,5 +328,14 @@ abstract contract BaseScript is Script {
 
     function _inferL2ProxyFromBroadcast(uint256 l2ChainId) internal view returns (address) {
         return _inferFromBroadcast(l2ChainId, "2_DeployCNSTokenL2.s.sol", "ERC1967Proxy");
+    }
+
+    function _inferTimelockFromBroadcast(uint256 l2ChainId) internal view returns (address) {
+        // Try from L2 deploy script first (may deploy timelock)
+        address addr = _inferFromBroadcast(l2ChainId, "2_DeployCNSTokenL2.s.sol", "TimelockController");
+        if (addr != address(0)) return addr;
+        // Also try upgrade script in case timelock was deployed there earlier
+        addr = _inferFromBroadcast(l2ChainId, "3_UpgradeCNSTokenL2ToV2.s.sol", "TimelockController");
+        return addr;
     }
 }

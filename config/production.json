@@ -26,12 +26,20 @@
       "upgrader": "0x42f04534d384673a884227b8a347598916003270",
       "pauser": "0x42f04534d384673a884227b8a347598916003270"
     },
-    "chain": { "name": "linea", "chainId": 59144 }
+    "chain": { "name": "linea", "chainId": 59144 },
+    "timelock": {
+      "minDelay": 172800,
+      "admin": "0x42f04534d384673a884227b8a347598916003270",
+      "proposers": ["0x42f04534d384673a884227b8a347598916003270"],
+      "executors": ["0x0000000000000000000000000000000000000000"],
+      "address": "0x0000000000000000000000000000000000000000"
+    }
   }
   ,
   "hedgey": {
-    "investorLockup": "0x0000000000000000000000000000000000000000",
-    "batchPlanner": "0x0000000000000000000000000000000000000000",
+    "investorLockup": "0xA600EC7Db69DFCD21f19face5B209a55EAb7a7C0",
+    "batchPlanner": "0x3466EB008EDD8d5052446293D1a7D212cb65C646",
+    "tokenVestingPlans": "0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C",
     "recipient": "0x0000000000000000000000000000000000000000",
     "amount": 0,
     "start": 0,
