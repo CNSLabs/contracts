@@ -37,7 +37,7 @@ contract CNSTokenL2V2Test is Test {
 
         // Prepare initialization data
         bytes memory initData = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector, admin, bridge, l1Token, TOKEN_NAME, TOKEN_SYMBOL, DECIMALS
+            CNSTokenL2.initialize.selector, admin, admin, admin, bridge, l1Token, TOKEN_NAME, TOKEN_SYMBOL, DECIMALS
         );
 
         // Deploy proxy with V1 implementation
