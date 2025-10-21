@@ -22,21 +22,38 @@ contract CNSTokenL2Test is Test {
     string internal constant NAME = "CNS Linea Token";
     string internal constant SYMBOL = "CNSL";
 
+    // Role constants
+    bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 internal constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 internal constant ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
+    bytes32 internal constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+
     function setUp() public {
         admin = makeAddr("admin");
-        bridge = makeAddr("bridge");
+        // Deploy a mock bridge contract
+        MockBridge mockBridge = new MockBridge();
+        bridge = address(mockBridge);
         l1Token = makeAddr("l1Token");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
 
-        token = _deployInitializedProxy(admin, bridge, l1Token);
+        token = _deployInitializedProxy(admin, admin, admin, admin, bridge, l1Token);
     }
 
-    function _deployInitializedProxy(address admin_, address bridge_, address l1Token_) internal returns (CNSTokenL2) {
+    function _deployInitializedProxy(
+        address defaultAdmin_,
+        address upgrader_,
+        address pauser_,
+        address allowlistAdmin_,
+        address bridge_,
+        address l1Token_
+    ) internal returns (CNSTokenL2) {
         CNSTokenL2 implementation = new CNSTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         CNSTokenL2 proxied = CNSTokenL2(address(proxy));
-        proxied.initialize(admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS);
+        proxied.initialize(
+            defaultAdmin_, upgrader_, pauser_, allowlistAdmin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS
+        );
         return proxied;
     }
 
@@ -60,22 +77,35 @@ contract CNSTokenL2Test is Test {
 
     function testInitializeRevertsOnZeroAddresses() public {
         CNSTokenL2 fresh = _deployProxy();
+        MockBridge mockBridge = new MockBridge();
 
-        vm.expectRevert("admin=0");
-        fresh.initialize(address(0), bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        vm.expectRevert("defaultAdmin=0");
+        fresh.initialize(address(0), admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
+
+        fresh = _deployProxy();
+        vm.expectRevert("upgrader=0");
+        fresh.initialize(admin, address(0), admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
+
+        fresh = _deployProxy();
+        vm.expectRevert("pauser=0");
+        fresh.initialize(admin, admin, address(0), admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
+
+        fresh = _deployProxy();
+        vm.expectRevert("allowlistAdmin=0");
+        fresh.initialize(admin, admin, admin, address(0), address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert("bridge=0");
-        fresh.initialize(admin, address(0), l1Token, NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, admin, admin, address(0), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert("l1Token=0");
-        fresh.initialize(admin, bridge, address(0), NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, admin, admin, address(mockBridge), address(0), NAME, SYMBOL, DECIMALS);
     }
 
     function testInitializeCannotRunTwice() public {
         vm.expectRevert();
-        token.initialize(admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        token.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     function testBridgeMintBypassesAllowlist() public {
@@ -222,6 +252,247 @@ contract CNSTokenL2Test is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         return CNSTokenL2(address(proxy));
     }
+
+    function testInitializeRevertsIfBridgeIsEOA() public {
+        CNSTokenL2 fresh = _deployProxy();
+        address eoa = makeAddr("eoa");
+
+        vm.expectRevert("bridge must be contract");
+        fresh.initialize(admin, admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
+    }
+
+    function testInitializationEmitsEvents() public {
+        CNSTokenL2 impl = new CNSTokenL2();
+        MockBridge mockBridge = new MockBridge();
+        address testBridge = address(mockBridge);
+
+        bytes memory initData = abi.encodeWithSelector(
+            CNSTokenL2.initialize.selector, admin, admin, admin, admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit CNSTokenL2.Initialized(admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS);
+
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    function testBatchAllowlistRevertsIfTooLarge() public {
+        address[] memory accounts = new address[](300);
+        for (uint256 i = 0; i < 300; i++) {
+            accounts[i] = address(uint160(i + 1));
+        }
+
+        vm.prank(admin);
+        vm.expectRevert("batch too large");
+        token.setSenderAllowedBatch(accounts, true);
+    }
+
+    function testBatchAllowlistSucceedsWithinLimit() public {
+        address[] memory accounts = new address[](200);
+        for (uint256 i = 0; i < 200; i++) {
+            accounts[i] = address(uint160(i + 1));
+        }
+
+        vm.prank(admin);
+        token.setSenderAllowedBatch(accounts, true);
+
+        // Verify first and last were added
+        assertTrue(token.isSenderAllowlisted(accounts[0]));
+        assertTrue(token.isSenderAllowlisted(accounts[199]));
+    }
+
+    function testBatchRevertsIfEmpty() public {
+        address[] memory accounts = new address[](0);
+
+        vm.expectRevert("empty batch");
+        vm.prank(admin);
+        token.setSenderAllowedBatch(accounts, true);
+    }
+
+    function testCannotAllowlistZeroAddress() public {
+        vm.expectRevert("zero address");
+        vm.prank(admin);
+        token.setSenderAllowed(address(0), true);
+    }
+
+    function testBatchCannotIncludeZeroAddress() public {
+        address[] memory accounts = new address[](3);
+        accounts[0] = makeAddr("user1");
+        accounts[1] = address(0); // Zero address in middle
+        accounts[2] = makeAddr("user2");
+
+        vm.expectRevert("zero address");
+        vm.prank(admin);
+        token.setSenderAllowedBatch(accounts, true);
+
+        // Verify none were added (transaction reverted)
+        assertFalse(token.isSenderAllowlisted(accounts[0]));
+        assertFalse(token.isSenderAllowlisted(accounts[2]));
+    }
+
+    function testAtomicInitializationPreventsReinitialization() public {
+        // This verifies the deployment script pattern works
+        CNSTokenL2 impl = new CNSTokenL2();
+        MockBridge mockBridge = new MockBridge();
+
+        bytes memory initData = abi.encodeWithSelector(
+            CNSTokenL2.initialize.selector,
+            admin,
+            admin,
+            admin,
+            admin,
+            address(mockBridge),
+            l1Token,
+            NAME,
+            SYMBOL,
+            DECIMALS
+        );
+
+        // Deploy with atomic initialization
+        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
+        CNSTokenL2 deployedToken = CNSTokenL2(address(proxy));
+
+        // Verify already initialized
+        assertTrue(deployedToken.hasRole(deployedToken.DEFAULT_ADMIN_ROLE(), admin));
+
+        // Cannot initialize again
+        vm.expectRevert();
+        deployedToken.initialize(admin, admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
+    }
+
+    // ============ Role Separation Tests ============
+
+    function testRoleSeparationCriticalRoles() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+
+        // Critical roles should be assigned correctly
+        assertTrue(separatedToken.hasRole(DEFAULT_ADMIN_ROLE, defaultAdmin));
+        assertTrue(separatedToken.hasRole(UPGRADER_ROLE, upgrader));
+    }
+
+    function testRoleSeparationOperationalRolesAssigned() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+
+        // Operational roles should be assigned to dedicated addresses
+        assertTrue(separatedToken.hasRole(PAUSER_ROLE, pauser));
+        assertTrue(separatedToken.hasRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin));
+
+        // DefaultAdmin should also have operational roles as backup
+        assertTrue(separatedToken.hasRole(PAUSER_ROLE, defaultAdmin));
+        assertTrue(separatedToken.hasRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin));
+    }
+
+    function testRoleSeparationPauserCanPause() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+
+        // Pauser should be able to pause
+        vm.prank(pauser);
+        separatedToken.pause();
+        assertTrue(separatedToken.paused());
+
+        // Pauser should be able to unpause
+        vm.prank(pauser);
+        separatedToken.unpause();
+        assertFalse(separatedToken.paused());
+    }
+
+    function testRoleSeparationAllowlistAdminCanManageAllowlist() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+        address testUser = makeAddr("testUser");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+
+        // Allowlist admin should be able to manage allowlist
+        vm.prank(allowlistAdmin);
+        separatedToken.setSenderAllowed(testUser, true);
+        assertTrue(separatedToken.isSenderAllowlisted(testUser));
+
+        vm.prank(allowlistAdmin);
+        separatedToken.setSenderAllowed(testUser, false);
+        assertFalse(separatedToken.isSenderAllowlisted(testUser));
+    }
+
+    function testRoleSeparationOnlyUpgraderCanUpgrade() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2MockV2 newImpl = new CNSTokenL2MockV2();
+
+        // Upgrader can upgrade
+        vm.prank(upgrader);
+        separatedToken.upgradeToAndCall(address(newImpl), "");
+
+        // Pauser cannot upgrade
+        CNSTokenL2 separatedToken2 =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+        vm.prank(pauser);
+        vm.expectRevert();
+        separatedToken2.upgradeToAndCall(address(newImpl), "");
+
+        // Allowlist admin cannot upgrade
+        CNSTokenL2 separatedToken3 =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+        vm.prank(allowlistAdmin);
+        vm.expectRevert();
+        separatedToken3.upgradeToAndCall(address(newImpl), "");
+    }
+
+    function testRoleSeparationDefaultAdminAsBackupCanPause() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+
+        // DefaultAdmin as backup can pause
+        vm.prank(defaultAdmin);
+        separatedToken.pause();
+        assertTrue(separatedToken.paused());
+    }
+
+    function testRoleSeparationDefaultAdminAsBackupCanManageAllowlist() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
+        address pauser = makeAddr("pauser");
+        address allowlistAdmin = makeAddr("allowlistAdmin");
+        address testUser = makeAddr("testUser");
+
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
+
+        // DefaultAdmin as backup can manage allowlist
+        vm.prank(defaultAdmin);
+        separatedToken.setSenderAllowed(testUser, true);
+        assertTrue(separatedToken.isSenderAllowlisted(testUser));
+    }
 }
 
 contract CNSTokenL2MockV2 is CNSTokenL2 {
@@ -229,3 +500,9 @@ contract CNSTokenL2MockV2 is CNSTokenL2 {
         return 2;
     }
 }
+
+// Mock bridge contract for testing
+contract MockBridge {
+    // Empty contract that just needs to exist
+
+    }

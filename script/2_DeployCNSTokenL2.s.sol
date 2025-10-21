@@ -2,45 +2,68 @@
 pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
-import "./ConfigLoader.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import "../src/CNSTokenL2.sol";
 
 /**
  * @title DeployCNSTokenL2
- * @notice Deploys CNS Token on L2 (Linea) as a bridged token with proxy pattern
- * @dev Deploys implementation + ERC1967 proxy with:
+ * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
+ * @dev This script deploys CNSTokenL2 with:
+ *      - Role separation (defaultAdmin, upgrader, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
- *      - Pausability
- *      - Allowlist controls
+ *      - Pausability and allowlist controls
  *      - UUPS upgradeability
+ *      - Atomic initialization for security
  *
  * Usage:
- *   # Default (dev): infer config from ENV
+ *   # Linea Sepolia testnet
  *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
  *     --rpc-url linea_sepolia \
  *     --broadcast \
  *     --verify
  *
- *   # Explicit non-default environment via ENV
- *   ENV=production forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   # Linea Mainnet
+ *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
  *     --rpc-url linea \
  *     --broadcast \
- *     --verify
+ *     --verify \
+ *     --slow
  *
- *   # Config file path is fixed: config/<ENV>.json
+ *   # Local testing
+ *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *     --rpc-url local \
+ *     --broadcast
  *
  * Environment Variables Required:
- *   - PRIVATE_KEY: Deployer private key (from your shell env)
- *   - ENV: Select public config JSON
+ *   - PRIVATE_KEY: Deployer private key (secret)
+ *   - CNS_DEFAULT_ADMIN: Address for DEFAULT_ADMIN_ROLE (governance address)
+ *   - CNS_TOKEN_L1: L1 canonical token address
+ *   - LINEA_L2_BRIDGE: Linea L2 bridge contract address
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
+ *
+ * Optional Configuration (with defaults):
+ *   - L2_TOKEN_NAME: Token name (default: "CNS Linea Token")
+ *   - L2_TOKEN_SYMBOL: Token symbol (default: "CNSL")
+ *   - L2_TOKEN_DECIMALS: Token decimals (default: 18)
+ *   - CNS_UPGRADER: Contract upgrader address (defaults to CNS_DEFAULT_ADMIN)
+ *   - CNS_PAUSER: Emergency pause address (defaults to CNS_DEFAULT_ADMIN)
+ *   - CNS_ALLOWLIST_ADMIN: Allowlist manager address (defaults to CNS_DEFAULT_ADMIN)
+ *
+ * Bridge Addresses:
+ *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
+ *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
 contract DeployCNSTokenL2 is BaseScript {
-    // Token parameters now loaded from config JSON
-    string L2_NAME;
-    string L2_SYMBOL;
-    uint8 L2_DECIMALS;
+    // Token configuration defaults (can be overridden via environment)
+    string constant DEFAULT_L2_NAME = "CNS Linea Token";
+    string constant DEFAULT_L2_SYMBOL = "CNSL";
+    uint8 constant DEFAULT_L2_DECIMALS = 18;
+
+    // Configuration with environment overrides
+    string L2_NAME = vm.envOr("L2_TOKEN_NAME", DEFAULT_L2_NAME);
+    string L2_SYMBOL = vm.envOr("L2_TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
+    uint8 L2_DECIMALS = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(DEFAULT_L2_DECIMALS)));
 
     // Deployed contracts
     CNSTokenL2 public implementation;
@@ -48,17 +71,26 @@ contract DeployCNSTokenL2 is BaseScript {
     CNSTokenL2 public token;
     TimelockController public timelock;
 
-    // Convenience no-arg entrypoint: infer config path
     function run() external {
         EnvConfig memory cfg = _loadEnvConfig();
-
-        L2_NAME = cfg.l2.name;
-        L2_SYMBOL = cfg.l2.symbol;
-        L2_DECIMALS = uint8(cfg.l2.decimals);
-
+        // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        address owner = cfg.l2.roles.admin;
+        // Get and validate required addresses
+        address defaultAdmin = vm.envAddress("CNS_DEFAULT_ADMIN");
+        address upgrader = vm.envOr("CNS_UPGRADER", defaultAdmin); // Defaults to defaultAdmin if not set
+        address pauser = vm.envOr("CNS_PAUSER", defaultAdmin); // Defaults to defaultAdmin if not set
+        address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", defaultAdmin); // Defaults to defaultAdmin if not set
+
+        _requireNonZeroAddress(defaultAdmin, "CNS_DEFAULT_ADMIN");
+        _requireNonZeroAddress(upgrader, "CNS_UPGRADER");
+        _requireNonZeroAddress(pauser, "CNS_PAUSER");
+        _requireNonZeroAddress(allowlistAdmin, "CNS_ALLOWLIST_ADMIN");
+
+        // Load Hedgey addresses from config
+        address hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
+        address hedgeyTokenVestingPlans = cfg.hedgey.tokenVestingPlans;
+
         address l1Token = cfg.l2.l1Token;
         if (l1Token == address(0)) {
             address inferred = _inferL1TokenFromBroadcast(cfg.l1.chain.chainId);
@@ -67,29 +99,35 @@ contract DeployCNSTokenL2 is BaseScript {
                 l1Token = inferred;
             }
         }
-        address bridge = cfg.l2.bridge;
+        l1Token = vm.envOr("CNS_TOKEN_L1", l1Token);
+        address bridge = vm.envOr("LINEA_L2_BRIDGE", cfg.l2.bridge);
 
-        // Load Hedgey addresses from config
-        address hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
-        address hedgeyTokenVestingPlans = cfg.hedgey.tokenVestingPlans;
-
-        _requireNonZeroAddress(owner, "CNS_OWNER");
         _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
         _requireNonZeroAddress(bridge, "LINEA_L2_BRIDGE");
 
-        _logDeploymentHeader("Deploying CNS Token L2");
+        // Log deployment info
+        _logDeploymentHeader("Deploying CNS Token L2 with Role Separation");
         console.log("Token Name:", L2_NAME);
         console.log("Token Symbol:", L2_SYMBOL);
         console.log("Decimals:", L2_DECIMALS);
-        console.log("Owner (Admin):", owner);
+        console.log("\n=== Role Assignment ===");
+        console.log("Default Admin:", defaultAdmin);
+        console.log("Upgrader:", upgrader);
+        console.log("Pauser:", pauser);
+        console.log("Allowlist Admin:", allowlistAdmin);
+        console.log("\n=== Contract Addresses ===");
         console.log("L1 Token:", l1Token);
         console.log("Bridge:", bridge);
         console.log("Deployer:", deployer);
         console.log("Hedgey Batch Planner:", hedgeyBatchPlanner);
         console.log("Hedgey Token Vesting Plans:", hedgeyTokenVestingPlans);
 
+        // Pre-deployment validation
         console.log("\n=== Pre-Deployment Validation ===");
-        require(owner != address(0), "FATAL: CNS_OWNER cannot be zero address");
+        require(defaultAdmin != address(0), "FATAL: CNS_DEFAULT_ADMIN cannot be zero address");
+        require(upgrader != address(0), "FATAL: CNS_UPGRADER cannot be zero address");
+        require(pauser != address(0), "FATAL: CNS_PAUSER cannot be zero address");
+        require(allowlistAdmin != address(0), "FATAL: CNS_ALLOWLIST_ADMIN cannot be zero address");
         require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
         require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
 
@@ -103,16 +141,30 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("[OK] Hedgey Token Vesting Plans is a valid contract");
 
         console.log("[OK] All required addresses are non-zero");
+        console.log("[INFO] Default Admin will also have backup access to operational roles");
 
+        // Safety check for mainnet
         _requireMainnetConfirmation();
 
+        // Deploy L2 token (implementation + proxy)
         vm.startBroadcast(deployerPrivateKey);
+
         console.log("\n1. Deploying CNSTokenL2 implementation...");
         implementation = new CNSTokenL2();
         console.log("   Implementation:", address(implementation));
 
+        // Prepare initialization data
         bytes memory initCalldata = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector, owner, bridge, l1Token, L2_NAME, L2_SYMBOL, L2_DECIMALS
+            CNSTokenL2.initialize.selector,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            bridge,
+            l1Token,
+            L2_NAME,
+            L2_SYMBOL,
+            L2_DECIMALS
         );
 
         console.log("\n2. Deploying ERC1967 proxy...");
@@ -120,37 +172,59 @@ contract DeployCNSTokenL2 is BaseScript {
         token = CNSTokenL2(address(proxy));
         console.log("   Proxy:", address(proxy));
 
+        // CRITICAL: Verify initialization happened successfully
         console.log("\n3. Verifying initialization...");
         require(token.l1Token() == l1Token, "FATAL: Initialization failed - l1Token not set");
         require(token.bridge() == bridge, "FATAL: Initialization failed - bridge not set");
         require(
-            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, owner),
-            "FATAL: Initialization failed - owner doesn't have DEFAULT_ADMIN_ROLE"
+            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, defaultAdmin),
+            "FATAL: Initialization failed - defaultAdmin doesn't have DEFAULT_ADMIN_ROLE"
         );
         require(
-            token.hasRole(keccak256("UPGRADER_ROLE"), owner),
-            "FATAL: Initialization failed - owner doesn't have UPGRADER_ROLE"
+            token.hasRole(keccak256("UPGRADER_ROLE"), upgrader),
+            "FATAL: Initialization failed - upgrader doesn't have UPGRADER_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("PAUSER_ROLE"), pauser),
+            "FATAL: Initialization failed - pauser doesn't have PAUSER_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("ALLOWLIST_ADMIN_ROLE"), allowlistAdmin),
+            "FATAL: Initialization failed - allowlistAdmin doesn't have ALLOWLIST_ADMIN_ROLE"
         );
         console.log("   [OK] Contract initialized successfully");
-        console.log("   [OK] Owner has admin roles");
+        console.log("   [OK] All roles assigned correctly");
 
         vm.stopBroadcast();
 
         // Setup allowlist using owner's private key
-        _setupAllowlist(hedgeyBatchPlanner, hedgeyTokenVestingPlans, owner);
-
-        _verifyDeployment(owner, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans);
+        _setupAllowlist(hedgeyBatchPlanner, hedgeyTokenVestingPlans, defaultAdmin);
+        // Verify deployment
+        _verifyDeployment(
+            defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
+        );
 
         // Deploy or attach to a TimelockController and assign UPGRADER_ROLE
-        _setupTimelock(cfg, deployerPrivateKey, owner);
+        _setupTimelock(cfg, deployerPrivateKey, upgrader);
 
-        _logDeploymentResults(owner, bridge, l1Token, initCalldata, hedgeyBatchPlanner, hedgeyTokenVestingPlans);
+        _logDeploymentResults(
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            bridge,
+            l1Token,
+            hedgeyBatchPlanner,
+            hedgeyTokenVestingPlans,
+            initCalldata
+        );
     }
 
-    // Removed local inference: use BaseScript helpers
-
     function _verifyDeployment(
-        address owner,
+        address defaultAdmin,
+        address upgrader,
+        address pauser,
+        address allowlistAdmin,
         address bridge,
         address l1Token,
         address hedgeyBatchPlanner,
@@ -178,16 +252,25 @@ contract DeployCNSTokenL2 is BaseScript {
         bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
         bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
-        require(token.hasRole(DEFAULT_ADMIN_ROLE, owner), "Owner missing DEFAULT_ADMIN_ROLE");
-        require(token.hasRole(PAUSER_ROLE, owner), "Owner missing PAUSER_ROLE");
-        require(token.hasRole(ALLOWLIST_ADMIN_ROLE, owner), "Owner missing ALLOWLIST_ADMIN_ROLE");
-        require(token.hasRole(UPGRADER_ROLE, owner), "Owner missing UPGRADER_ROLE");
-        console.log("[OK] Owner has all required roles");
+        // Verify critical roles
+        require(token.hasRole(DEFAULT_ADMIN_ROLE, defaultAdmin), "DefaultAdmin missing DEFAULT_ADMIN_ROLE");
+        require(token.hasRole(UPGRADER_ROLE, upgrader), "Upgrader missing UPGRADER_ROLE");
+        console.log("[OK] Critical roles assigned (DEFAULT_ADMIN + UPGRADER)");
+
+        // Verify operational roles
+        require(token.hasRole(PAUSER_ROLE, pauser), "Pauser missing PAUSER_ROLE");
+        require(token.hasRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin), "AllowlistAdmin missing ALLOWLIST_ADMIN_ROLE");
+        console.log("[OK] Operational roles assigned correctly");
+
+        // Verify defaultAdmin has backup access to operational roles
+        require(token.hasRole(PAUSER_ROLE, defaultAdmin), "DefaultAdmin missing backup PAUSER_ROLE");
+        require(token.hasRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin), "DefaultAdmin missing backup ALLOWLIST_ADMIN_ROLE");
+        console.log("[OK] Default Admin has backup access to operational roles");
 
         // Check sender allowlist
         require(token.isSenderAllowlisted(address(token)), "Token not allowlisted");
         require(token.isSenderAllowlisted(bridge), "Bridge not allowlisted");
-        require(token.isSenderAllowlisted(owner), "Owner not allowlisted");
+        require(token.isSenderAllowlisted(defaultAdmin), "DefaultAdmin not allowlisted");
         require(token.senderAllowlistEnabled(), "Sender allowlist not enabled");
         console.log("[OK] Default addresses allowlisted");
 
@@ -259,12 +342,15 @@ contract DeployCNSTokenL2 is BaseScript {
     }
 
     function _logDeploymentResults(
-        address owner,
+        address defaultAdmin,
+        address upgrader,
+        address pauser,
+        address allowlistAdmin,
         address bridge,
         address l1Token,
-        bytes memory initCalldata,
         address hedgeyBatchPlanner,
-        address hedgeyTokenVestingPlans
+        address hedgeyTokenVestingPlans,
+        bytes memory initCalldata
     ) internal view {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
@@ -283,13 +369,21 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Bridge:", bridge);
         console.log("Paused:", token.paused());
 
-        console.log("\n=== Access Control ===");
-        console.log("Owner (has all roles):", owner);
-        console.log("Sender Allowlist Enabled:", token.senderAllowlistEnabled());
+        console.log("\n=== Access Control (Role Separation) ===");
+        console.log("Default Admin:", defaultAdmin);
+        console.log("  - Controls: Role management");
+        console.log("  - Backup for: Pause/Unpause, Allowlist management");
+        console.log("Upgrader:", upgrader);
+        console.log("  - Controls: Contract upgrades");
+        console.log("Pauser:", pauser);
+        console.log("  - Controls: Emergency pause/unpause");
+        console.log("Allowlist Admin:", allowlistAdmin);
+        console.log("  - Controls: Sender allowlist management");
+        console.log("\nSender Allowlist Enabled:", token.senderAllowlistEnabled());
         console.log("Sender Allowlisted:");
         console.log("  - Token contract:", token.isSenderAllowlisted(address(token)));
         console.log("  - Bridge:", token.isSenderAllowlisted(bridge));
-        console.log("  - Owner:", token.isSenderAllowlisted(owner));
+        console.log("  - Default Admin:", token.isSenderAllowlisted(defaultAdmin));
         console.log("  - Hedgey Batch Planner:", token.isSenderAllowlisted(hedgeyBatchPlanner));
         console.log("  - Hedgey Token Vesting Plans:", token.isSenderAllowlisted(hedgeyTokenVestingPlans));
 
