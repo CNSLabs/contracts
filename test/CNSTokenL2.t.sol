@@ -37,11 +37,12 @@ contract CNSTokenL2Test is Test {
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
 
-        token = _deployInitializedProxy(admin, admin, admin, bridge, l1Token);
+        token = _deployInitializedProxy(admin, admin, admin, admin, bridge, l1Token);
     }
 
     function _deployInitializedProxy(
-        address multisig_,
+        address defaultAdmin_,
+        address upgrader_,
         address pauser_,
         address allowlistAdmin_,
         address bridge_,
@@ -50,7 +51,9 @@ contract CNSTokenL2Test is Test {
         CNSTokenL2 implementation = new CNSTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         CNSTokenL2 proxied = CNSTokenL2(address(proxy));
-        proxied.initialize(multisig_, pauser_, allowlistAdmin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS);
+        proxied.initialize(
+            defaultAdmin_, upgrader_, pauser_, allowlistAdmin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS
+        );
         return proxied;
     }
 
@@ -74,30 +77,35 @@ contract CNSTokenL2Test is Test {
 
     function testInitializeRevertsOnZeroAddresses() public {
         CNSTokenL2 fresh = _deployProxy();
+        MockBridge mockBridge = new MockBridge();
 
-        vm.expectRevert("multisig=0");
-        fresh.initialize(address(0), admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        vm.expectRevert("defaultAdmin=0");
+        fresh.initialize(address(0), admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
+
+        fresh = _deployProxy();
+        vm.expectRevert("upgrader=0");
+        fresh.initialize(admin, address(0), admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert("pauser=0");
-        fresh.initialize(admin, address(0), admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, address(0), admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert("allowlistAdmin=0");
-        fresh.initialize(admin, admin, address(0), bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, admin, address(0), address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert("bridge=0");
-        fresh.initialize(admin, admin, admin, address(0), l1Token, NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, admin, admin, address(0), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert("l1Token=0");
-        fresh.initialize(admin, admin, admin, bridge, address(0), NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, admin, admin, address(mockBridge), address(0), NAME, SYMBOL, DECIMALS);
     }
 
     function testInitializeCannotRunTwice() public {
         vm.expectRevert();
-        token.initialize(admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        token.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     function testBridgeMintBypassesAllowlist() public {
@@ -247,40 +255,46 @@ contract CNSTokenL2Test is Test {
 
     // ============ Role Separation Tests ============
 
-    function testRoleSeparationMultisigHasCriticalRoles() public {
-        address multisig = makeAddr("multisig");
+    function testRoleSeparationCriticalRoles() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
 
-        // Multisig should have critical roles
-        assertTrue(separatedToken.hasRole(DEFAULT_ADMIN_ROLE, multisig));
-        assertTrue(separatedToken.hasRole(UPGRADER_ROLE, multisig));
+        // Critical roles should be assigned correctly
+        assertTrue(separatedToken.hasRole(DEFAULT_ADMIN_ROLE, defaultAdmin));
+        assertTrue(separatedToken.hasRole(UPGRADER_ROLE, upgrader));
     }
 
     function testRoleSeparationOperationalRolesAssigned() public {
-        address multisig = makeAddr("multisig");
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
 
         // Operational roles should be assigned to dedicated addresses
         assertTrue(separatedToken.hasRole(PAUSER_ROLE, pauser));
         assertTrue(separatedToken.hasRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin));
 
-        // Multisig should also have operational roles as backup
-        assertTrue(separatedToken.hasRole(PAUSER_ROLE, multisig));
-        assertTrue(separatedToken.hasRole(ALLOWLIST_ADMIN_ROLE, multisig));
+        // DefaultAdmin should also have operational roles as backup
+        assertTrue(separatedToken.hasRole(PAUSER_ROLE, defaultAdmin));
+        assertTrue(separatedToken.hasRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin));
     }
 
     function testRoleSeparationPauserCanPause() public {
-        address multisig = makeAddr("multisig");
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
 
         // Pauser should be able to pause
         vm.prank(pauser);
@@ -294,12 +308,14 @@ contract CNSTokenL2Test is Test {
     }
 
     function testRoleSeparationAllowlistAdminCanManageAllowlist() public {
-        address multisig = makeAddr("multisig");
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
         address testUser = makeAddr("testUser");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
 
         // Allowlist admin should be able to manage allowlist
         vm.prank(allowlistAdmin);
@@ -311,54 +327,62 @@ contract CNSTokenL2Test is Test {
         assertFalse(separatedToken.isSenderAllowlisted(testUser));
     }
 
-    function testRoleSeparationOnlyMultisigCanUpgrade() public {
-        address multisig = makeAddr("multisig");
+    function testRoleSeparationOnlyUpgraderCanUpgrade() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
         CNSTokenL2MockV2 newImpl = new CNSTokenL2MockV2();
 
-        // Multisig can upgrade
-        vm.prank(multisig);
+        // Upgrader can upgrade
+        vm.prank(upgrader);
         separatedToken.upgradeToAndCall(address(newImpl), "");
 
         // Pauser cannot upgrade
-        CNSTokenL2 separatedToken2 = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken2 =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
         vm.prank(pauser);
         vm.expectRevert();
         separatedToken2.upgradeToAndCall(address(newImpl), "");
 
         // Allowlist admin cannot upgrade
-        CNSTokenL2 separatedToken3 = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken3 =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
         vm.prank(allowlistAdmin);
         vm.expectRevert();
         separatedToken3.upgradeToAndCall(address(newImpl), "");
     }
 
-    function testRoleSeparationMultisigAsBackupCanPause() public {
-        address multisig = makeAddr("multisig");
+    function testRoleSeparationDefaultAdminAsBackupCanPause() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
 
-        // Multisig as backup can pause
-        vm.prank(multisig);
+        // DefaultAdmin as backup can pause
+        vm.prank(defaultAdmin);
         separatedToken.pause();
         assertTrue(separatedToken.paused());
     }
 
-    function testRoleSeparationMultisigAsBackupCanManageAllowlist() public {
-        address multisig = makeAddr("multisig");
+    function testRoleSeparationDefaultAdminAsBackupCanManageAllowlist() public {
+        address defaultAdmin = makeAddr("defaultAdmin");
+        address upgrader = makeAddr("upgrader");
         address pauser = makeAddr("pauser");
         address allowlistAdmin = makeAddr("allowlistAdmin");
         address testUser = makeAddr("testUser");
 
-        CNSTokenL2 separatedToken = _deployInitializedProxy(multisig, pauser, allowlistAdmin, bridge, l1Token);
+        CNSTokenL2 separatedToken =
+            _deployInitializedProxy(defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token);
 
-        // Multisig as backup can manage allowlist
-        vm.prank(multisig);
+        // DefaultAdmin as backup can manage allowlist
+        vm.prank(defaultAdmin);
         separatedToken.setSenderAllowed(testUser, true);
         assertTrue(separatedToken.isSenderAllowlisted(testUser));
     }
