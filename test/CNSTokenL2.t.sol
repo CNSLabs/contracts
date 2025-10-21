@@ -232,7 +232,7 @@ contract CNSTokenL2Test is Test {
 
         CNSTokenL2MockV2 upgraded = CNSTokenL2MockV2(address(token));
 
-        assertEq(upgraded.version(), 2);
+        assertEq(upgraded.version(), "2.0.0");
         assertEq(upgraded.bridge(), bridge);
         assertTrue(upgraded.hasRole(upgraded.UPGRADER_ROLE(), admin));
     }
@@ -496,8 +496,8 @@ contract CNSTokenL2Test is Test {
 }
 
 contract CNSTokenL2MockV2 is CNSTokenL2 {
-    function version() external pure returns (uint256) {
-        return 2;
+    function version() public pure override returns (string memory) {
+        return "2.0.0";
     }
 }
 

@@ -131,7 +131,7 @@ contract CNSTokenL2UpgradeTest is Test {
         assertEq(upgradedToken.balanceOf(user2), 100 ether);
 
         // Test new functionality
-        assertEq(upgradedToken.version(), 2);
+        assertEq(upgradedToken.version(), "2.0.0");
     }
 
     // ============ Storage Layout Tests ============
@@ -223,7 +223,7 @@ contract CNSTokenL2UpgradeTest is Test {
         token.upgradeToAndCall(address(implV2), "");
 
         CNSTokenL2V2 tokenV2 = CNSTokenL2V2(address(token));
-        assertEq(tokenV2.version(), 2);
+        assertEq(tokenV2.version(), "2.0.0");
         assertEq(tokenV2.balanceOf(user1), balanceBefore);
 
         // Upgrade to V3
@@ -232,7 +232,7 @@ contract CNSTokenL2UpgradeTest is Test {
         tokenV2.upgradeToAndCall(address(implV3), "");
 
         CNSTokenL2V3 tokenV3 = CNSTokenL2V3(address(token));
-        assertEq(tokenV3.version(), 3);
+        assertEq(tokenV3.version(), "3.0.0");
         assertEq(tokenV3.balanceOf(user1), balanceBefore);
     }
 
@@ -255,14 +255,14 @@ contract CNSTokenL2UpgradeTest is Test {
 // ============ Mock Upgrade Contracts ============
 
 contract CNSTokenL2V2 is CNSTokenL2 {
-    function version() external pure returns (uint256) {
-        return 2;
+    function version() public pure override returns (string memory) {
+        return "2.0.0";
     }
 }
 
 contract CNSTokenL2V3 is CNSTokenL2 {
-    function version() external pure returns (uint256) {
-        return 3;
+    function version() public pure override returns (string memory) {
+        return "3.0.0";
     }
 }
 
@@ -273,8 +273,8 @@ contract CNSTokenL2V2WithInit is CNSTokenL2 {
         newFeatureValue = _value;
     }
 
-    function version() external pure returns (uint256) {
-        return 2;
+    function version() public pure override returns (string memory) {
+        return "2.0.0";
     }
 }
 

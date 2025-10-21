@@ -37,6 +37,10 @@ contract CNSTokenL2 is
         uint8 decimals
     );
 
+    function version() public pure virtual returns (string memory) {
+        return "1.0.0";
+    }
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
