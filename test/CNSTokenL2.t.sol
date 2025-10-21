@@ -336,7 +336,16 @@ contract CNSTokenL2Test is Test {
         MockBridge mockBridge = new MockBridge();
 
         bytes memory initData = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector, admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS
+            CNSTokenL2.initialize.selector,
+            admin,
+            admin,
+            admin,
+            admin,
+            address(mockBridge),
+            l1Token,
+            NAME,
+            SYMBOL,
+            DECIMALS
         );
 
         // Deploy with atomic initialization
