@@ -23,7 +23,7 @@
 - [ ] **P1.3** Improve Allowlist UX (Documentation/Auto-allowlist needed)
 
 ### Priority 2 (Medium - Recommended):
-- [ ] **P2.1** Implement Upgrade Timelock (Not implemented - recommend for production)
+- [x] **P2.1** Implement Upgrade Timelock ✅ (TimelockController deployed with configurable delay)
 - [x] **P2.2** Add Event Emissions ✅ (`Initialized` event)
 - [x] **P2.3** Add Batch Size Limits ✅ (`MAX_BATCH_SIZE = 200`)
 
@@ -39,16 +39,17 @@
 - [ ] **T4** Add Integration Testing (`CNSTokenL2.integration.t.sol`)
 
 ### 📊 Progress Summary (Updated Oct 21, 2025)
-- **✅ Completed**: 11/15 items (73%)
+- **✅ Completed**: 12/15 items (80%)
 - **🔴 Critical Issues**: 4/4 completed (100%) ✅ **ALL CRITICAL ISSUES RESOLVED**
 - **🟠 High Priority**: 2/3 completed (67%)
-- **🟡 Medium Priority**: 2/3 completed (67%)
+- **🟡 Medium Priority**: 3/3 completed (100%) ✅ **ALL MEDIUM ISSUES RESOLVED**
 - **🟢 Low Priority**: 2/3 completed (67%)
 - **🧪 Testing**: 0/4 completed (0%) - Core tests pass (55 total), advanced testing needed
 
 **Recent Implementation Updates:**
 - ✅ CNSTokenL2V2 with ERC20VotesUpgradeable implemented (Oct 21, 2025)
 - ✅ Storage layout verification completed - NO COLLISIONS DETECTED (Oct 21, 2025)
+- ✅ TimelockController implementation with configurable delays (production: 48h, dev: 5min)
 - ✅ Lock pragma version to 0.8.25
 - ✅ Add bridge contract validation (`bridge_.code.length > 0`)
 - ✅ Add event emissions for initialization (`Initialized` event)
@@ -56,8 +57,8 @@
 - ✅ Add zero address validation in allowlist functions
 - ✅ Test suite: 55 tests passing (13 L1 + 26 L2 + 10 upgrade + 6 V2)
 - ✅ Role separation with 4 distinct admin parameters
-- ✅ **All P0 critical issues resolved**
-- ⚠️ **Outstanding**: Timelock implementation (recommended), advanced testing (optional)
+- ✅ **All P0 critical and P2 medium issues resolved**
+- ⚠️ **Outstanding**: Advanced testing (optional), allowlist UX improvements
 
 ## Executive Summary
 
@@ -776,103 +777,86 @@ function setSenderAllowedBatch(address[] calldata accounts, bool allowed)
 
 ---
 
-### 11. No Timelock for Upgrades
+### 11. ✅ RESOLVED: Timelock for Upgrades Implemented
 
 **Severity**: MEDIUM  
-**Location**: `CNSTokenL2.sol:109`  
-**CWE**: CWE-269 (Improper Privilege Management)
+**Location**: `script/2_DeployCNSTokenL2.s.sol:298`  
+**CWE**: CWE-269 (Improper Privilege Management)  
+**Status**: ✅ **IMPLEMENTED** (TimelockController deployed with configurable delays)
 
-#### Issue Description
+#### Implementation Details
 
 ```solidity
-function _authorizeUpgrade(address newImplementation) 
-    internal override onlyRole(UPGRADER_ROLE) {}
+// script/2_DeployCNSTokenL2.s.sol:298
+timelock = new TimelockController(minDelay, proposers, executors, tlAdmin);
+
+// Grant UPGRADER_ROLE to timelock instead of EOA
+token.grantRole(UPGRADER_ROLE, address(timelock));
 ```
 
-Upgrades can be executed immediately by the `UPGRADER_ROLE` without any delay or announcement period.
+**Configuration**:
+- **Production**: 48 hours delay (`minDelay: 172800`)
+- **Development**: 5 minutes delay (`minDelay: 300`)
+- **Alpha**: 1 hour delay (`minDelay: 3600`)
+
+**Upgrade Process**:
+1. **Schedule**: `3_UpgradeCNSTokenL2ToV2_Schedule.s.sol` - Propose upgrade via timelock
+2. **Execute**: `4_UpgradeCNSTokenL2ToV2_Execute.s.sol` - Execute after delay period
 
 #### Impact
 
-**Security Concerns**:
-- **No User Exit Window**: Users cannot bridge tokens back to L1 if upgrade is malicious
-- **No Community Review**: No time for community/auditors to review new implementation
-- **Compromised Admin**: If upgrader key is compromised, instant malicious upgrade possible
-- **No Transparency**: Users unaware of impending changes
+**✅ Security Benefits Achieved**:
+- **User Exit Window**: 48-hour delay allows users to bridge tokens back to L1 if needed
+- **Community Review**: Time for community/auditors to review new implementation
+- **Compromised Admin Protection**: Even if proposer key is compromised, execution requires delay
+- **Transparency**: Users can monitor scheduled upgrades via timelock events
 
-**Best Practice**: Major DeFi protocols use 24-72 hour timelocks for upgrades:
-- Compound: 2 days
-- Uniswap: 2 days
-- Aave: 1 day (short timelock) + 5 days (long timelock)
+**Industry Standard Compliance**:
+- ✅ **Production**: 48 hours (2 days) - matches Compound/Uniswap standards
+- ✅ **Development**: 5 minutes - allows rapid testing
+- ✅ **Alpha**: 1 hour - balanced for testing environments
 
 #### Risk Assessment
 
-- **Likelihood**: Low (requires compromised upgrader or malicious insider)
-- **Impact**: Critical (if exploited, total fund loss)
-- **Industry Standard**: Timelocks are expected for production systems
+- **Likelihood**: Very Low (timelock prevents immediate execution)
+- **Impact**: Mitigated (users have exit window)
+- **Industry Standard**: ✅ Fully compliant with DeFi best practices
 
-#### Recommendation
+#### Implementation Details
 
-**Option 1: OpenZeppelin TimelockController** (Recommended)
-
-```solidity
-// Deploy TimelockController with 48 hour delay
-TimelockController timelock = new TimelockController(
-    48 hours,                    // minimum delay
-    proposers,                   // who can schedule
-    executors,                   // who can execute (or address(0) for anyone)
-    admin                        // admin (should renounce after setup)
-);
-
-// Grant UPGRADER_ROLE to timelock, not to EOA
-_grantRole(UPGRADER_ROLE, address(timelock));
-```
-
-**Option 2: Custom Upgrade Delay**
+**✅ TimelockController Deployed**:
 
 ```solidity
-struct PendingUpgrade {
-    address implementation;
-    uint256 executeAfter;
-}
-
-PendingUpgrade public pendingUpgrade;
-uint256 public constant UPGRADE_DELAY = 48 hours;
-
-event UpgradeProposed(address indexed implementation, uint256 executeAfter);
-event UpgradeExecuted(address indexed implementation);
-event UpgradeCancelled(address indexed implementation);
-
-function proposeUpgrade(address newImplementation) 
-    external onlyRole(UPGRADER_ROLE) {
-    require(newImplementation != address(0), "zero address");
-    require(newImplementation.code.length > 0, "not a contract");
-    
-    pendingUpgrade = PendingUpgrade({
-        implementation: newImplementation,
-        executeAfter: block.timestamp + UPGRADE_DELAY
-    });
-    
-    emit UpgradeProposed(newImplementation, pendingUpgrade.executeAfter);
-}
-
-function executeUpgrade() external onlyRole(UPGRADER_ROLE) {
-    require(pendingUpgrade.implementation != address(0), "no pending upgrade");
-    require(block.timestamp >= pendingUpgrade.executeAfter, "too early");
-    
-    address impl = pendingUpgrade.implementation;
-    delete pendingUpgrade;
-    
-    _upgradeTo(impl);
-    emit UpgradeExecuted(impl);
-}
-
-function cancelUpgrade() external onlyRole(UPGRADER_ROLE) {
-    require(pendingUpgrade.implementation != address(0), "no pending upgrade");
-    address impl = pendingUpgrade.implementation;
-    delete pendingUpgrade;
-    emit UpgradeCancelled(impl);
+// Production configuration (config/production.json)
+{
+  "timelock": {
+    "minDelay": 172800,  // 48 hours
+    "admin": "0x42f04534d384673a884227b8a347598916003270",
+    "proposers": ["0x42f04534d384673a884227b8a347598916003270"],
+    "executors": ["0x0000000000000000000000000000000000000000"]  // Anyone can execute
+  }
 }
 ```
+
+**Upgrade Workflow**:
+
+1. **Schedule Upgrade** (`3_UpgradeCNSTokenL2ToV2_Schedule.s.sol`):
+   ```bash
+   forge script script/3_UpgradeCNSTokenL2ToV2_Schedule.s.sol:UpgradeCNSTokenL2ToV2 \
+     --rpc-url linea_mainnet --broadcast
+   ```
+
+2. **Execute After Delay** (`4_UpgradeCNSTokenL2ToV2_Execute.s.sol`):
+   ```bash
+   forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:ExecuteUpgrade \
+     --rpc-url linea_mainnet --broadcast
+   ```
+
+**Security Features**:
+- ✅ Configurable delays per environment
+- ✅ Separate proposer and executor roles
+- ✅ Salt-based operation IDs prevent replay attacks
+- ✅ Integration with existing role-based access control
 
 ---
 
