@@ -48,6 +48,7 @@ struct L2Config {
 struct HedgeyConfig {
     address investorLockup;
     address batchPlanner;
+    address tokenVestingPlans;
     address recipient;
     uint256 amount;
     uint256 start;
@@ -154,6 +155,7 @@ library ConfigLoader {
         // Hedgey (optional)
         cfg.hedgey.investorLockup = _readAddress(vm_, json, ".hedgey.investorLockup", address(0));
         cfg.hedgey.batchPlanner = _readAddress(vm_, json, ".hedgey.batchPlanner", address(0));
+        cfg.hedgey.tokenVestingPlans = _readAddress(vm_, json, ".hedgey.tokenVestingPlans", address(0));
         cfg.hedgey.recipient = _readAddress(vm_, json, ".hedgey.recipient", address(0));
         cfg.hedgey.amount = _readUint(vm_, json, ".hedgey.amount", 0);
         cfg.hedgey.start = _readUint(vm_, json, ".hedgey.start", 0);
