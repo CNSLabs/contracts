@@ -28,7 +28,9 @@ contract CNSTokenL2UpgradeTest is Test {
 
     function setUp() public {
         admin = makeAddr("admin");
-        bridge = makeAddr("bridge");
+        // Deploy a mock bridge contract
+        MockBridge mockBridge = new MockBridge();
+        bridge = address(mockBridge);
         l1Token = makeAddr("l1Token");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
@@ -50,7 +52,7 @@ contract CNSTokenL2UpgradeTest is Test {
         CNSTokenL2 implementation = new CNSTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         CNSTokenL2 proxied = CNSTokenL2(address(proxy));
-        proxied.initialize(admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS);
+        proxied.initialize(admin_, admin_, admin_, admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS);
         return proxied;
     }
 
@@ -207,7 +209,7 @@ contract CNSTokenL2UpgradeTest is Test {
 
         // Should not be able to call initialize again
         vm.expectRevert();
-        upgraded.initialize(admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
+        upgraded.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     // ============ Multi-Upgrade Tests ============
@@ -280,3 +282,9 @@ contract NonUUPSContract {
     // Not a UUPS contract, should fail upgrade
     uint256 public dummy;
 }
+
+// Mock bridge contract for testing
+contract MockBridge {
+    // Empty contract that just needs to exist
+
+    }
