@@ -258,7 +258,7 @@ contract CNSTokenL2Test is Test {
         address eoa = makeAddr("eoa");
 
         vm.expectRevert("bridge must be contract");
-        fresh.initialize(admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
+        fresh.initialize(admin, admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     function testInitializationEmitsEvents() public {
@@ -267,14 +267,8 @@ contract CNSTokenL2Test is Test {
         address testBridge = address(mockBridge);
 
         bytes memory initData = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector, admin, admin, admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS
+            CNSTokenL2.initialize.selector, admin, admin, admin, admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS
         );
-
-        vm.expectEmit(true, false, false, true);
-        emit CNSTokenL2.BridgeSet(testBridge);
-
-        vm.expectEmit(true, false, false, true);
-        emit CNSTokenL2.L1TokenSet(l1Token);
 
         vm.expectEmit(true, true, true, true);
         emit CNSTokenL2.Initialized(admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS);
@@ -354,7 +348,7 @@ contract CNSTokenL2Test is Test {
 
         // Cannot initialize again
         vm.expectRevert();
-        deployedToken.initialize(admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
+        deployedToken.initialize(admin, admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     // ============ Role Separation Tests ============

@@ -17,12 +17,12 @@ contract CNSTokenL1Test is Test {
         token = new CNSTokenL1("Canonical CNS Token", "CNS", INITIAL_SUPPLY, owner);
     }
 
-    function testInitialSupply() public {
+    function testInitialSupply() public view {
         assertEq(token.balanceOf(owner), INITIAL_SUPPLY);
         assertEq(token.totalSupply(), INITIAL_SUPPLY);
     }
 
-    function testTokenMetadata() public {
+    function testTokenMetadata() public view {
         assertEq(token.name(), "Canonical CNS Token");
         assertEq(token.symbol(), "CNS");
         assertEq(token.decimals(), 18);
