@@ -45,16 +45,18 @@ contract CNSTokenL2 is
     }
 
     /// @notice Initialize the token with role separation
-    /// @param multisig_ Address for DEFAULT_ADMIN_ROLE and UPGRADER_ROLE (should be Gnosis Safe)
-    /// @param pauser_ Address for PAUSER_ROLE (can be hot wallet for emergency response)
-    /// @param allowlistAdmin_ Address for ALLOWLIST_ADMIN_ROLE (operational wallet)
+    /// @param defaultAdmin_ Address for DEFAULT_ADMIN_ROLE (governance address)
+    /// @param upgrader_ Address for UPGRADER_ROLE (can upgrade the contract)
+    /// @param pauser_ Address for PAUSER_ROLE (can pause/unpause in emergencies)
+    /// @param allowlistAdmin_ Address for ALLOWLIST_ADMIN_ROLE (manages transfer allowlist)
     /// @param bridge_ Linea bridge contract address
     /// @param l1Token_ L1 token address
     /// @param name_ Token name
     /// @param symbol_ Token symbol
     /// @param decimals_ Token decimals
     function initialize(
-        address multisig_,
+        address defaultAdmin_,
+        address upgrader_,
         address pauser_,
         address allowlistAdmin_,
         address bridge_,
@@ -63,7 +65,8 @@ contract CNSTokenL2 is
         string memory symbol_,
         uint8 decimals_
     ) external initializer {
-        require(multisig_ != address(0), "multisig=0");
+        require(defaultAdmin_ != address(0), "defaultAdmin=0");
+        require(upgrader_ != address(0), "upgrader=0");
         require(pauser_ != address(0), "pauser=0");
         require(allowlistAdmin_ != address(0), "allowlistAdmin=0");
         require(bridge_ != address(0), "bridge=0");
@@ -84,24 +87,24 @@ contract CNSTokenL2 is
         l1Token = l1Token_;
         emit L1TokenSet(l1Token_);
 
-        // Grant critical roles to multisig (should be Gnosis Safe 3-of-5 or better)
-        _grantRole(DEFAULT_ADMIN_ROLE, multisig_);
-        _grantRole(UPGRADER_ROLE, multisig_);
+        // Grant critical roles
+        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
+        _grantRole(UPGRADER_ROLE, upgrader_);
 
         // Grant operational roles to dedicated addresses
         _grantRole(PAUSER_ROLE, pauser_);
         _grantRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin_);
 
-        // Grant multisig as backup for operational roles
-        _grantRole(PAUSER_ROLE, multisig_);
-        _grantRole(ALLOWLIST_ADMIN_ROLE, multisig_);
+        // Grant defaultAdmin as backup for operational roles
+        _grantRole(PAUSER_ROLE, defaultAdmin_);
+        _grantRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin_);
 
         _senderAllowlistEnabled = true;
         _setSenderAllowlist(address(this), true);
         _setSenderAllowlist(bridge_, true);
-        _setSenderAllowlist(multisig_, true);
+        _setSenderAllowlist(defaultAdmin_, true);
 
-        emit Initialized(multisig_, bridge_, l1Token_, name_, symbol_, decimals_);
+        emit Initialized(defaultAdmin_, bridge_, l1Token_, name_, symbol_, decimals_);
     }
 
     function isSenderAllowlisted(address account) external view returns (bool) {
