@@ -55,39 +55,6 @@
 - PR #40: Feature/role separation multisig
 - PR #41: Timelocked token upgrades
 
----
-
-## 📋 Security Recommendations Checklist
-
-### Priority 0 (Critical - Must Fix):
-- [ ] **P0.1** Verify Storage Gap Calculations
-- [ ] **P0.2** Fix V1→V2 Storage Layout  
-- [ ] **P0.3** Implement Atomic Initialization
-- [ ] **P0.4** Add Comprehensive Upgrade Tests
-
-### Priority 1 (High - Should Fix):
-- [ ] **P1.1** Add Bridge Contract Validation
-- [ ] **P1.2** Separate Admin Roles (Multisig)
-- [ ] **P1.3** Improve Allowlist UX
-
-### Priority 2 (Medium - Recommended):
-- [ ] **P2.1** Implement Upgrade Timelock
-- [ ] **P2.2** Add Event Emissions
-- [ ] **P2.3** Add Batch Size Limits
-
-### Priority 3 (Low - Optional):
-- [ ] **P3.1** Migrate to Custom Errors
-- [ ] **P3.2** Add Zero Address Validation
-- [ ] **P3.3** Lock Pragma Version
-
-### Testing Enhancements:
-- [ ] **T1** Add Security Test Suite (`CNSTokenL2.security.t.sol`)
-- [ ] **T2** Add Fuzz Testing (`CNSTokenL2.fuzz.t.sol`)
-- [ ] **T3** Add Invariant Testing (`CNSTokenL2.invariant.t.sol`)
-- [ ] **T4** Add Integration Testing (`CNSTokenL2.integration.t.sol`)
-
----
-
 ## Executive Summary
 
 This report presents a comprehensive security audit of the `CNSTokenL2` contract, an upgradeable L2 bridged token for Linea with allowlist controls. The contract uses OpenZeppelin v5.4.0 upgradeable contracts with the UUPS (Universal Upgradeable Proxy Standard) proxy pattern.
