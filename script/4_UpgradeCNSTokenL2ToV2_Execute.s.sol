@@ -12,7 +12,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  * @notice Executes an upgrade after the timelock delay has elapsed
  *
  * Environment Variables (Required):
- *   - PRIVATE_KEY or CNS_OWNER_PRIVATE_KEY: Executor key (must have EXECUTOR_ROLE on timelock)
+ *   - PRIVATE_KEY or CNS_UPGRADER_PRIVATE_KEY: Executor key (must have EXECUTOR_ROLE on timelock)
  *   - CNS_NEW_IMPLEMENTATION: Address of deployed V2 implementation
  *   - CNS_TIMELOCK_SALT: Salt used when scheduling
  *   - ENV: Select public config JSON
@@ -33,12 +33,12 @@ contract UpgradeCNSTokenL2ToV2_Execute is BaseScript {
         uint256 executorPrivateKey;
         address executor;
 
-        try vm.envUint("CNS_OWNER_PRIVATE_KEY") returns (uint256 key) {
+        try vm.envUint("CNS_UPGRADER_PRIVATE_KEY") returns (uint256 key) {
             executorPrivateKey = key;
             executor = vm.addr(executorPrivateKey);
-            console.log("Using CNS_OWNER_PRIVATE_KEY");
+            console.log("Using CNS_UPGRADER_PRIVATE_KEY");
         } catch {
-            console.log("CNS_OWNER_PRIVATE_KEY not found, using PRIVATE_KEY");
+            console.log("CNS_UPGRADER_PRIVATE_KEY not found, using PRIVATE_KEY");
             (executorPrivateKey, executor) = _getDeployer();
         }
 
