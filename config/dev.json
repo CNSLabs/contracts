@@ -3,13 +3,9 @@
   "l1": {
     "name": "Canonical CNS Token",
     "symbol": "CNS",
-    "decimals": 18,
     "initialSupply": 100000000000000000000000000,
     "roles": {
-      "admin": "0x42f04534d384673a884227b8a347598916003270",
-      "allowlistAdmin": "0x42f04534d384673a884227b8a347598916003270",
-      "upgrader": "0x42f04534d384673a884227b8a347598916003270",
-      "pauser": "0x42f04534d384673a884227b8a347598916003270"
+      "admin": "0x42f04534d384673a884227b8a347598916003270"
     },
     "chain": { "name": "sepolia", "chainId": 11155111 }
   },
