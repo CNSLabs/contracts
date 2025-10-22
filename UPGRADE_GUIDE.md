@@ -22,13 +22,13 @@ User → Proxy (ERC1967) → Implementation (CNSTokenL2)
 ### 1. Storage Layout Verification
 ```bash
 # Generate current storage layout
-forge inspect CNSTokenL2 storage-layout > layouts/CNSTokenL2-v1.json
+forge inspect CNSTokenL2 storage-layout > storage-layouts/CNSTokenL2-v1.json
 
 # Generate new version layout
-forge inspect CNSTokenL2V2 storage-layout > layouts/CNSTokenL2V2-v2.json
+forge inspect CNSTokenL2V2 storage-layout > storage-layouts/CNSTokenL2V2-v2.json
 
 # Compare layouts (manually verify no collisions)
-diff layouts/CNSTokenL2-v1.json layouts/CNSTokenL2V2-v2.json
+diff storage-layouts/CNSTokenL2-v1.json storage-layouts/CNSTokenL2V2-v2.json
 ```
 
 **Critical Rules:**

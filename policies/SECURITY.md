@@ -13,7 +13,7 @@ Slither runs automatically on every push and PR. It performs:
 - Best practice checks
 - Upgrade safety analysis
 
-**Configuration**: See `slither.config.json`
+**Configuration**: See `../security/slither.config.json`
 
 **Manual run**:
 ```bash
@@ -21,7 +21,7 @@ Slither runs automatically on every push and PR. It performs:
 pip3 install slither-analyzer
 
 # Run analysis
-slither . --config-file slither.config.json
+slither . --config-file ../security/slither.config.json
 
 # Run with specific detectors
 slither . --detect reentrancy-eth,uninitialized-state
@@ -62,10 +62,10 @@ For upgradeable contracts (CNSTokenL2), verify storage layout compatibility:
 forge inspect CNSTokenL2 storage-layout
 
 # Compare layouts between versions
-forge inspect CNSTokenL2 storage-layout > layout-v1.json
+forge inspect CNSTokenL2 storage-layout > ../storage-layouts/layout-v1.json
 # After upgrade
-forge inspect CNSTokenL2V2 storage-layout > layout-v2.json
-diff layout-v1.json layout-v2.json
+forge inspect CNSTokenL2V2 storage-layout > ../storage-layouts/layout-v2.json
+diff ../storage-layouts/layout-v1.json ../storage-layouts/layout-v2.json
 ```
 
 ### Security Checklist

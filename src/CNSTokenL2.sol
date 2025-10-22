@@ -60,7 +60,7 @@ contract CNSTokenL2 is
 
     /// @notice Initialize the token with role separation
     /// @param defaultAdmin_ Address for DEFAULT_ADMIN_ROLE (governance address)
-    /// @param upgrader_ Address that receives UPGRADER_ROLE (typically TimelockController)
+    /// @param upgrader_ Address for UPGRADER_ROLE (can upgrade the contract)
     /// @param pauser_ Address for PAUSER_ROLE (can pause/unpause in emergencies)
     /// @param allowlistAdmin_ Address for ALLOWLIST_ADMIN_ROLE (manages transfer allowlist)
     /// @param bridge_ Linea bridge contract address
@@ -103,7 +103,6 @@ contract CNSTokenL2 is
 
         // Grant critical roles
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
-        // Grant UPGRADER_ROLE to upgrader (typically the timelock)
         _grantRole(UPGRADER_ROLE, upgrader_);
 
         // Grant operational roles to dedicated addresses
