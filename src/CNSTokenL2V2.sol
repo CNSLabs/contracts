@@ -185,13 +185,22 @@ contract CNSTokenL2V2 is
     /**
      * @dev Override required for ERC20VotesUpgradeable to track voting power on transfers
      *      Also enforces pause and sender allowlist restrictions from V1
+     * @notice Bridge operations (mint/burn) bypass allowlist checks by design
+     * @dev Minting (from=0) and burning (to=0) are allowed for bridge operations
+     * @dev Transfers (from!=0 && to!=0) require sender to be allowlisted
+     * @dev This design ensures:
+     *      - Bridge can mint tokens to any address (required for L1→L2 bridging)
+     *      - Bridge can burn tokens from any address (required for L2→L1 bridging)
+     *      - Users must be allowlisted to transfer tokens (restrictive by design)
+     * @dev Recipients of bridged tokens must be allowlisted by admin to transfer
+     * @dev Vote tracking is automatically handled by ERC20VotesUpgradeable
      */
     function _update(address from, address to, uint256 value)
         internal
         override(ERC20Upgradeable, ERC20VotesUpgradeable)
         whenNotPaused
     {
-        // Enforce sender allowlist only if enabled (skip for mint/burn operations)
+        // Enforce sender allowlist only for transfers (not mint/burn operations)
         if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
             if (!_senderAllowlisted[from]) revert("sender not allowlisted");
         }
