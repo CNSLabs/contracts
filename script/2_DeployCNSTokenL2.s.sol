@@ -77,10 +77,10 @@ contract DeployCNSTokenL2 is BaseScript {
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
         // Get and validate required addresses
-        address defaultAdmin = vm.envAddress("CNS_DEFAULT_ADMIN");
-        address upgrader = vm.envOr("CNS_UPGRADER", defaultAdmin); // Defaults to defaultAdmin if not set
-        address pauser = vm.envOr("CNS_PAUSER", defaultAdmin); // Defaults to defaultAdmin if not set
-        address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", defaultAdmin); // Defaults to defaultAdmin if not set
+        address defaultAdmin = vm.envOr("CNS_DEFAULT_ADMIN", cfg.l2.roles.admin);
+        address upgrader = vm.envOr("CNS_UPGRADER", cfg.l2.roles.upgrader); // Defaults to defaultAdmin if not set
+        address pauser = vm.envOr("CNS_PAUSER", cfg.l2.roles.pauser); // Defaults to defaultAdmin if not set
+        address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", cfg.l2.roles.allowlistAdmin); // Defaults to defaultAdmin if not set
 
         _requireNonZeroAddress(defaultAdmin, "CNS_DEFAULT_ADMIN");
         _requireNonZeroAddress(upgrader, "CNS_UPGRADER");
@@ -198,14 +198,14 @@ contract DeployCNSTokenL2 is BaseScript {
         vm.stopBroadcast();
 
         // Setup allowlist using owner's private key
-        _setupAllowlist(hedgeyBatchPlanner, hedgeyTokenVestingPlans, defaultAdmin);
+        _setupAllowlist(hedgeyBatchPlanner, hedgeyTokenVestingPlans);
         // Verify deployment
         _verifyDeployment(
             defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
         );
 
         // Deploy or attach to a TimelockController and assign UPGRADER_ROLE
-        _setupTimelock(cfg, deployerPrivateKey, upgrader);
+        _setupTimelock(cfg, deployerPrivateKey, defaultAdmin, upgrader);
 
         _logDeploymentResults(
             defaultAdmin,
@@ -284,7 +284,9 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("\n[SUCCESS] All deployment checks passed!");
     }
 
-    function _setupTimelock(EnvConfig memory cfg, uint256 deployerPrivateKey, address owner) internal {
+    function _setupTimelock(EnvConfig memory cfg, uint256 deployerPrivateKey, address defaultAdmin, address upgrader)
+        internal
+    {
         uint256 minDelay = cfg.l2.timelock.minDelay;
         address tlAdmin = cfg.l2.timelock.admin;
         address[] memory proposers = cfg.l2.timelock.proposers;
@@ -304,29 +306,28 @@ contract DeployCNSTokenL2 is BaseScript {
         bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
         bytes32 DEFAULT_ADMIN_ROLE = 0x00;
 
-        uint256 adminPrivateKey = vm.envUint("CNS_OWNER_PRIVATE_KEY");
-        address adminActor = vm.addr(adminPrivateKey);
-        require(adminActor == owner, "CNS_OWNER_PRIVATE_KEY != owner");
-        require(token.hasRole(DEFAULT_ADMIN_ROLE, adminActor), "owner lacks DEFAULT_ADMIN_ROLE");
+        uint256 upgraderPrivateKey = vm.envUint("CNS_UPGRADER_PRIVATE_KEY");
+        address upgraderActor = vm.addr(upgraderPrivateKey);
+        require(upgraderActor == upgrader, "CNS_UPGRADER_PRIVATE_KEY != upgrader");
 
-        vm.startBroadcast(adminPrivateKey);
+        require(token.hasRole(DEFAULT_ADMIN_ROLE, defaultAdmin), "defaultAdmin lacks DEFAULT_ADMIN_ROLE");
+        vm.startBroadcast(upgraderPrivateKey);
         token.grantRole(UPGRADER_ROLE, address(timelock));
-        token.revokeRole(UPGRADER_ROLE, owner);
+        token.revokeRole(UPGRADER_ROLE, upgrader);
         vm.stopBroadcast();
         console.log("Granted UPGRADER_ROLE to TimelockController");
         console.log("Revoked UPGRADER_ROLE from owner");
     }
 
-    function _setupAllowlist(address hedgeyBatchPlanner, address hedgeyTokenVestingPlans, address owner) internal {
+    function _setupAllowlist(address hedgeyBatchPlanner, address hedgeyTokenVestingPlans) internal {
         console.log("\n=== Allowlist Setup ===");
 
         // Get owner's private key for allowlist operations
         bytes32 DEFAULT_ADMIN_ROLE = 0x00;
 
-        uint256 adminPrivateKey = vm.envUint("CNS_OWNER_PRIVATE_KEY");
+        uint256 adminPrivateKey = vm.envUint("CNS_DEFAULT_ADMIN_PRIVATE_KEY");
         address adminActor = vm.addr(adminPrivateKey);
-        require(adminActor == owner, "CNS_OWNER_PRIVATE_KEY != owner");
-        require(token.hasRole(DEFAULT_ADMIN_ROLE, adminActor), "owner lacks DEFAULT_ADMIN_ROLE");
+        require(token.hasRole(DEFAULT_ADMIN_ROLE, adminActor), "defaultAdmin lacks DEFAULT_ADMIN_ROLE");
 
         console.log("Adding Hedgey addresses to allowlist...");
         address[] memory hedgeyAddresses = new address[](2);

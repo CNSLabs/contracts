@@ -52,15 +52,16 @@ contract DeployCNSTokenL1 is BaseScript {
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
         // Owner comes from config (admin field)
-        address owner = cfg.l1.roles.admin;
-        _requireNonZeroAddress(owner, "CNS_OWNER");
+        address admin = cfg.l1.roles.admin;
+        admin = vm.envOr("CNS_DEFAULT_ADMIN", admin);
+        _requireNonZeroAddress(admin, "Admin");
 
         // Log deployment info
         _logDeploymentHeader("Deploying CNS Token L1");
         console.log("Token Name:", TOKEN_NAME);
         console.log("Token Symbol:", TOKEN_SYMBOL);
         console.log("Initial Supply:", INITIAL_SUPPLY / 10 ** 18, "tokens");
-        console.log("Supply Recipient (Owner):", owner);
+        console.log("Supply Recipient (Owner):", admin);
         console.log("Deployer:", deployer);
 
         // Safety check for mainnet
@@ -69,12 +70,12 @@ contract DeployCNSTokenL1 is BaseScript {
         // Deploy L1 token
         vm.startBroadcast(deployerPrivateKey);
 
-        token = new CNSTokenL1(TOKEN_NAME, TOKEN_SYMBOL, INITIAL_SUPPLY, owner);
+        token = new CNSTokenL1(TOKEN_NAME, TOKEN_SYMBOL, INITIAL_SUPPLY, admin);
 
         vm.stopBroadcast();
 
         // Log deployment results
-        _logDeploymentResults(owner);
+        _logDeploymentResults(admin);
 
         // Log verification command
         _logVerificationCommand(address(token), "src/CNSTokenL1.sol:CNSTokenL1");

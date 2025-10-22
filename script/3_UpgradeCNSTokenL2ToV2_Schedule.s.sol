@@ -14,7 +14,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *
  * Environment Variables:
  *   - PRIVATE_KEY: Signer key (must have PROPOSER_ROLE on timelock)
- *   - CNS_OWNER_PRIVATE_KEY: Alternative to PRIVATE_KEY
+ *   - CNS_UPGRADER_PRIVATE_KEY: Alternative to PRIVATE_KEY
  *   - ENV: Select public config JSON
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet
  *
@@ -35,12 +35,12 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
         uint256 ownerPrivateKey;
         address owner;
 
-        try vm.envUint("CNS_OWNER_PRIVATE_KEY") returns (uint256 key) {
+        try vm.envUint("CNS_UPGRADER_PRIVATE_KEY") returns (uint256 key) {
             ownerPrivateKey = key;
             owner = vm.addr(ownerPrivateKey);
-            console.log("Using CNS_OWNER_PRIVATE_KEY");
+            console.log("Using CNS_UPGRADER_PRIVATE_KEY");
         } catch {
-            console.log("CNS_OWNER_PRIVATE_KEY not found, using PRIVATE_KEY");
+            console.log("CNS_UPGRADER_PRIVATE_KEY not found, using PRIVATE_KEY");
             (ownerPrivateKey, owner) = _getDeployer();
         }
 
