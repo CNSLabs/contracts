@@ -37,6 +37,21 @@ anvil
 
 See [`LOCAL_TESTING_GUIDE.md`](./LOCAL_TESTING_GUIDE.md) for detailed instructions.
 
+## Security
+
+Security documentation and analysis:
+
+- **[Security Audits](security/audits/)** - Audit reports and analysis
+- **[Storage Layouts](storage-layouts/)** - Upgrade safety verification  
+- **[Security Policies](policies/SECURITY.md)** - Guidelines and procedures
+- **[Gas Optimization](policies/GAS_OPTIMIZATION.md)** - Gas optimization guidelines
+
+### Current Security Status: ✅ **PRODUCTION READY**
+
+All critical and high priority security issues have been resolved. See the [latest audit report](security/audits/2025-10-21-ai-analysis.md) for details.
+
+**Report security issues to**: security@cnslabs.com
+
 ### Environment Variables
 
 `env.example` lists all variables consumed by deployment scripts. Required placeholders:

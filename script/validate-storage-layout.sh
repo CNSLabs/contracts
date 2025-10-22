@@ -12,14 +12,14 @@ NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-LAYOUTS_DIR="$ROOT_DIR/layouts"
+LAYOUTS_DIR="$ROOT_DIR/storage-layouts"
 
 echo "=== Storage Layout Validation ==="
 echo ""
 
 # Ensure layouts directory exists
 if [ ! -d "$LAYOUTS_DIR" ]; then
-    echo -e "${RED}Error: layouts/ directory not found${NC}"
+    echo -e "${RED}Error: storage-layouts/ directory not found${NC}"
     exit 1
 fi
 
@@ -92,7 +92,7 @@ for contract in "${CONTRACTS[@]}"; do
         echo ""
         echo "  This could corrupt contract state during upgrades!"
         echo "  If this is intentional, update the baseline:"
-        echo "    cat out/${contract}.sol/${contract}.json | jq '.storageLayout.storage' > layouts/${contract}.json"
+        echo "    cat out/${contract}.sol/${contract}.json | jq '.storageLayout.storage' > storage-layouts/${contract}.json"
         echo ""
     else
         # Check for new variables (OK as long as they're at the end)

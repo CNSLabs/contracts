@@ -18,13 +18,13 @@ All storage slots are preserved at identical positions. No collisions detected.
 
 ```bash
 # Generate V1 layout
-forge inspect src/CNSTokenL2.sol:CNSTokenL2 storage-layout > layouts/v1-storage.json
+forge inspect src/CNSTokenL2.sol:CNSTokenL2 storage-layout > storage-layouts/v1-storage.json
 
 # Generate V2 layout
-forge inspect src/CNSTokenL2V2.sol:CNSTokenL2V2 storage-layout > layouts/v2-storage.json
+forge inspect src/CNSTokenL2V2.sol:CNSTokenL2V2 storage-layout > storage-layouts/v2-storage.json
 
 # Compare
-diff -u layouts/v1-storage.json layouts/v2-storage.json
+diff -u storage-layouts/v1-storage.json storage-layouts/v2-storage.json
 ```
 
 ## Verification Date

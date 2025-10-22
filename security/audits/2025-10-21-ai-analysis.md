@@ -6,6 +6,7 @@
 **Contract Version**: v1.0 (CNSTokenL2), v2.0 (CNSTokenL2V2 with ERC20Votes)  
 **Solidity Version**: 0.8.25 (locked)  
 **OpenZeppelin Version**: v5.4.0  
+**File Location**: `security/audits/2025-10-21-ai-analysis.md`  
 
 ---
 
@@ -176,7 +177,7 @@ uint256[46] private __gap;  // ⚠️ Same gap size despite adding ERC20Votes
 
 Despite adding these storage requirements through inheritance, the gap remains at 46 slots. 
 
-**✅ VERIFICATION COMPLETE (Oct 21, 2025)**: Storage layout analysis confirms NO collisions. All V1 storage slots are preserved at identical positions in V2. ERC20Votes storage is managed within OpenZeppelin's internal storage allocation. See `layouts/STORAGE_ANALYSIS.md` for detailed verification report.
+**✅ VERIFICATION COMPLETE (Oct 21, 2025)**: Storage layout analysis confirms NO collisions. All V1 storage slots are preserved at identical positions in V2. ERC20Votes storage is managed within OpenZeppelin's internal storage allocation. See `../storage-layouts/STORAGE_ANALYSIS.md` for detailed verification report.
 
 #### Impact
 
@@ -206,8 +207,8 @@ Despite adding these storage requirements through inheritance, the gap remains a
 
 ```bash
 # Generate and compare storage layouts
-forge inspect CNSTokenL2 storage-layout --pretty > layouts/v1-storage.txt
-forge inspect CNSTokenL2V2 storage-layout --pretty > layouts/v2-storage.txt
+forge inspect CNSTokenL2 storage-layout --pretty > storage-layouts/v1-storage.txt
+forge inspect CNSTokenL2V2 storage-layout --pretty > storage-layouts/v2-storage.txt
 
 # Verify:
 # 1. All V1 storage slots remain at same positions in V2
@@ -227,13 +228,13 @@ uint256[44] private __gap;  // Example: Reduced by ~2 slots for ERC20Votes inter
 
 ```bash
 # Generate V1 storage layout
-forge inspect CNSTokenL2 storage-layout > layouts/v1-layout.json
+forge inspect CNSTokenL2 storage-layout > storage-layouts/v1-layout.json
 
 # Generate V2 storage layout
-forge inspect CNSTokenL2V2 storage-layout > layouts/v2-layout.json
+forge inspect CNSTokenL2V2 storage-layout > storage-layouts/v2-layout.json
 
 # Compare and verify no collisions
-diff layouts/v1-layout.json layouts/v2-layout.json
+diff storage-layouts/v1-layout.json storage-layouts/v2-layout.json
 
 # Verify all V1 slots remain at same positions in V2
 ```
@@ -1239,8 +1240,8 @@ function _update(address from, address to, uint256 value)
 1. **🔴 Verify Storage Gap Calculations**
    ```bash
    # Run these commands and manually verify
-   forge inspect CNSTokenL2 storage-layout --pretty > layouts/v1-analysis.txt
-   forge inspect CNSTokenL2V2 storage-layout --pretty > layouts/v2-analysis.txt
+   forge inspect CNSTokenL2 storage-layout --pretty > storage-layouts/v1-analysis.txt
+   forge inspect CNSTokenL2V2 storage-layout --pretty > storage-layouts/v2-analysis.txt
    
    # Compare and verify:
    # - All V1 slots remain at same positions in V2

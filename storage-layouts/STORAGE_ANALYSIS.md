@@ -205,7 +205,7 @@ Track storage layout in CI/CD:
 ```bash
 # Add to GitHub Actions workflow
 forge inspect src/CNSTokenL2V2.sol:CNSTokenL2V2 storage-layout > current-layout.json
-diff layouts/v2-storage.json current-layout.json || exit 1
+diff storage-layouts/v2-storage.json current-layout.json || exit 1
 ```
 
 ---
