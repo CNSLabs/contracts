@@ -90,35 +90,35 @@ contract CNSTokenL2Test is Test {
         MockBridge mockBridge = new MockBridge();
         address[] memory emptyAllowlist = new address[](0);
 
-        vm.expectRevert("defaultAdmin=0");
+        vm.expectRevert(CNSTokenL2.InvalidDefaultAdmin.selector);
         fresh.initialize(
             address(0), admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
         );
 
         fresh = _deployProxy();
-        vm.expectRevert("upgrader=0");
+        vm.expectRevert(CNSTokenL2.InvalidUpgrader.selector);
         fresh.initialize(
             admin, address(0), admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
         );
 
         fresh = _deployProxy();
-        vm.expectRevert("pauser=0");
+        vm.expectRevert(CNSTokenL2.InvalidPauser.selector);
         fresh.initialize(
             admin, admin, address(0), admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
         );
 
         fresh = _deployProxy();
-        vm.expectRevert("allowlistAdmin=0");
+        vm.expectRevert(CNSTokenL2.InvalidAllowlistAdmin.selector);
         fresh.initialize(
             admin, admin, admin, address(0), address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
         );
 
         fresh = _deployProxy();
-        vm.expectRevert("bridge=0");
+        vm.expectRevert(CNSTokenL2.InvalidBridge.selector);
         fresh.initialize(admin, admin, admin, admin, address(0), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
 
         fresh = _deployProxy();
-        vm.expectRevert("l1Token=0");
+        vm.expectRevert(CNSTokenL2.InvalidL1Token.selector);
         fresh.initialize(
             admin, admin, admin, admin, address(mockBridge), address(0), NAME, SYMBOL, DECIMALS, emptyAllowlist
         );
@@ -137,7 +137,7 @@ contract CNSTokenL2Test is Test {
         assertEq(token.balanceOf(user1), INITIAL_BRIDGE_MINT);
 
         vm.prank(user1);
-        vm.expectRevert("sender not allowlisted");
+        vm.expectRevert(CNSTokenL2.SenderNotAllowlisted.selector);
         token.transfer(user2, 1 ether);
     }
 
@@ -199,7 +199,7 @@ contract CNSTokenL2Test is Test {
 
         // user1 is not allowlisted, transfer should fail
         vm.prank(user1);
-        vm.expectRevert("sender not allowlisted");
+        vm.expectRevert(CNSTokenL2.SenderNotAllowlisted.selector);
         token.transfer(user2, 1 ether);
 
         // Disable sender allowlist
@@ -217,7 +217,7 @@ contract CNSTokenL2Test is Test {
 
         // Transfer should fail again
         vm.prank(user1);
-        vm.expectRevert("sender not allowlisted");
+        vm.expectRevert(CNSTokenL2.SenderNotAllowlisted.selector);
         token.transfer(user2, 1 ether);
     }
 
@@ -239,7 +239,7 @@ contract CNSTokenL2Test is Test {
 
         // Now try transfer FROM user2 (not allowlisted) TO user1 (allowlisted) - should fail
         vm.prank(user2);
-        vm.expectRevert("sender not allowlisted");
+        vm.expectRevert(CNSTokenL2.SenderNotAllowlisted.selector);
         token.transfer(user1, 50 ether);
 
         // Verify user2's balance is unchanged
@@ -280,7 +280,7 @@ contract CNSTokenL2Test is Test {
         address eoa = makeAddr("eoa");
         address[] memory emptyAllowlist = new address[](0);
 
-        vm.expectRevert("bridge must be contract");
+        vm.expectRevert(CNSTokenL2.BridgeNotContract.selector);
         fresh.initialize(admin, admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
     }
 
@@ -317,7 +317,7 @@ contract CNSTokenL2Test is Test {
         }
 
         vm.prank(admin);
-        vm.expectRevert("batch too large");
+        vm.expectRevert(CNSTokenL2.BatchTooLarge.selector);
         token.setSenderAllowedBatch(accounts, true);
     }
 
@@ -338,13 +338,13 @@ contract CNSTokenL2Test is Test {
     function testBatchRevertsIfEmpty() public {
         address[] memory accounts = new address[](0);
 
-        vm.expectRevert("empty batch");
+        vm.expectRevert(CNSTokenL2.EmptyBatch.selector);
         vm.prank(admin);
         token.setSenderAllowedBatch(accounts, true);
     }
 
     function testCannotAllowlistZeroAddress() public {
-        vm.expectRevert("zero address");
+        vm.expectRevert(CNSTokenL2.ZeroAddress.selector);
         vm.prank(admin);
         token.setSenderAllowed(address(0), true);
     }
@@ -355,7 +355,7 @@ contract CNSTokenL2Test is Test {
         accounts[1] = address(0); // Zero address in middle
         accounts[2] = makeAddr("user2");
 
-        vm.expectRevert("zero address");
+        vm.expectRevert(CNSTokenL2.ZeroAddress.selector);
         vm.prank(admin);
         token.setSenderAllowedBatch(accounts, true);
 
