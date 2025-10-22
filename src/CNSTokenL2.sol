@@ -86,7 +86,6 @@ contract CNSTokenL2 is
         if (pauser_ == address(0)) revert InvalidPauser();
         if (allowlistAdmin_ == address(0)) revert InvalidAllowlistAdmin();
         if (bridge_ == address(0)) revert InvalidBridge();
-        if (bridge_.code.length == 0) revert BridgeNotContract();
         if (l1Token_ == address(0)) revert InvalidL1Token();
 
         __Pausable_init();
