@@ -21,7 +21,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  * Usage:
  *   ENV=dev CNS_NEW_IMPLEMENTATION=0x... CNS_TIMELOCK_SALT=0x... \
  *   forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:UpgradeCNSTokenL2ToV2_Execute \
- *     --rpc-url linea_sepolia --broadcast
+ *     --rpc-url linea-sepolia --broadcast
  */
 contract UpgradeCNSTokenL2ToV2_Execute is BaseScript {
     address public proxyAddress;
