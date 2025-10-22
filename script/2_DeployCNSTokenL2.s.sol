@@ -247,7 +247,7 @@ contract DeployCNSTokenL2 is BaseScript {
 
     function _verifyDeployment(
         address defaultAdmin,
-        address upgrader,
+        address /* upgrader */,
         address pauser,
         address allowlistAdmin,
         address bridge,
@@ -318,7 +318,7 @@ contract DeployCNSTokenL2 is BaseScript {
 
     function _logDeploymentResults(
         address defaultAdmin,
-        address upgrader,
+        address /* upgrader */,
         address pauser,
         address allowlistAdmin,
         address bridge,
