@@ -160,6 +160,9 @@ contract CNSTokenL2FuzzTest is Test {
         vm.assume(from != address(0));
         vm.assume(to != address(0));
         vm.assume(from != to);
+        vm.assume(from != admin); // Ensure from is not admin (who is allowlisted)
+        vm.assume(from != address(bridge)); // Ensure from is not bridge (who is allowlisted)
+        vm.assume(from != address(token)); // Ensure from is not the proxy contract (who is allowlisted)
         vm.assume(amount > 0);
         vm.assume(amount <= 1000000 ether);
 
@@ -360,6 +363,9 @@ contract CNSTokenL2FuzzTest is Test {
         vm.assume(from != address(0));
         vm.assume(to != address(0));
         vm.assume(from != to);
+        vm.assume(from != admin); // Ensure from is not admin (who is allowlisted)
+        vm.assume(from != address(bridge)); // Ensure from is not bridge (who is allowlisted)
+        vm.assume(from != address(token)); // Ensure from is not the proxy contract (who is allowlisted)
         vm.assume(amount > 0);
         vm.assume(amount <= 1000000 ether);
 
@@ -399,7 +405,7 @@ contract CNSTokenL2FuzzTest is Test {
     // ============ Gas Limit Fuzz Tests ============
 
     function testFuzzBatchSizeLimits(uint256 batchSize) public {
-        vm.assume(batchSize > 200); // Exceed limit
+        vm.assume(batchSize > 200 && batchSize < 1000); // Exceed limit but keep reasonable for gas
 
         address[] memory accounts = new address[](batchSize);
         for (uint256 i = 0; i < batchSize; i++) {
