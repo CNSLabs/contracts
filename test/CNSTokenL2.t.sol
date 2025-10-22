@@ -52,16 +52,7 @@ contract CNSTokenL2Test is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         CNSTokenL2 proxied = CNSTokenL2(address(proxy));
         proxied.initialize(
-            defaultAdmin_,
-            upgrader_,
-            pauser_,
-            allowlistAdmin_,
-            bridge_,
-            l1Token_,
-            NAME,
-            SYMBOL,
-            DECIMALS,
-            emptyAllowlist
+            defaultAdmin_, upgrader_, pauser_, allowlistAdmin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS
         );
         return proxied;
     }
@@ -114,7 +105,7 @@ contract CNSTokenL2Test is Test {
 
     function testInitializeCannotRunTwice() public {
         vm.expectRevert();
-        token.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
+        token.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     function testBridgeMintBypassesAllowlist() public {
@@ -276,17 +267,7 @@ contract CNSTokenL2Test is Test {
         address testBridge = address(mockBridge);
 
         bytes memory initData = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector,
-            admin,
-            admin,
-            admin,
-            admin,
-            testBridge,
-            l1Token,
-            NAME,
-            SYMBOL,
-            DECIMALS,
-            emptyAllowlist
+            CNSTokenL2.initialize.selector, admin, admin, admin, admin, testBridge, l1Token, NAME, SYMBOL, DECIMALS
         );
 
         vm.expectEmit(true, true, true, true);
@@ -364,8 +345,7 @@ contract CNSTokenL2Test is Test {
             l1Token,
             NAME,
             SYMBOL,
-            DECIMALS,
-            emptyAllowlist
+            DECIMALS
         );
 
         // Deploy with atomic initialization
@@ -377,9 +357,7 @@ contract CNSTokenL2Test is Test {
 
         // Cannot initialize again
         vm.expectRevert();
-        deployedToken.initialize(
-            admin, admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist2
-        );
+        deployedToken.initialize(admin, admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     // ============ Role Separation Tests ============

@@ -52,8 +52,7 @@ contract CNSTokenL2UpgradeTest is Test {
         CNSTokenL2 implementation = new CNSTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         CNSTokenL2 proxied = CNSTokenL2(address(proxy));
-        address[] memory emptyAllowlist = new address[](0);
-        proxied.initialize(admin_, admin_, admin_, admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS, emptyAllowlist);
+        proxied.initialize(admin_, admin_, admin_, admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS);
         return proxied;
     }
 
@@ -210,8 +209,7 @@ contract CNSTokenL2UpgradeTest is Test {
 
         // Should not be able to call initialize again
         vm.expectRevert();
-        address[] memory emptyAllowlist = new address[](0);
-        upgraded.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
+        upgraded.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     // ============ Multi-Upgrade Tests ============
