@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity 0.8.25;
 
 import {CustomBridgedToken} from "./linea/CustomBridgedToken.sol";
 import {BridgedToken} from "./linea/BridgedToken.sol";
@@ -35,6 +35,7 @@ contract CNSTokenL2V2 is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    uint256 public constant MAX_BATCH_SIZE = 200;
 
     address public l1Token;
     mapping(address => bool) private _senderAllowlisted;
@@ -43,6 +44,18 @@ contract CNSTokenL2V2 is
     event SenderAllowlistUpdated(address indexed account, bool allowed);
     event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
     event SenderAllowlistEnabledUpdated(bool enabled);
+    event Initialized(
+        address indexed admin,
+        address indexed bridge,
+        address indexed l1Token,
+        string name,
+        string symbol,
+        uint8 decimals
+    );
+
+    function version() public pure virtual returns (string memory) {
+        return "2.0.0";
+    }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -51,19 +64,35 @@ contract CNSTokenL2V2 is
 
     /**
      * @notice Initializes the V2 contract with voting capabilities
-     * @dev This is called during upgrade from V1. If upgrading from V1, use initializeV2() instead.
-     *      This function is kept for potential fresh deployments of V2.
+     * @dev This is for fresh deployments of V2. If upgrading from V1, use initializeV2() instead.
      */
+    /// @notice Initialize the token with role separation
+    /// @param defaultAdmin_ Address for DEFAULT_ADMIN_ROLE (governance address)
+    /// @param upgrader_ Address for UPGRADER_ROLE (can upgrade the contract)
+    /// @param pauser_ Address for PAUSER_ROLE (can pause/unpause in emergencies)
+    /// @param allowlistAdmin_ Address for ALLOWLIST_ADMIN_ROLE (manages transfer allowlist)
+    /// @param bridge_ Linea bridge contract address
+    /// @param l1Token_ L1 token address
+    /// @param name_ Token name
+    /// @param symbol_ Token symbol
+    /// @param decimals_ Token decimals
     function initialize(
-        address admin_,
+        address defaultAdmin_,
+        address upgrader_,
+        address pauser_,
+        address allowlistAdmin_,
         address bridge_,
         address l1Token_,
         string memory name_,
         string memory symbol_,
         uint8 decimals_
     ) external initializer {
-        require(admin_ != address(0), "admin=0");
+        require(defaultAdmin_ != address(0), "defaultAdmin=0");
+        require(upgrader_ != address(0), "upgrader=0");
+        require(pauser_ != address(0), "pauser=0");
+        require(allowlistAdmin_ != address(0), "allowlistAdmin=0");
         require(bridge_ != address(0), "bridge=0");
+        require(bridge_.code.length > 0, "bridge must be contract");
         require(l1Token_ != address(0), "l1Token=0");
 
         __Pausable_init();
@@ -73,21 +102,30 @@ contract CNSTokenL2V2 is
         __ERC20_init(name_, symbol_);
         __ERC20Permit_init(name_);
         __ERC20Votes_init(); // Initialize voting functionality
-
         bridge = bridge_;
+
         _decimals = decimals_;
 
         l1Token = l1Token_;
 
-        _grantRole(DEFAULT_ADMIN_ROLE, admin_);
-        _grantRole(PAUSER_ROLE, admin_);
-        _grantRole(ALLOWLIST_ADMIN_ROLE, admin_);
-        _grantRole(UPGRADER_ROLE, admin_);
+        // Grant critical roles
+        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
+        _grantRole(UPGRADER_ROLE, upgrader_);
+
+        // Grant operational roles to dedicated addresses
+        _grantRole(PAUSER_ROLE, pauser_);
+        _grantRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin_);
+
+        // Grant defaultAdmin as backup for operational roles
+        _grantRole(PAUSER_ROLE, defaultAdmin_);
+        _grantRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin_);
 
         _senderAllowlistEnabled = true;
         _setSenderAllowlist(address(this), true);
         _setSenderAllowlist(bridge_, true);
-        _setSenderAllowlist(admin_, true);
+        _setSenderAllowlist(defaultAdmin_, true);
+
+        emit Initialized(defaultAdmin_, bridge_, l1Token_, name_, symbol_, decimals_);
     }
 
     /**
@@ -122,11 +160,16 @@ contract CNSTokenL2V2 is
     }
 
     function setSenderAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        require(account != address(0), "zero address");
         _setSenderAllowlist(account, allowed);
     }
 
     function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        require(accounts.length > 0, "empty batch");
+        require(accounts.length <= MAX_BATCH_SIZE, "batch too large");
+
         for (uint256 i; i < accounts.length; ++i) {
+            require(accounts[i] != address(0), "zero address");
             _setSenderAllowlist(accounts[i], allowed);
         }
         emit SenderAllowlistBatchUpdated(accounts, allowed);
