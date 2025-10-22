@@ -22,7 +22,6 @@ contract CNSTokenL2 is
     error InvalidPauser();
     error InvalidAllowlistAdmin();
     error InvalidBridge();
-    error BridgeNotContract();
     error InvalidL1Token();
     error SenderNotAllowlisted();
     error ZeroAddress();

@@ -275,14 +275,6 @@ contract CNSTokenL2Test is Test {
         return CNSTokenL2(address(proxy));
     }
 
-    function testInitializeRevertsIfBridgeIsEOA() public {
-        CNSTokenL2 fresh = _deployProxy();
-        address eoa = makeAddr("eoa");
-        address[] memory emptyAllowlist = new address[](0);
-
-        vm.expectRevert(CNSTokenL2.BridgeNotContract.selector);
-        fresh.initialize(admin, admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
-    }
 
     function testInitializationEmitsEvents() public {
         CNSTokenL2 impl = new CNSTokenL2();
