@@ -99,7 +99,7 @@ contract DeployCNSTokenL1 is BaseScript {
         console.log("2. Use this L1 token address when deploying L2 token");
         console.log("3. Bridge tokens using the Linea canonical bridge");
         console.log("   L1 Token Address:", address(token));
-        
+
         // Final prominent contract address display
         console.log("\n");
         console.log(StdStyle.green("================================================================================"));

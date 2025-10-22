@@ -378,7 +378,7 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("7. Test transfers between allowlisted addresses");
         console.log("8. Test Hedgey integration with allowlisted addresses");
         console.log("9. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol (routed through timelock)");
-        
+
         // Final prominent contract addresses display
         console.log("\n");
         console.log(StdStyle.green("================================================================================"));
