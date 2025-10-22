@@ -275,7 +275,6 @@ contract CNSTokenL2Test is Test {
         return CNSTokenL2(address(proxy));
     }
 
-
     function testInitializationEmitsEvents() public {
         CNSTokenL2 impl = new CNSTokenL2();
         MockBridge mockBridge = new MockBridge();
