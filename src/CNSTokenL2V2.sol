@@ -32,6 +32,18 @@ contract CNSTokenL2V2 is
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
+    // Custom errors for gas optimization
+    error InvalidDefaultAdmin();
+    error InvalidUpgrader();
+    error InvalidPauser();
+    error InvalidAllowlistAdmin();
+    error InvalidBridge();
+    error BridgeNotContract();
+    error InvalidL1Token();
+    error SenderNotAllowlisted();
+    error ZeroAddress();
+    error EmptyBatch();
+    error BatchTooLarge();
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
@@ -89,13 +101,13 @@ contract CNSTokenL2V2 is
         uint8 decimals_,
         address[] calldata senderAllowlist_
     ) external initializer {
-        require(defaultAdmin_ != address(0), "defaultAdmin=0");
-        require(upgrader_ != address(0), "upgrader=0");
-        require(pauser_ != address(0), "pauser=0");
-        require(allowlistAdmin_ != address(0), "allowlistAdmin=0");
-        require(bridge_ != address(0), "bridge=0");
-        require(bridge_.code.length > 0, "bridge must be contract");
-        require(l1Token_ != address(0), "l1Token=0");
+        if (defaultAdmin_ == address(0)) revert InvalidDefaultAdmin();
+        if (upgrader_ == address(0)) revert InvalidUpgrader();
+        if (pauser_ == address(0)) revert InvalidPauser();
+        if (allowlistAdmin_ == address(0)) revert InvalidAllowlistAdmin();
+        if (bridge_ == address(0)) revert InvalidBridge();
+        if (bridge_.code.length == 0) revert BridgeNotContract();
+        if (l1Token_ == address(0)) revert InvalidL1Token();
 
         __Pausable_init();
         __AccessControl_init();
@@ -130,7 +142,11 @@ contract CNSTokenL2V2 is
 
         // Add additional senderAllowlist addresses provided during initialization
         if (senderAllowlist_.length > 0) {
-            _setBatchSenderAllowlist(senderAllowlist_, true);
+            for (uint256 i; i < senderAllowlist_.length; ++i) {
+                if (senderAllowlist_[i] != address(0)) {
+                    _setSenderAllowlist(senderAllowlist_[i], true);
+                }
+            }
         }
 
         emit Initialized(defaultAdmin_, bridge_, l1Token_, name_, symbol_, decimals_);
@@ -168,12 +184,18 @@ contract CNSTokenL2V2 is
     }
 
     function setSenderAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        require(account != address(0), "zero address");
+        if (account == address(0)) revert ZeroAddress();
         _setSenderAllowlist(account, allowed);
     }
 
     function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        _setBatchSenderAllowlist(accounts, allowed);
+        if (accounts.length == 0) revert EmptyBatch();
+        if (accounts.length > MAX_BATCH_SIZE) revert BatchTooLarge();
+
+        for (uint256 i; i < accounts.length; ++i) {
+            if (accounts[i] == address(0)) revert ZeroAddress();
+            _setSenderAllowlist(accounts[i], allowed);
+        }
         emit SenderAllowlistBatchUpdated(accounts, allowed);
     }
 
@@ -202,7 +224,7 @@ contract CNSTokenL2V2 is
     {
         // Enforce sender allowlist only for transfers (not mint/burn operations)
         if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
-            if (!_senderAllowlisted[from]) revert("sender not allowlisted");
+            if (!_senderAllowlisted[from]) revert SenderNotAllowlisted();
         }
 
         // Call ERC20VotesUpgradeable's _update which handles vote tracking
@@ -221,16 +243,6 @@ contract CNSTokenL2V2 is
     function _setSenderAllowlist(address account, bool allowed) internal {
         _senderAllowlisted[account] = allowed;
         emit SenderAllowlistUpdated(account, allowed);
-    }
-
-    function _setBatchSenderAllowlist(address[] calldata accounts, bool allowed) internal {
-        require(accounts.length > 0, "empty batch");
-        require(accounts.length <= MAX_BATCH_SIZE, "batch too large");
-
-        for (uint256 i; i < accounts.length; ++i) {
-            require(accounts[i] != address(0), "zero address");
-            _setSenderAllowlist(accounts[i], allowed);
-        }
     }
 
     uint256[46] private __gap;
