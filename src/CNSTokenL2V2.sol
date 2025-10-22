@@ -142,11 +142,7 @@ contract CNSTokenL2V2 is
 
         // Add additional senderAllowlist addresses provided during initialization
         if (senderAllowlist_.length > 0) {
-            for (uint256 i; i < senderAllowlist_.length; ++i) {
-                if (senderAllowlist_[i] != address(0)) {
-                    _setSenderAllowlist(senderAllowlist_[i], true);
-                }
-            }
+            _setBatchSenderAllowlist(senderAllowlist_, true);
         }
 
         emit Initialized(defaultAdmin_, bridge_, l1Token_, name_, symbol_, decimals_);
@@ -189,13 +185,7 @@ contract CNSTokenL2V2 is
     }
 
     function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        if (accounts.length == 0) revert EmptyBatch();
-        if (accounts.length > MAX_BATCH_SIZE) revert BatchTooLarge();
-
-        for (uint256 i; i < accounts.length; ++i) {
-            if (accounts[i] == address(0)) revert ZeroAddress();
-            _setSenderAllowlist(accounts[i], allowed);
-        }
+        _setBatchSenderAllowlist(accounts, allowed);
         emit SenderAllowlistBatchUpdated(accounts, allowed);
     }
 
@@ -243,6 +233,19 @@ contract CNSTokenL2V2 is
     function _setSenderAllowlist(address account, bool allowed) internal {
         _senderAllowlisted[account] = allowed;
         emit SenderAllowlistUpdated(account, allowed);
+    }
+
+    /// @notice Internal batch setter for sender allowlist with validation
+    /// @param accounts Array of addresses to update
+    /// @param allowed True to allowlist, false to remove from allowlist
+    function _setBatchSenderAllowlist(address[] calldata accounts, bool allowed) internal {
+        if (accounts.length == 0) revert EmptyBatch();
+        if (accounts.length > MAX_BATCH_SIZE) revert BatchTooLarge();
+
+        for (uint256 i; i < accounts.length; ++i) {
+            if (accounts[i] == address(0)) revert ZeroAddress();
+            _setSenderAllowlist(accounts[i], allowed);
+        }
     }
 
     uint256[46] private __gap;
