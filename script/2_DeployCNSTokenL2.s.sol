@@ -10,11 +10,12 @@ import "../src/CNSTokenL2.sol";
  * @title DeployCNSTokenL2
  * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
  * @dev This script deploys CNSTokenL2 with:
- *      - Role separation (defaultAdmin, upgrader, pauser, allowlist admin)
+ *      - Role separation (defaultAdmin, upgrader via timelock, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
  *      - Pausability and allowlist controls
  *      - UUPS upgradeability
- *      - Atomic initialization for security
+ *      - Atomic initialization for security (includes sender allowlist setup)
+ *      - Automatic TimelockController deployment with UPGRADER_ROLE
  *
  * Usage:
  *   # Linea Sepolia testnet
@@ -49,6 +50,13 @@ import "../src/CNSTokenL2.sol";
  *   - CNS_UPGRADER: Contract upgrader address (defaults to CNS_DEFAULT_ADMIN)
  *   - CNS_PAUSER: Emergency pause address (defaults to CNS_DEFAULT_ADMIN)
  *   - CNS_ALLOWLIST_ADMIN: Allowlist manager address (defaults to CNS_DEFAULT_ADMIN)
+ *
+ * Notes:
+ *   - Hedgey contract addresses (HEDGEY_BATCH_PLANNER, HEDGEY_TOKEN_VESTING_PLANS)
+ *     are automatically added to the sender allowlist during initialization
+ *   - TimelockController is automatically deployed and granted UPGRADER_ROLE
+ *   - All setup is atomic - single transaction with no intermediate steps
+ *   - No private keys required for DEFAULT_ADMIN role (supports multisig)
  *
  * Bridge Addresses:
  *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
@@ -146,6 +154,22 @@ contract DeployCNSTokenL2 is BaseScript {
         // Safety check for mainnet
         _requireMainnetConfirmation();
 
+        // Deploy TimelockController first
+        console.log("\n=== Timelock Deployment ===");
+        uint256 minDelay = cfg.l2.timelock.minDelay;
+        address tlAdmin = cfg.l2.timelock.admin;
+        address[] memory proposers = cfg.l2.timelock.proposers;
+        address[] memory executors = cfg.l2.timelock.executors;
+
+        require(minDelay > 0, "timelock minDelay=0");
+        require(tlAdmin != address(0), "timelock admin=0");
+
+        vm.startBroadcast(deployerPrivateKey);
+        timelock = new TimelockController(minDelay, proposers, executors, tlAdmin);
+        vm.stopBroadcast();
+        console.log("Deployed TimelockController:", address(timelock));
+        console.log("Min delay:", timelock.getMinDelay());
+
         // Deploy L2 token (implementation + proxy)
         vm.startBroadcast(deployerPrivateKey);
 
@@ -153,18 +177,23 @@ contract DeployCNSTokenL2 is BaseScript {
         implementation = new CNSTokenL2();
         console.log("   Implementation:", address(implementation));
 
-        // Prepare initialization data
+        // Prepare initialization data with senderAllowlist
+        address[] memory senderAllowlist = new address[](2);
+        senderAllowlist[0] = hedgeyBatchPlanner;
+        senderAllowlist[1] = hedgeyTokenVestingPlans;
+
         bytes memory initCalldata = abi.encodeWithSelector(
             CNSTokenL2.initialize.selector,
             defaultAdmin,
-            upgrader,
+            address(timelock),
             pauser,
             allowlistAdmin,
             bridge,
             l1Token,
             L2_NAME,
             L2_SYMBOL,
-            L2_DECIMALS
+            L2_DECIMALS,
+            senderAllowlist
         );
 
         console.log("\n2. Deploying ERC1967 proxy...");
@@ -181,8 +210,8 @@ contract DeployCNSTokenL2 is BaseScript {
             "FATAL: Initialization failed - defaultAdmin doesn't have DEFAULT_ADMIN_ROLE"
         );
         require(
-            token.hasRole(keccak256("UPGRADER_ROLE"), upgrader),
-            "FATAL: Initialization failed - upgrader doesn't have UPGRADER_ROLE"
+            token.hasRole(keccak256("UPGRADER_ROLE"), address(timelock)),
+            "FATAL: Initialization failed - timelock doesn't have UPGRADER_ROLE"
         );
         require(
             token.hasRole(keccak256("PAUSER_ROLE"), pauser),
@@ -194,18 +223,14 @@ contract DeployCNSTokenL2 is BaseScript {
         );
         console.log("   [OK] Contract initialized successfully");
         console.log("   [OK] All roles assigned correctly");
+        console.log("   [OK] UPGRADER_ROLE granted to TimelockController");
 
         vm.stopBroadcast();
 
-        // Setup allowlist using owner's private key
-        _setupAllowlist(hedgeyBatchPlanner, hedgeyTokenVestingPlans);
         // Verify deployment
         _verifyDeployment(
             defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
         );
-
-        // Deploy or attach to a TimelockController and assign UPGRADER_ROLE
-        _setupTimelock(cfg, deployerPrivateKey, defaultAdmin, upgrader);
 
         _logDeploymentResults(
             defaultAdmin,
@@ -254,8 +279,8 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Verify critical roles
         require(token.hasRole(DEFAULT_ADMIN_ROLE, defaultAdmin), "DefaultAdmin missing DEFAULT_ADMIN_ROLE");
-        require(token.hasRole(UPGRADER_ROLE, upgrader), "Upgrader missing UPGRADER_ROLE");
-        console.log("[OK] Critical roles assigned (DEFAULT_ADMIN + UPGRADER)");
+        require(token.hasRole(UPGRADER_ROLE, address(timelock)), "Timelock missing UPGRADER_ROLE");
+        console.log("[OK] Critical roles assigned (DEFAULT_ADMIN + UPGRADER via Timelock)");
 
         // Verify operational roles
         require(token.hasRole(PAUSER_ROLE, pauser), "Pauser missing PAUSER_ROLE");
@@ -267,14 +292,21 @@ contract DeployCNSTokenL2 is BaseScript {
         require(token.hasRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin), "DefaultAdmin missing backup ALLOWLIST_ADMIN_ROLE");
         console.log("[OK] Default Admin has backup access to operational roles");
 
-        // Check sender allowlist
-        require(token.isSenderAllowlisted(address(token)), "Token not allowlisted");
-        require(token.isSenderAllowlisted(bridge), "Bridge not allowlisted");
-        require(token.isSenderAllowlisted(defaultAdmin), "DefaultAdmin not allowlisted");
+        // Check sender allowlist is enabled
         require(token.senderAllowlistEnabled(), "Sender allowlist not enabled");
-        console.log("[OK] Default addresses allowlisted");
+        console.log("[OK] Sender allowlist is enabled");
 
-        // Check Hedgey addresses (required)
+        // Verify core addresses are allowlisted
+        require(token.isSenderAllowlisted(address(token)), "Token contract not allowlisted");
+        console.log("[OK] Token contract allowlisted");
+
+        require(token.isSenderAllowlisted(bridge), "Bridge not allowlisted");
+        console.log("[OK] Bridge allowlisted");
+
+        require(token.isSenderAllowlisted(defaultAdmin), "DefaultAdmin not allowlisted");
+        console.log("[OK] Default Admin allowlisted");
+
+        // Verify Hedgey addresses are allowlisted (these are critical for operations)
         require(token.isSenderAllowlisted(hedgeyBatchPlanner), "Hedgey Batch Planner not allowlisted");
         console.log("[OK] Hedgey Batch Planner allowlisted");
 
@@ -282,64 +314,6 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("[OK] Hedgey Token Vesting Plans allowlisted");
 
         console.log("\n[SUCCESS] All deployment checks passed!");
-    }
-
-    function _setupTimelock(EnvConfig memory cfg, uint256 deployerPrivateKey, address defaultAdmin, address upgrader)
-        internal
-    {
-        uint256 minDelay = cfg.l2.timelock.minDelay;
-        address tlAdmin = cfg.l2.timelock.admin;
-        address[] memory proposers = cfg.l2.timelock.proposers;
-        address[] memory executors = cfg.l2.timelock.executors;
-
-        console.log("\n=== Timelock Setup ===");
-        require(minDelay > 0, "timelock minDelay=0");
-        require(tlAdmin != address(0), "timelock admin=0");
-
-        vm.startBroadcast(deployerPrivateKey);
-        timelock = new TimelockController(minDelay, proposers, executors, tlAdmin);
-        vm.stopBroadcast();
-        console.log("Deployed TimelockController:", address(timelock));
-        console.log("Min delay:", timelock.getMinDelay());
-
-        // Assign roles using the owner (DEFAULT_ADMIN_ROLE) key
-        bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-        bytes32 DEFAULT_ADMIN_ROLE = 0x00;
-
-        uint256 upgraderPrivateKey = vm.envUint("CNS_UPGRADER_PRIVATE_KEY");
-        address upgraderActor = vm.addr(upgraderPrivateKey);
-        require(upgraderActor == upgrader, "CNS_UPGRADER_PRIVATE_KEY != upgrader");
-
-        require(token.hasRole(DEFAULT_ADMIN_ROLE, defaultAdmin), "defaultAdmin lacks DEFAULT_ADMIN_ROLE");
-        vm.startBroadcast(upgraderPrivateKey);
-        token.grantRole(UPGRADER_ROLE, address(timelock));
-        token.revokeRole(UPGRADER_ROLE, upgrader);
-        vm.stopBroadcast();
-        console.log("Granted UPGRADER_ROLE to TimelockController");
-        console.log("Revoked UPGRADER_ROLE from owner");
-    }
-
-    function _setupAllowlist(address hedgeyBatchPlanner, address hedgeyTokenVestingPlans) internal {
-        console.log("\n=== Allowlist Setup ===");
-
-        // Get owner's private key for allowlist operations
-        bytes32 DEFAULT_ADMIN_ROLE = 0x00;
-
-        uint256 adminPrivateKey = vm.envUint("CNS_DEFAULT_ADMIN_PRIVATE_KEY");
-        address adminActor = vm.addr(adminPrivateKey);
-        require(token.hasRole(DEFAULT_ADMIN_ROLE, adminActor), "defaultAdmin lacks DEFAULT_ADMIN_ROLE");
-
-        console.log("Adding Hedgey addresses to allowlist...");
-        address[] memory hedgeyAddresses = new address[](2);
-        hedgeyAddresses[0] = hedgeyBatchPlanner;
-        hedgeyAddresses[1] = hedgeyTokenVestingPlans;
-
-        vm.startBroadcast(adminPrivateKey);
-        token.setSenderAllowedBatch(hedgeyAddresses, true);
-        vm.stopBroadcast();
-
-        console.log("   [OK] Hedgey Batch Planner allowlisted:", hedgeyBatchPlanner);
-        console.log("   [OK] Hedgey Token Vesting Plans allowlisted:", hedgeyTokenVestingPlans);
     }
 
     function _logDeploymentResults(
@@ -374,8 +348,9 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Default Admin:", defaultAdmin);
         console.log("  - Controls: Role management");
         console.log("  - Backup for: Pause/Unpause, Allowlist management");
-        console.log("Upgrader:", upgrader);
+        console.log("Upgrader (via Timelock):", address(timelock));
         console.log("  - Controls: Contract upgrades");
+        console.log("  - MinDelay:", timelock.getMinDelay(), "seconds");
         console.log("Pauser:", pauser);
         console.log("  - Controls: Emergency pause/unpause");
         console.log("Allowlist Admin:", allowlistAdmin);
@@ -394,12 +369,14 @@ contract DeployCNSTokenL2 is BaseScript {
         // Log next steps
         console.log("\n=== Next Steps ===");
         console.log("1. Verify contracts (see commands below)");
-        console.log("2. Add additional addresses to sender allowlist: token.setSenderAllowed(address, true)");
-        console.log("3. Optionally disable allowlist: token.setSenderAllowlistEnabled(false)");
-        console.log("4. Bridge tokens from L1 using Linea bridge");
-        console.log("5. Test transfers between allowlisted addresses");
-        console.log("6. Test Hedgey integration with allowlisted addresses");
-        console.log("7. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol");
+        console.log("2. Hedgey addresses have been allowlisted during initialization");
+        console.log("3. UPGRADER_ROLE has been granted to TimelockController");
+        console.log("4. Add additional addresses to sender allowlist: token.setSenderAllowed(address, true)");
+        console.log("5. Optionally disable allowlist: token.setSenderAllowlistEnabled(false)");
+        console.log("6. Bridge tokens from L1 using Linea bridge");
+        console.log("7. Test transfers between allowlisted addresses");
+        console.log("8. Test Hedgey integration with allowlisted addresses");
+        console.log("9. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol (routed through timelock)");
     }
 
     function _logVerificationCommands(bytes memory initCalldata) internal view {
