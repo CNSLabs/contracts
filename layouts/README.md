@@ -1,102 +1,35 @@
-# Storage Layouts
+# Storage Layout Verification
 
-This directory contains baseline storage layout snapshots for upgradeable contracts.
+This directory contains storage layout verification artifacts for the CNSTokenL2 contracts.
 
-Storage layout validation is **automatically checked in CI** to prevent breaking changes during upgrades.
+## Files
 
-## Automated CI Validation
+- **`v1-storage.json`** - Storage layout for CNSTokenL2 (V1)
+- **`v2-storage.json`** - Storage layout for CNSTokenL2V2 (V2)
+- **`STORAGE_ANALYSIS.md`** - Detailed analysis of V1 → V2 upgrade safety
 
-On every PR, the CI will:
-1. Build the contracts
-2. Run OpenZeppelin's storage layout validation: `npx @openzeppelin/upgrades-core validate out/build-info --unsafeAllow missing-initializer`
-3. Upload storage layout artifacts for reference
-4. Fail if incompatible changes are detected
+## Verification Results
 
-## Baseline Files
+✅ **V1 → V2 Upgrade is SAFE**
 
-- `CNSTokenL2.json` - Baseline for CNSTokenL2 contract
-- `CNSTokenL2V2.json` - Baseline for CNSTokenL2V2 contract
+All storage slots are preserved at identical positions. No collisions detected.
 
-## Updating Baselines
-
-These baseline files are kept for reference and documentation purposes. The actual validation is handled by OpenZeppelin's tool.
-
-If you need to update these reference files:
+## How to Regenerate
 
 ```bash
-# Build contracts
-forge build
+# Generate V1 layout
+forge inspect src/CNSTokenL2.sol:CNSTokenL2 storage-layout > layouts/v1-storage.json
 
-# Update baseline for a specific contract
-cat out/CNSTokenL2.sol/CNSTokenL2.json | jq '.storageLayout.storage' > layouts/CNSTokenL2.json
+# Generate V2 layout
+forge inspect src/CNSTokenL2V2.sol:CNSTokenL2V2 storage-layout > layouts/v2-storage.json
+
+# Compare
+diff -u layouts/v1-storage.json layouts/v2-storage.json
 ```
 
-## Manual Validation
+## Verification Date
 
-You can run the OpenZeppelin validation locally:
+**Last Verified**: October 21, 2025  
+**Result**: ✅ NO STORAGE COLLISIONS
 
-```bash
-# Build contracts first
-forge build
-
-# Run OpenZeppelin validation
-npx @openzeppelin/upgrades-core validate out/build-info --unsafeAllow missing-initializer
-```
-
-## Understanding Storage Layouts
-
-### Safe Operations ✅
-- Add new variables at the END
-- Add new functions (don't affect storage)
-- Modify function logic
-- Use storage gap slots for new variables
-
-### Unsafe Operations ❌
-- Reorder existing variables
-- Change variable types
-- Remove variables
-- Insert variables between existing ones
-
-### Storage Gap Usage
-
-Our upgradeable contracts use storage gaps to reserve space for future variables:
-
-```solidity
-// In CNSTokenL2
-uint256[47] private __gap;
-```
-
-**When adding N new storage variables:**
-1. Add them at the end of the contract (before the gap)
-2. Reduce the gap size by N slots: `uint256[47-N] private __gap;`
-3. Update the baseline storage layout
-
-**Example:**
-```solidity
-// Before (gap of 47)
-mapping(address => bool) private _allowlisted;
-uint256[47] private __gap;
-
-// After adding 2 new variables (gap of 45)
-mapping(address => bool) private _allowlisted;
-uint256 private _newVariable1;
-address private _newVariable2;
-uint256[45] private __gap;  // Reduced by 2
-```
-
-## Viewing Storage Layouts
-
-To inspect the current storage layout of a contract:
-
-```bash
-# Pretty table format
-forge inspect src/CNSTokenL2.sol:CNSTokenL2 storageLayout
-
-# JSON format
-forge inspect src/CNSTokenL2.sol:CNSTokenL2 storageLayout --json
-```
-
-## See Also
-
-- [UPGRADE_GUIDE.md](../UPGRADE_GUIDE.md) - Comprehensive upgrade checklist
-- [SECURITY.md](../SECURITY.md) - Security considerations including storage safety
+See `STORAGE_ANALYSIS.md` for complete details.
