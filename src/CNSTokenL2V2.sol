@@ -80,7 +80,7 @@ contract CNSTokenL2V2 is
      */
     /// @notice Initialize the token with role separation
     /// @param defaultAdmin_ Address for DEFAULT_ADMIN_ROLE (governance address)
-    /// @param upgrader_ Address that receives UPGRADER_ROLE (typically TimelockController)
+    /// @param upgrader_ Address for UPGRADER_ROLE (can upgrade the contract)
     /// @param pauser_ Address for PAUSER_ROLE (can pause/unpause in emergencies)
     /// @param allowlistAdmin_ Address for ALLOWLIST_ADMIN_ROLE (manages transfer allowlist)
     /// @param bridge_ Linea bridge contract address
@@ -88,7 +88,6 @@ contract CNSTokenL2V2 is
     /// @param name_ Token name
     /// @param symbol_ Token symbol
     /// @param decimals_ Token decimals
-    /// @param senderAllowlist_ Array of addresses to add to sender allowlist during initialization
     function initialize(
         address defaultAdmin_,
         address upgrader_,
@@ -98,8 +97,7 @@ contract CNSTokenL2V2 is
         address l1Token_,
         string memory name_,
         string memory symbol_,
-        uint8 decimals_,
-        address[] calldata senderAllowlist_
+        uint8 decimals_
     ) external initializer {
         if (defaultAdmin_ == address(0)) revert InvalidDefaultAdmin();
         if (upgrader_ == address(0)) revert InvalidUpgrader();
@@ -124,7 +122,6 @@ contract CNSTokenL2V2 is
 
         // Grant critical roles
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
-        // Grant UPGRADER_ROLE to upgrader (typically the timelock)
         _grantRole(UPGRADER_ROLE, upgrader_);
 
         // Grant operational roles to dedicated addresses
@@ -139,11 +136,6 @@ contract CNSTokenL2V2 is
         _setSenderAllowlist(address(this), true);
         _setSenderAllowlist(bridge_, true);
         _setSenderAllowlist(defaultAdmin_, true);
-
-        // Add additional senderAllowlist addresses provided during initialization
-        if (senderAllowlist_.length > 0) {
-            _setBatchSenderAllowlist(senderAllowlist_, true);
-        }
 
         emit Initialized(defaultAdmin_, bridge_, l1Token_, name_, symbol_, decimals_);
     }
@@ -185,7 +177,13 @@ contract CNSTokenL2V2 is
     }
 
     function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        _setBatchSenderAllowlist(accounts, allowed);
+        if (accounts.length == 0) revert EmptyBatch();
+        if (accounts.length > MAX_BATCH_SIZE) revert BatchTooLarge();
+
+        for (uint256 i; i < accounts.length; ++i) {
+            if (accounts[i] == address(0)) revert ZeroAddress();
+            _setSenderAllowlist(accounts[i], allowed);
+        }
         emit SenderAllowlistBatchUpdated(accounts, allowed);
     }
 
@@ -233,19 +231,6 @@ contract CNSTokenL2V2 is
     function _setSenderAllowlist(address account, bool allowed) internal {
         _senderAllowlisted[account] = allowed;
         emit SenderAllowlistUpdated(account, allowed);
-    }
-
-    /// @notice Internal batch setter for sender allowlist with validation
-    /// @param accounts Array of addresses to update
-    /// @param allowed True to allowlist, false to remove from allowlist
-    function _setBatchSenderAllowlist(address[] calldata accounts, bool allowed) internal {
-        if (accounts.length == 0) revert EmptyBatch();
-        if (accounts.length > MAX_BATCH_SIZE) revert BatchTooLarge();
-
-        for (uint256 i; i < accounts.length; ++i) {
-            if (accounts[i] == address(0)) revert ZeroAddress();
-            _setSenderAllowlist(accounts[i], allowed);
-        }
     }
 
     uint256[46] private __gap;

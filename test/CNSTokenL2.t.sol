@@ -51,7 +51,6 @@ contract CNSTokenL2Test is Test {
         CNSTokenL2 implementation = new CNSTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
         CNSTokenL2 proxied = CNSTokenL2(address(proxy));
-        address[] memory emptyAllowlist = new address[](0);
         proxied.initialize(
             defaultAdmin_,
             upgrader_,
@@ -88,44 +87,32 @@ contract CNSTokenL2Test is Test {
     function testInitializeRevertsOnZeroAddresses() public {
         CNSTokenL2 fresh = _deployProxy();
         MockBridge mockBridge = new MockBridge();
-        address[] memory emptyAllowlist = new address[](0);
 
         vm.expectRevert(CNSTokenL2.InvalidDefaultAdmin.selector);
-        fresh.initialize(
-            address(0), admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
-        );
+        fresh.initialize(address(0), admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert(CNSTokenL2.InvalidUpgrader.selector);
-        fresh.initialize(
-            admin, address(0), admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
-        );
+        fresh.initialize(admin, address(0), admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert(CNSTokenL2.InvalidPauser.selector);
-        fresh.initialize(
-            admin, admin, address(0), admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
-        );
+        fresh.initialize(admin, admin, address(0), admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert(CNSTokenL2.InvalidAllowlistAdmin.selector);
-        fresh.initialize(
-            admin, admin, admin, address(0), address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist
-        );
+        fresh.initialize(admin, admin, admin, address(0), address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert(CNSTokenL2.InvalidBridge.selector);
-        fresh.initialize(admin, admin, admin, admin, address(0), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
+        fresh.initialize(admin, admin, admin, admin, address(0), l1Token, NAME, SYMBOL, DECIMALS);
 
         fresh = _deployProxy();
         vm.expectRevert(CNSTokenL2.InvalidL1Token.selector);
-        fresh.initialize(
-            admin, admin, admin, admin, address(mockBridge), address(0), NAME, SYMBOL, DECIMALS, emptyAllowlist
-        );
+        fresh.initialize(admin, admin, admin, admin, address(mockBridge), address(0), NAME, SYMBOL, DECIMALS);
     }
 
     function testInitializeCannotRunTwice() public {
-        address[] memory emptyAllowlist = new address[](0);
         vm.expectRevert();
         token.initialize(admin, admin, admin, admin, bridge, l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
     }
@@ -278,17 +265,15 @@ contract CNSTokenL2Test is Test {
     function testInitializeRevertsIfBridgeIsEOA() public {
         CNSTokenL2 fresh = _deployProxy();
         address eoa = makeAddr("eoa");
-        address[] memory emptyAllowlist = new address[](0);
 
         vm.expectRevert(CNSTokenL2.BridgeNotContract.selector);
-        fresh.initialize(admin, admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist);
+        fresh.initialize(admin, admin, admin, admin, eoa, l1Token, NAME, SYMBOL, DECIMALS);
     }
 
     function testInitializationEmitsEvents() public {
         CNSTokenL2 impl = new CNSTokenL2();
         MockBridge mockBridge = new MockBridge();
         address testBridge = address(mockBridge);
-        address[] memory emptyAllowlist = new address[](0);
 
         bytes memory initData = abi.encodeWithSelector(
             CNSTokenL2.initialize.selector,
@@ -368,7 +353,6 @@ contract CNSTokenL2Test is Test {
         // This verifies the deployment script pattern works
         CNSTokenL2 impl = new CNSTokenL2();
         MockBridge mockBridge = new MockBridge();
-        address[] memory emptyAllowlist = new address[](0);
 
         bytes memory initData = abi.encodeWithSelector(
             CNSTokenL2.initialize.selector,
@@ -393,7 +377,6 @@ contract CNSTokenL2Test is Test {
 
         // Cannot initialize again
         vm.expectRevert();
-        address[] memory emptyAllowlist2 = new address[](0);
         deployedToken.initialize(
             admin, admin, admin, admin, address(mockBridge), l1Token, NAME, SYMBOL, DECIMALS, emptyAllowlist2
         );
