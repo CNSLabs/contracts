@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "chainId": "59144",
+  "createdAt": 1761173205896,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.18.2",
+    "createdFromSafeAddress": "0x42f04534d384673a884227b8a347598916003270",
+    "createdFromOwnerAddress": "",
+    "checksum": ""
+  },
+  "transactions": [
+    {
+      "to": "0xD9a83e94F41723727F55a78C8a4f056f6B4C2AB7",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
+        "value": "100000000000000000000000000"
+      }
+    },
+    {
+      "to": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "_recipient",
+            "type": "address"
+          }
+        ],
+        "name": "bridgeToken",
+        "payable": true
+      },
+      "contractInputsValues": {
+        "_token": "0xD9a83e94F41723727F55a78C8a4f056f6B4C2AB7",
+        "_amount": "100000000000000000000000000",
+        "_recipient": "0x42f04534d384673a884227b8a347598916003270"
+      }
+    }
+  ]
+}

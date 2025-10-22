@@ -1,0 +1,30 @@
+{
+  "name": "safe-batch-generator",
+  "version": "1.0.0",
+  "description": "Generate Safe transaction batch JSON from template with config substitution",
+  "main": "generate-safe-batch.js",
+  "bin": {
+    "generate-safe-batch": "./generate-safe-batch.js"
+  },
+  "scripts": {
+    "start": "node generate-safe-batch.js",
+    "test": "node generate-safe-batch.js --dry-run --env dev"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "safe",
+    "gnosis-safe",
+    "ethereum",
+    "transaction",
+    "batch",
+    "template"
+  ],
+  "author": "",
+  "license": "MIT"
+}
