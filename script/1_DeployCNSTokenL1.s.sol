@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./BaseScript.sol";
 import "./ConfigLoader.sol";
 import "../src/CNSTokenL1.sol";
+import {StdStyle} from "forge-std/StdStyle.sol";
 
 /**
  * @title DeployCNSTokenL1
@@ -98,5 +99,12 @@ contract DeployCNSTokenL1 is BaseScript {
         console.log("2. Use this L1 token address when deploying L2 token");
         console.log("3. Bridge tokens using the Linea canonical bridge");
         console.log("   L1 Token Address:", address(token));
+
+        // Final prominent contract address display
+        console.log("\n");
+        console.log(StdStyle.green("================================================================================"));
+        console.log(StdStyle.yellow(StdStyle.bold(">>> DEPLOYED CONTRACT ADDRESS <<<")));
+        console.log(StdStyle.cyan(StdStyle.bold(vm.toString(address(token)))));
+        console.log(StdStyle.green("================================================================================"));
     }
 }

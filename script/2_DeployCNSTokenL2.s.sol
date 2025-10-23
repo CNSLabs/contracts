@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./BaseScript.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {StdStyle} from "forge-std/StdStyle.sol";
 import "../src/CNSTokenL2.sol";
 
 /**
@@ -20,7 +21,7 @@ import "../src/CNSTokenL2.sol";
  * Usage:
  *   # Linea Sepolia testnet
  *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
- *     --rpc-url linea_sepolia \
+ *     --rpc-url linea-sepolia \
  *     --broadcast \
  *     --verify
  *
@@ -377,6 +378,21 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("7. Test transfers between allowlisted addresses");
         console.log("8. Test Hedgey integration with allowlisted addresses");
         console.log("9. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol (routed through timelock)");
+
+        // Final prominent contract addresses display
+        console.log("\n");
+        console.log(StdStyle.green("================================================================================"));
+        console.log(StdStyle.yellow(StdStyle.bold(">>> DEPLOYED CONTRACT ADDRESSES <<<")));
+        console.log(StdStyle.green("================================================================================"));
+        console.log(StdStyle.cyan(StdStyle.bold("Timelock Controller:")));
+        console.log(StdStyle.cyan(vm.toString(address(timelock))));
+        console.log("");
+        console.log(StdStyle.magenta(StdStyle.bold("CNSTokenL2 Implementation:")));
+        console.log(StdStyle.magenta(vm.toString(address(implementation))));
+        console.log("");
+        console.log(StdStyle.blue(StdStyle.bold("CNSTokenL2 Proxy (Main Contract):")));
+        console.log(StdStyle.blue(vm.toString(address(proxy))));
+        console.log(StdStyle.green("================================================================================"));
     }
 
     function _logVerificationCommands(bytes memory initCalldata) internal view {
