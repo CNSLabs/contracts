@@ -354,20 +354,13 @@ abstract contract BaseScript is Script {
         try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
             fromEnv = a;
         } catch {}
-
-        if (fromEnv != address(0)) {
-            console.log("CNS_TOKEN_L2_PROXY from env:", fromEnv);
-            return fromEnv;
-        }
+        if (fromEnv != address(0)) return fromEnv;
 
         if (cfg.l2.proxy != address(0)) {
-            // console.log("L2 from config:", cheats.toString(cfg.l2));
-            console.log("CNS_TOKEN_L2_PROXY from config:", cfg.l2.proxy);
             return cfg.l2.proxy;
         }
 
         address fromArtifacts = _inferL2ProxyFromBroadcast(block.chainid);
-        console.log("CNS_TOKEN_L2_PROXY from artifacts:", fromArtifacts);
         return fromArtifacts;
     }
 

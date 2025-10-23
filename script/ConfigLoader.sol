@@ -97,9 +97,8 @@ library ConfigLoader {
         pure
         returns (address)
     {
-        try vm_.parseJson(json, key) returns (bytes memory raw) {
-            if (raw.length == 0) return defaultValue;
-            return abi.decode(raw, (address));
+        try vm_.parseJsonAddress(json, key) returns (address parsed) {
+            return parsed;
         } catch {
             return defaultValue;
         }
