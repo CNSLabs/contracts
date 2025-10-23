@@ -86,12 +86,10 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Get and validate required addresses
         address defaultAdmin = vm.envOr("CNS_DEFAULT_ADMIN", cfg.l2.roles.admin);
-        address upgrader = vm.envOr("CNS_UPGRADER", cfg.l2.roles.upgrader); // Defaults to defaultAdmin if not set
         address pauser = vm.envOr("CNS_PAUSER", cfg.l2.roles.pauser); // Defaults to defaultAdmin if not set
         address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", cfg.l2.roles.allowlistAdmin); // Defaults to defaultAdmin if not set
 
         _requireNonZeroAddress(defaultAdmin, "CNS_DEFAULT_ADMIN");
-        _requireNonZeroAddress(upgrader, "CNS_UPGRADER");
         _requireNonZeroAddress(pauser, "CNS_PAUSER");
         _requireNonZeroAddress(allowlistAdmin, "CNS_ALLOWLIST_ADMIN");
 
@@ -120,7 +118,6 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("Decimals:", L2_DECIMALS);
         console.log("\n=== Role Assignment ===");
         console.log("Default Admin:", defaultAdmin);
-        console.log("Upgrader:", upgrader);
         console.log("Pauser:", pauser);
         console.log("Allowlist Admin:", allowlistAdmin);
         console.log("\n=== Contract Addresses ===");
@@ -133,7 +130,6 @@ contract DeployCNSTokenL2 is BaseScript {
         // Pre-deployment validation
         console.log("\n=== Pre-Deployment Validation ===");
         require(defaultAdmin != address(0), "FATAL: CNS_DEFAULT_ADMIN cannot be zero address");
-        require(upgrader != address(0), "FATAL: CNS_UPGRADER cannot be zero address");
         require(pauser != address(0), "FATAL: CNS_PAUSER cannot be zero address");
         require(allowlistAdmin != address(0), "FATAL: CNS_ALLOWLIST_ADMIN cannot be zero address");
         require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
@@ -229,12 +225,11 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Verify deployment
         _verifyDeployment(
-            defaultAdmin, upgrader, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
+            defaultAdmin, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
         );
 
         _logDeploymentResults(
             defaultAdmin,
-            upgrader,
             pauser,
             allowlistAdmin,
             bridge,
@@ -247,8 +242,6 @@ contract DeployCNSTokenL2 is BaseScript {
 
     function _verifyDeployment(
         address defaultAdmin,
-        address,
-        /* upgrader */
         address pauser,
         address allowlistAdmin,
         address bridge,
@@ -319,8 +312,6 @@ contract DeployCNSTokenL2 is BaseScript {
 
     function _logDeploymentResults(
         address defaultAdmin,
-        address,
-        /* upgrader */
         address pauser,
         address allowlistAdmin,
         address bridge,
