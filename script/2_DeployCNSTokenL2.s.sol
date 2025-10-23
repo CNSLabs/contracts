@@ -156,6 +156,11 @@ contract DeployCNSTokenL2 is BaseScript {
         uint256 minDelay = cfg.l2.timelock.minDelay;
         address tlAdmin = cfg.l2.timelock.admin;
         address[] memory proposers = cfg.l2.timelock.proposers;
+        address proposerOverride = vm.envOr("CNS_TIMELOCK_PROPOSER", address(0));
+        if (proposerOverride != address(0)) {
+            proposers = new address[](1);
+            proposers[0] = proposerOverride;
+        }
         address[] memory executors = cfg.l2.timelock.executors;
 
         require(minDelay > 0, "timelock minDelay=0");

@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
 import "./ConfigLoader.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /**
  * @title BaseScript
@@ -337,5 +338,48 @@ abstract contract BaseScript is Script {
         // Also try upgrade script in case timelock was deployed there earlier
         addr = _inferFromBroadcast(l2ChainId, "3_UpgradeCNSTokenL2ToV2.s.sol", "TimelockController");
         return addr;
+    }
+
+    // ============================================
+    // L2 Address Resolution Helpers
+    // ============================================
+
+    /**
+     * @notice Resolve L2 token proxy address from env, config, or broadcast artifacts
+     * @param cfg EnvConfig containing proxy address
+     * @return The resolved proxy address
+     */
+    function _resolveL2ProxyAddress(EnvConfig memory cfg) internal view returns (address) {
+        address fromEnv = address(0);
+        try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+            fromEnv = a;
+        } catch {}
+        if (fromEnv != address(0)) return fromEnv;
+
+        if (cfg.l2.proxy != address(0)) {
+            return cfg.l2.proxy;
+        }
+
+        address fromArtifacts = _inferL2ProxyFromBroadcast(block.chainid);
+        return fromArtifacts;
+    }
+
+    /**
+     * @notice Resolve L2 timelock address from env, config, or broadcast artifacts
+     * @param cfg EnvConfig containing timelock address
+     * @param proxyAddress The proxy address (used to avoid false matches)
+     * @return The resolved timelock address, or 0x0 if not found
+     */
+    function _resolveL2TimelockAddress(EnvConfig memory cfg, address proxyAddress) internal view returns (address) {
+        address timelockAddress = vm.envOr("CNS_L2_TIMELOCK", cfg.l2.timelock.addr);
+        if (timelockAddress == address(0)) {
+            address inferred = _inferTimelockFromBroadcast(block.chainid);
+            if (inferred != address(0) && inferred != proxyAddress) {
+                try TimelockController(payable(inferred)).getMinDelay() returns (uint256) {
+                    timelockAddress = inferred;
+                } catch {}
+            }
+        }
+        return timelockAddress;
     }
 }
