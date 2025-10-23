@@ -13,7 +13,7 @@ import "./ConfigLoader.sol";
  * Usage:
  *   # Default (dev)
  *   forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
- *     --rpc-url linea_sepolia \
+ *     --rpc-url linea-sepolia \
  *     --broadcast
  *
  *   # Explicit non-default environment via ENV

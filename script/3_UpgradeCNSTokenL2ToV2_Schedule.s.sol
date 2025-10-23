@@ -20,7 +20,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *
  * Usage:
  *   ENV=dev forge script script/3_UpgradeCNSTokenL2ToV2_Schedule.s.sol:UpgradeCNSTokenL2ToV2_Schedule \
- *     --rpc-url linea_sepolia --broadcast
+ *     --rpc-url linea-sepolia --broadcast
  *
  * Output:
  *   - Prints NEW_IMPL_ADDRESS and TIMELOCK_SALT needed for execution

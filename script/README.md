@@ -47,12 +47,12 @@ contract MyScript is BaseScript {
   # New: zero-arg run() with inferred config
   # Select env via ENV (default: dev)
   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
-    --rpc-url linea_sepolia \
+    --rpc-url linea-sepolia \
     --broadcast --verify
 
   # Linea Sepolia testnet
   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
-    --rpc-url linea_sepolia \
+    --rpc-url linea-sepolia \
     --broadcast \
     --verify
   
@@ -76,7 +76,7 @@ contract MyScript is BaseScript {
   ```bash
   # Testnet
   forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
-    --rpc-url linea_sepolia \
+    --rpc-url linea-sepolia \
     --broadcast \
     --verify
   
@@ -90,7 +90,7 @@ contract MyScript is BaseScript {
   ```bash
   # Linea Sepolia testnet
   forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
-    --rpc-url linea_sepolia \
+    --rpc-url linea-sepolia \
     --broadcast
   ```
   
@@ -100,7 +100,7 @@ contract MyScript is BaseScript {
 
 - **`DemoV2Features.s.sol`** - Demo script showing V2 voting features
   ```bash
-  forge script script/DemoV2Features.s.sol:DemoV2Features --rpc-url linea_sepolia
+  forge script script/DemoV2Features.s.sol:DemoV2Features --rpc-url linea-sepolia
   ```
 
 ## BaseScript Utilities
@@ -251,7 +251,7 @@ contract DeployMyContract is BaseScript {
    
    # Deploy to Linea Sepolia
    forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
-     --rpc-url linea_sepolia \
+     --rpc-url linea-sepolia \
      --broadcast \
      --verify
    
@@ -267,7 +267,7 @@ contract DeployMyContract is BaseScript {
      0xUserAddress \
      true \
      --private-key $PRIVATE_KEY \
-     --rpc-url linea_sepolia
+     --rpc-url linea-sepolia
    
    # Bridge some tokens from L1 to L2 using Linea bridge UI
    ```
@@ -276,7 +276,7 @@ contract DeployMyContract is BaseScript {
    ```bash
    # Upgrade to add voting capabilities
    forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
-     --rpc-url linea_sepolia \
+     --rpc-url linea-sepolia \
      --broadcast \
      --verify
    ```
@@ -320,7 +320,7 @@ Defined in `foundry.toml`:
 forge script ... --rpc-url mainnet --broadcast
 forge script ... --rpc-url sepolia --broadcast
 forge script ... --rpc-url linea --broadcast
-forge script ... --rpc-url linea_sepolia --broadcast
+forge script ... --rpc-url linea-sepolia --broadcast
 forge script ... --rpc-url local --broadcast
 ```
 
