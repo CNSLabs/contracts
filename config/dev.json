@@ -38,7 +38,10 @@
     "start": 1759752000,
     "cliff": 1759838400,
     "rate": 23148148148148,
-    "period": 1
+    "period": 1,
+    "useInvestorLockup": 0,
+    "vestingAdmin": "0x42f04534d384673a884227b8a347598916003270",
+    "adminTransferOBO": 0
   }
 }
 

@@ -38,7 +38,10 @@
     "start": 0,
     "cliff": 0,
     "rate": 0,
-    "period": 0
+    "period": 0,
+    "useInvestorLockup": 0,
+    "vestingAdmin": "0x0000000000000000000000000000000000000000",
+    "adminTransferOBO": 0
   }
 }
 

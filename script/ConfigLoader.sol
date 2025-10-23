@@ -55,6 +55,9 @@ struct HedgeyConfig {
     uint256 cliff;
     uint256 rate;
     uint256 period;
+    bool useInvestorLockup;
+    address vestingAdmin;
+    bool adminTransferOBO;
 }
 
 struct EnvConfig {
@@ -161,6 +164,9 @@ library ConfigLoader {
         cfg.hedgey.cliff = _readUint(vm_, json, ".hedgey.cliff", 0);
         cfg.hedgey.rate = _readUint(vm_, json, ".hedgey.rate", 0);
         cfg.hedgey.period = _readUint(vm_, json, ".hedgey.period", 0);
+        cfg.hedgey.useInvestorLockup = _readUint(vm_, json, ".hedgey.useInvestorLockup", 0) != 0;
+        cfg.hedgey.vestingAdmin = _readAddress(vm_, json, ".hedgey.vestingAdmin", address(0));
+        cfg.hedgey.adminTransferOBO = _readUint(vm_, json, ".hedgey.adminTransferOBO", 0) != 0;
     }
 
     function loadEnv(Vm vm_, string memory envName) internal view returns (EnvConfig memory cfg) {
