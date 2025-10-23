@@ -6,29 +6,27 @@
     "initialSupply": 100000000000000000000000000,
     "roles": {
       "admin": "0x42f04534d384673a884227b8a347598916003270"
-    },
-    "chain": { "name": "mainnet", "chainId": 1 }
+    }
   },
   "l2": {
     "name": "CNS Linea Token",
     "symbol": "CNSL",
     "decimals": 18,
-    "bridge": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
-    "l1Token": "0x0000000000000000000000000000000000000000",
-    "proxy": "0x0000000000000000000000000000000000000000",
+    "bridge": "0x353012dc4a9A6cF55c941bADC267f82004A8ceB9",
+    "l1Token": "",
+    "proxy": "",
     "roles": {
-      "admin": "0x42f04534d384673a884227b8a347598916003270",
-      "allowlistAdmin": "0x42f04534d384673a884227b8a347598916003270",
-      "upgrader": "0x42f04534d384673a884227b8a347598916003270",
-      "pauser": "0x42f04534d384673a884227b8a347598916003270"
+      "admin": "",
+      "allowlistAdmin": "",
+      "upgrader": "",
+      "pauser": ""
     },
-    "chain": { "name": "linea", "chainId": 59144 },
     "timelock": {
       "minDelay": 172800,
-      "admin": "0x42f04534d384673a884227b8a347598916003270",
-      "proposers": ["0x42f04534d384673a884227b8a347598916003270"],
+      "admin": "",
+      "proposers": [""],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "address": "0x0000000000000000000000000000000000000000"
+      "address": ""
     }
   }
   ,

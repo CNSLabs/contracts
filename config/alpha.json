@@ -5,30 +5,28 @@
     "symbol": "CNS",
     "initialSupply": 100000000000000000000000000,
     "roles": {
-      "admin": "0x42f04534d384673a884227b8a347598916003270"
-    },
-    "chain": { "name": "sepolia", "chainId": 11155111 }
+      "admin": ""
+    }
   },
   "l2": {
     "name": "CNS Linea Token",
     "symbol": "CNSL",
     "decimals": 18,
     "bridge": "0x93DcAdf238932e6e6a85852caC89cBd71798F463",
-    "l1Token": "0x0000000000000000000000000000000000000000",
-    "proxy": "0x0000000000000000000000000000000000000000",
+    "l1Token": "",
+    "proxy": "",
     "roles": {
-      "admin": "0x42f04534d384673a884227b8a347598916003270",
-      "allowlistAdmin": "0x42f04534d384673a884227b8a347598916003270",
-      "upgrader": "0x42f04534d384673a884227b8a347598916003270",
-      "pauser": "0x42f04534d384673a884227b8a347598916003270"
+      "admin": "",
+      "allowlistAdmin": "",
+      "upgrader": "",
+      "pauser": ""
     },
-    "chain": { "name": "linea-sepolia", "chainId": 59141 },
     "timelock": {
       "minDelay": 3600,
       "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
       "proposers": ["0xD7C8FD8F38683110B15771392Eb74209c15495ac"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "address": "0x0000000000000000000000000000000000000000"
+      "address": ""
     }
   }
   ,
