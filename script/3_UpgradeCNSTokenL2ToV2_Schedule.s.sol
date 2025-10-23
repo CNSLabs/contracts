@@ -14,7 +14,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *
  * Environment Variables:
  *   - PRIVATE_KEY: Signer key (must have PROPOSER_ROLE on timelock)
- *   - CNS_UPGRADER_PRIVATE_KEY: Alternative to PRIVATE_KEY
+ *   - CNS_TIMELOCK_PROPOSER_PRIVATE_KEY: Alternative to PRIVATE_KEY
  *   - ENV: Select public config JSON
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet
  *
@@ -35,16 +35,16 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
         uint256 ownerPrivateKey;
         address owner;
 
-        try vm.envUint("CNS_UPGRADER_PRIVATE_KEY") returns (uint256 key) {
+        try vm.envUint("CNS_TIMELOCK_PROPOSER_PRIVATE_KEY") returns (uint256 key) {
             ownerPrivateKey = key;
             owner = vm.addr(ownerPrivateKey);
-            console.log("Using CNS_UPGRADER_PRIVATE_KEY");
+            console.log("Using CNS_TIMELOCK_PROPOSER_PRIVATE_KEY");
         } catch {
-            console.log("CNS_UPGRADER_PRIVATE_KEY not found, using PRIVATE_KEY");
+            console.log("CNS_TIMELOCK_PROPOSER_PRIVATE_KEY not found, using PRIVATE_KEY");
             (ownerPrivateKey, owner) = _getDeployer();
         }
 
-        proxyAddress = _resolveProxyAddress(cfg);
+        proxyAddress = _resolveL2ProxyAddress(cfg);
         _requireNonZeroAddress(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
         _requireContract(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
 
@@ -54,15 +54,7 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
 
         _requireMainnetConfirmation();
 
-        timelockAddress = _resolveTimelockAddress(cfg);
-        if (timelockAddress == address(0)) {
-            address inferred = _inferTimelockFromBroadcast(block.chainid);
-            if (inferred != address(0) && inferred != proxyAddress) {
-                try TimelockController(payable(inferred)).getMinDelay() returns (uint256) {
-                    timelockAddress = inferred;
-                } catch {}
-            }
-        }
+        timelockAddress = _resolveL2TimelockAddress(cfg, proxyAddress);
         require(timelockAddress != address(0), "Missing TimelockController (set CNS_L2_TIMELOCK or config)");
         console.log("Using TimelockController:", timelockAddress);
 
@@ -113,28 +105,5 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
 
         // Log verification command for V2 implementation
         _logVerificationCommand(newImplementation, "src/CNSTokenL2V2.sol:CNSTokenL2V2");
-    }
-
-    function _resolveTimelockAddress(EnvConfig memory cfg) internal view returns (address) {
-        try vm.envAddress("CNS_L2_TIMELOCK") returns (address a) {
-            if (a != address(0)) return a;
-        } catch {}
-        if (cfg.l2.timelock.addr != address(0)) return cfg.l2.timelock.addr;
-        return address(0);
-    }
-
-    function _resolveProxyAddress(EnvConfig memory cfg) internal view returns (address) {
-        address fromEnv = address(0);
-        try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
-            fromEnv = a;
-        } catch {}
-        if (fromEnv != address(0)) return fromEnv;
-
-        if (cfg.l2.proxy != address(0)) {
-            return cfg.l2.proxy;
-        }
-
-        address fromArtifacts = _inferL2ProxyFromBroadcast(block.chainid);
-        return fromArtifacts;
     }
 }

@@ -285,9 +285,9 @@ contract UpgradeToken is BaseScript {
 
         // Get deployer private key
         uint256 deployerPrivateKey;
-        try vm.envUint("CNS_UPGRADER_PRIVATE_KEY") returns (uint256 key) {
+        try vm.envUint("CNS_TIMELOCK_PROPOSER_PRIVATE_KEY") returns (uint256 key) {
             deployerPrivateKey = key;
-            console.log("Using CNS_UPGRADER_PRIVATE_KEY for deployment");
+            console.log("Using CNS_TIMELOCK_PROPOSER_PRIVATE_KEY for deployment");
         } catch {
             (deployerPrivateKey,) = _getDeployer();
             console.log("Using PRIVATE_KEY for deployment");
