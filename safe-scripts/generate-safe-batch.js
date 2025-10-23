@@ -272,8 +272,14 @@ function generateBatch() {
       console.log('\nGenerated JSON (dry run):');
       console.log(JSON.stringify(result, null, 2));
     } else {
-      // Write to file
-      const outputPath = path.resolve(options.output);
+      // Create out directory if it doesn't exist
+      const outDir = path.join(__dirname, 'out');
+      if (!fs.existsSync(outDir)) {
+        fs.mkdirSync(outDir, { recursive: true });
+      }
+      
+      // Write to file in out directory
+      const outputPath = path.resolve(outDir, options.output);
       fs.writeFileSync(outputPath, JSON.stringify(result, null, 2));
       console.log(`\nSafe batch JSON written to: ${outputPath}`);
     }

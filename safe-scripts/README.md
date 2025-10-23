@@ -28,7 +28,7 @@ node generate-safe-batch.js --env production --token-contract 0x1111...
 
 - `-e, --env <environment>`: Environment (dev, alpha, production) [default: dev]
 - `--testnet`: Use testnet chain ID (59141), otherwise use mainnet (59144)
-- `-o, --output <file>`: Output file path [default: safe-batch.json]
+- `-o, --output <file>`: Output file path [default: safe-batch.json] (saved to out/ directory)
 - `--token-holder <address>`: Token holder safe address (overrides config)
 - `--token-contract <address>`: Token contract address (overrides config)
 - `--token-supply <amount>`: Token supply amount (overrides config)
@@ -101,7 +101,7 @@ The template uses these placeholders that get substituted:
 
 ## Output
 
-The script generates a JSON file compatible with Safe's transaction builder interface. The file can be imported into Safe for execution.
+The script generates a JSON file in the `out/` directory that is compatible with Safe's transaction builder interface. The file can be imported into Safe for execution.
 
 ## Error Handling
 
