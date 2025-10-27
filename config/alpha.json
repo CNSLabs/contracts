@@ -3,29 +3,29 @@
   "l1": {
     "name": "Canonical CNS Token",
     "symbol": "CNS",
-    "initialSupply": 100000000000000000000000000,
+    "initialSupply": 1000000000000000000000000,
     "roles": {
-      "admin": ""
+      "admin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d"
     }
   },
   "l2": {
     "name": "CNS Linea Token",
     "symbol": "CNSL",
     "decimals": 18,
-    "bridge": "0x93DcAdf238932e6e6a85852caC89cBd71798F463",
-    "l1Token": "",
-    "proxy": "",
+    "bridge": "0x42f04534d384673a884227b8a347598916003270",
+    "l1Token": "0xeb8708cafb403c90d5475bb623636896ce78facf",
+    "proxy": "0xc4E60963Bba97217EdB5b6FBAaFDF57255fcAA9E",
     "roles": {
-      "admin": "",
-      "allowlistAdmin": "",
-      "pauser": ""
+      "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
+      "allowlistAdmin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
+      "pauser": "0xD7C8FD8F38683110B15771392Eb74209c15495ac"
     },
     "timelock": {
-      "minDelay": 3600,
+      "minDelay": 300,
       "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
       "proposers": ["0xD7C8FD8F38683110B15771392Eb74209c15495ac"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": ""
+      "addr": "0x3F5e21086280444255d63C7B2BB78E92d98f8C97"
     }
   }
   ,

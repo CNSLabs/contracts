@@ -14,12 +14,13 @@ program
   .description('Generate Safe transaction batch JSON from template with config substitution')
   .version('1.0.0')
   .option('-e, --env <environment>', 'Environment (dev, alpha, production)', 'dev')
-  .option('--testnet', 'Use testnet chain ID (59141), otherwise use mainnet (59144)')
+  .option('--testnet', 'Use testnet chain ID (11155111), otherwise use mainnet (1)')
   .option('-o, --output <file>', 'Output file path', 'safe-batch.json')
   .option('--token-holder <address>', 'Token holder safe address (overrides config)')
   .option('--token-contract <address>', 'Token contract address (overrides config)')
   .option('--token-supply <amount>', 'Token supply amount (overrides config)')
   .option('--bridge-contract <address>', 'Bridge contract address (overrides config)')
+  .option('--recipient <address>', 'Recipient address for bridged tokens (overrides config)')
   .option('--dry-run', 'Print the generated JSON without writing to file')
   .parse();
 
@@ -92,7 +93,7 @@ const template = {
       "contractInputsValues": {
         "_token": "{TokenContract}",
         "_amount": "{TokenSupply}",
-        "_recipient": "{TokenHolderSafe}"
+        "_recipient": "{Recipient}"
       }
     }
   ]
@@ -190,7 +191,7 @@ function generateBatch() {
     console.log(`Loaded config for environment: ${options.env}`);
     
     // Determine chain ID based on testnet flag
-    const chainId = options.testnet ? '59141' : '59144';
+    const chainId = options.testnet ? '11155111' : '1';
     console.log(`Using chain ID: ${chainId} (${options.testnet ? 'testnet' : 'mainnet'})`);
     
     
@@ -235,6 +236,18 @@ function generateBatch() {
       'Token'
     );
 
+    // Get recipient address - default to l2.roles.admin, fallback to token holder safe
+    const recipientValue = getValue(
+      options.recipient,
+      null,
+      'l2.roles.admin',
+      config
+    );
+    
+    const recipient = validateAddress(
+      recipientValue || tokenHolderSafe, // Fallback to token holder safe if l2.roles.admin is not set
+      'Recipient'
+    );
     
     const bridgeContract = options.testnet ? '0x5A0a48389BB0f12E5e017116c1105da97E129142' : '0xd19d4B5d358258f05D7B411E21A1460D11B0876F';
     
@@ -247,7 +260,8 @@ function generateBatch() {
       '{TokenHolderSafe}': tokenHolderSafe,
       '{TokenContract}': tokenContract,
       '{TokenSupply}': tokenSupply,
-      '{BridgeContract}': bridgeContract
+      '{BridgeContract}': bridgeContract,
+      '{Recipient}': recipient
     };
     
     // Replace all placeholders in the JSON string
@@ -267,6 +281,7 @@ function generateBatch() {
     console.log(`Token Contract: ${tokenContract}`);
     console.log(`Token Supply: ${tokenSupply}`);
     console.log(`Bridge Contract: ${bridgeContract}`);
+    console.log(`Recipient: ${recipient}`);
     
     if (options.dryRun) {
       console.log('\nGenerated JSON (dry run):');
