@@ -269,10 +269,16 @@ contract CreateHedgeyInvestorLockup is BaseScript {
             // Capture detailed revert reasons from batchVestingPlans
             try IHedgeyBatchPlanner(hedgeyBatchPlanner)
 <<<<<<< HEAD
+<<<<<<< HEAD
                 .batchVestingPlans(hedgeyInvestorLockup, token, amount, plans, period, vestingAdmin, adminTransferOBO, 0) {
 =======
                 .batchVestingPlans(hedgeyTokenVestingPlans, token, amount, plans, period, vestingAdmin, adminTransferOBO, 0) {
 >>>>>>> d02b733 (update hedgey test script)
+=======
+                .batchVestingPlans(
+                    hedgeyTokenVestingPlans, token, amount, plans, period, vestingAdmin, adminTransferOBO, 0
+                ) {
+>>>>>>> 7416591 (fix forge fmt)
                 console.log("batchVestingPlans succeeded");
             } catch Error(string memory reason) {
                 console.log("batchVestingPlans Error(string):", reason);
@@ -320,10 +326,16 @@ contract CreateHedgeyInvestorLockup is BaseScript {
 
         // Post-call verification (works for both locking and vesting plans)
 <<<<<<< HEAD
+<<<<<<< HEAD
         _verifyPlanCreated(recipient, token, amount, start, cliff, rate, period);
 =======
         _verifyPlanCreated(recipient, token, amount, start, cliff, rate, period, useInvestorLockup, vestingAdmin, adminTransferOBO);
 >>>>>>> d02b733 (update hedgey test script)
+=======
+        _verifyPlanCreated(
+            recipient, token, amount, start, cliff, rate, period, useInvestorLockup, vestingAdmin, adminTransferOBO
+        );
+>>>>>>> 7416591 (fix forge fmt)
     }
 
     function _verifyPlanCreated(
