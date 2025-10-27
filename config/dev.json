@@ -32,7 +32,7 @@
   "hedgey": {
     "investorLockup": "0xaA8d13b9c2A9368aa108dde629237EF719eEC14e",
     "batchPlanner": "0x642581ed679E77e0D9AebFdBCA2a0B4ab194532c",
-    "tokenVestingPlans": "0x23103cc8D394Cd4440711F2d2e436FA46d90EF55",
+    "tokenVestingPlans": "0xa32705Ce46A33407DC93663dAcE4a3d0408A6C42",
     "recipient": "0x057ef20Ed09fc34Da5af791376F4447ba0B8cDE6",
     "amount": 10000000000000000000,
     "start": 1759752000,
