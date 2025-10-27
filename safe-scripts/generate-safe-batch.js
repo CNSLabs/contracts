@@ -14,7 +14,7 @@ program
   .description('Generate Safe transaction batch JSON from template with config substitution')
   .version('1.0.0')
   .option('-e, --env <environment>', 'Environment (dev, alpha, production)', 'dev')
-  .option('--testnet', 'Use testnet chain ID (59141), otherwise use mainnet (59144)')
+  .option('--testnet', 'Use testnet chain ID (11155111), otherwise use mainnet (1)')
   .option('-o, --output <file>', 'Output file path', 'safe-batch.json')
   .option('--token-holder <address>', 'Token holder safe address (overrides config)')
   .option('--token-contract <address>', 'Token contract address (overrides config)')
@@ -191,7 +191,7 @@ function generateBatch() {
     console.log(`Loaded config for environment: ${options.env}`);
     
     // Determine chain ID based on testnet flag
-    const chainId = options.testnet ? '59141' : '59144';
+    const chainId = options.testnet ? '11155111' : '1';
     console.log(`Using chain ID: ${chainId} (${options.testnet ? 'testnet' : 'mainnet'})`);
     
     
