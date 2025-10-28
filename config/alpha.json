@@ -1,20 +1,21 @@
 {
   "env": "alpha",
   "l1": {
-    "name": "Canonical CNS Token",
-    "symbol": "CNS",
+    "name": "Shodai Token",
+    "symbol": "SHO",
     "initialSupply": 1000000000000000000000000000,
     "roles": {
       "admin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d"
     }
   },
   "l2": {
-    "name": "CNS Linea Token",
-    "symbol": "CNSL",
+    "name": "Shodai Token",
+    "symbol": "SHO",
     "decimals": 18,
-    "bridge": "0x42f04534d384673a884227b8a347598916003270",
-    "l1Token": "0xeb8708cafb403c90d5475bb623636896ce78facf",
-    "proxy": "0xc4E60963Bba97217EdB5b6FBAaFDF57255fcAA9E",
+    "bridge": "0x93DcAdf238932e6e6a85852caC89cBd71798F463",
+    "l1Token": "0x8b4f9a5B10421416726908b882b35910D41B757c",
+    "addr": "0xF5582Cb86526b7d9D09aeb7DF4be948155d6C51B",
+    "proxy": "0x24cf431c5A4b0c642706614CF05aD4dB27093846",
     "roles": {
       "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
       "allowlistAdmin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
@@ -25,7 +26,7 @@
       "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
       "proposers": ["0xD7C8FD8F38683110B15771392Eb74209c15495ac"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": "0x3F5e21086280444255d63C7B2BB78E92d98f8C97"
+      "addr": "0x0BF19fA67c20863235Dc85EE319B6726d00645e3"
     }
   },
   "hedgey": {
