@@ -7,8 +7,8 @@ import "../src/CNSTokenL2V2.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /**
- * @title UpgradeCNSTokenL2ToV2_Execute
- * @dev Script to execute a previously scheduled CNSTokenL2 upgrade via TimelockController
+ * @title UpgradeShoTokenL2ToV2_Execute
+ * @dev Script to execute a previously scheduled ShoTokenL2 upgrade via TimelockController
  * @notice Executes an upgrade after the timelock delay has elapsed
  *
  * Environment Variables (Required):
@@ -21,10 +21,10 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *
  * Usage:
  *   ENV=dev CNS_NEW_IMPLEMENTATION=0x... CNS_TIMELOCK_SALT=0x... \
- *   forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:UpgradeCNSTokenL2ToV2_Execute \
+ *   forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:UpgradeShoTokenL2ToV2_Execute \
  *     --rpc-url linea-sepolia --broadcast
  */
-contract UpgradeCNSTokenL2ToV2_Execute is BaseScript {
+contract UpgradeShoTokenL2ToV2_Execute is BaseScript {
     address public proxyAddress;
     address public newImplementation;
     address public timelockAddress;
@@ -53,7 +53,7 @@ contract UpgradeCNSTokenL2ToV2_Execute is BaseScript {
         _requireNonZeroAddress(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
         _requireContract(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
 
-        _logDeploymentHeader("Executing CNSTokenL2 to V2 Upgrade");
+        _logDeploymentHeader("Executing ShoTokenL2 to V2 Upgrade");
         console.log("Proxy address:", proxyAddress);
         console.log("New implementation:", newImplementation);
         console.log("Executor address:", executor);
@@ -73,7 +73,7 @@ contract UpgradeCNSTokenL2ToV2_Execute is BaseScript {
         );
 
         // Prepare call data
-        bytes memory initData = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        bytes memory initData = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
         bytes memory callData =
             abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, newImplementation, initData);
 
@@ -101,7 +101,7 @@ contract UpgradeCNSTokenL2ToV2_Execute is BaseScript {
     function _verifyUpgrade() internal view {
         console.log("\n=== Verifying Upgrade ===");
 
-        CNSTokenL2V2 proxy = CNSTokenL2V2(proxyAddress);
+        ShoTokenL2V2 proxy = ShoTokenL2V2(proxyAddress);
 
         bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
         address implementationAddress = address(uint160(uint256(vm.load(proxyAddress, implementationSlot))));

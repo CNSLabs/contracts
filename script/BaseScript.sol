@@ -283,7 +283,7 @@ abstract contract BaseScript is Script {
      * @notice Generic reader for Foundry broadcast run-latest.json to fetch the last deployed address for a contract
      * @param chainId The chain id subdirectory to look under
      * @param scriptBasename The script basename under broadcast/ (e.g., "1_DeployCNSTokenL1.s.sol")
-     * @param desiredContractName The simple contract name to look for (e.g., "CNSTokenL1" or "ERC1967Proxy")
+     * @param desiredContractName The simple contract name to look for (e.g., "ShoTokenL1" or "ERC1967Proxy")
      */
     function _inferFromBroadcast(uint256 chainId, string memory scriptBasename, string memory desiredContractName)
         internal
@@ -324,7 +324,7 @@ abstract contract BaseScript is Script {
     }
 
     function _inferL1TokenFromBroadcast(uint256 l1ChainId) internal view returns (address) {
-        return _inferFromBroadcast(l1ChainId, "1_DeployCNSTokenL1.s.sol", "CNSTokenL1");
+        return _inferFromBroadcast(l1ChainId, "1_DeployCNSTokenL1.s.sol", "ShoTokenL1");
     }
 
     function _inferL2ProxyFromBroadcast(uint256 l2ChainId) internal view returns (address) {

@@ -8,9 +8,9 @@ import {StdStyle} from "forge-std/StdStyle.sol";
 import "../src/CNSTokenL2.sol";
 
 /**
- * @title DeployCNSTokenL2
+ * @title DeployShoTokenL2
  * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
- * @dev This script deploys CNSTokenL2 with:
+ * @dev This script deploys ShoTokenL2 with:
  *      - Role separation (defaultAdmin, upgrader via timelock, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
  *      - Pausability and allowlist controls
@@ -20,20 +20,20 @@ import "../src/CNSTokenL2.sol";
  *
  * Usage:
  *   # Linea Sepolia testnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   forge script script/2_DeployCNSTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url linea-sepolia \
  *     --broadcast \
  *     --verify
  *
  *   # Linea Mainnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   forge script script/2_DeployCNSTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url linea \
  *     --broadcast \
  *     --verify \
  *     --slow
  *
  *   # Local testing
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   forge script script/2_DeployCNSTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url local \
  *     --broadcast
  *
@@ -63,11 +63,11 @@ import "../src/CNSTokenL2.sol";
  *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
  *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
-contract DeployCNSTokenL2 is BaseScript {
+contract DeployShoTokenL2 is BaseScript {
     // Deployed contracts
-    CNSTokenL2 public implementation;
+    ShoTokenL2 public implementation;
     ERC1967Proxy public proxy;
-    CNSTokenL2 public token;
+    ShoTokenL2 public token;
     TimelockController public timelock;
 
     function run() external {
@@ -170,8 +170,8 @@ contract DeployCNSTokenL2 is BaseScript {
         // Deploy L2 token (implementation + proxy)
         vm.startBroadcast(deployerPrivateKey);
 
-        console.log("\n1. Deploying CNSTokenL2 implementation...");
-        implementation = new CNSTokenL2();
+        console.log("\n1. Deploying ShoTokenL2 implementation...");
+        implementation = new ShoTokenL2();
         console.log("   Implementation:", address(implementation));
 
         // Prepare initialization data with senderAllowlist
@@ -180,7 +180,7 @@ contract DeployCNSTokenL2 is BaseScript {
         senderAllowlist[1] = hedgeyTokenVestingPlans;
 
         bytes memory initCalldata = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector,
+            ShoTokenL2.initialize.selector,
             defaultAdmin,
             address(timelock),
             pauser,
@@ -195,7 +195,7 @@ contract DeployCNSTokenL2 is BaseScript {
 
         console.log("\n2. Deploying ERC1967 proxy...");
         proxy = new ERC1967Proxy(address(implementation), initCalldata);
-        token = CNSTokenL2(address(proxy));
+        token = ShoTokenL2(address(proxy));
         console.log("   Proxy:", address(proxy));
 
         // CRITICAL: Verify initialization happened successfully
@@ -398,10 +398,10 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log(StdStyle.cyan(StdStyle.bold("Timelock Controller:")));
         console.log(StdStyle.cyan(vm.toString(address(timelock))));
         console.log("");
-        console.log(StdStyle.magenta(StdStyle.bold("CNSTokenL2 Implementation:")));
+        console.log(StdStyle.magenta(StdStyle.bold("ShoTokenL2 Implementation:")));
         console.log(StdStyle.magenta(vm.toString(address(implementation))));
         console.log("");
-        console.log(StdStyle.blue(StdStyle.bold("CNSTokenL2 Proxy (Main Contract):")));
+        console.log(StdStyle.blue(StdStyle.bold("ShoTokenL2 Proxy (Main Contract):")));
         console.log(StdStyle.blue(vm.toString(address(proxy))));
         console.log(StdStyle.green("================================================================================"));
     }
@@ -411,7 +411,7 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Implementation verification
         console.log("\n1. Verify implementation:");
-        _logVerificationCommand(address(implementation), "src/CNSTokenL2.sol:CNSTokenL2");
+        _logVerificationCommand(address(implementation), "src/CNSTokenL2.sol:ShoTokenL2");
 
         // Proxy verification
         console.log("\n2. Verify proxy:");

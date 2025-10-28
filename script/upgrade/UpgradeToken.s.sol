@@ -74,7 +74,7 @@ contract UpgradeToken is BaseScript {
         console.log("\n");
         console.log("################################################################");
         console.log("##                                                            ##");
-        console.log("##         CNS TOKEN L2 UPGRADE - ALL-IN-ONE SCRIPT           ##");
+        console.log("##         SHO TOKEN L2 UPGRADE - ALL-IN-ONE SCRIPT           ##");
         console.log("##                                                            ##");
         console.log("################################################################");
         console.log("");
@@ -225,7 +225,7 @@ contract UpgradeToken is BaseScript {
 
         console.log("Checking UPGRADER_ROLE...");
 
-        CNSTokenL2 proxy = CNSTokenL2(targetContract);
+        ShoTokenL2 proxy = ShoTokenL2(targetContract);
         bytes32 UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
         bool hasRole = proxy.hasRole(UPGRADER_ROLE, upgrader);
@@ -295,8 +295,8 @@ contract UpgradeToken is BaseScript {
 
         // Deploy implementation
         vm.startBroadcast(deployerPrivateKey);
-        console.log("Deploying CNSTokenL2 implementation...");
-        newImplementation = address(new CNSTokenL2());
+        console.log("Deploying ShoTokenL2 implementation...");
+        newImplementation = address(new ShoTokenL2());
         vm.stopBroadcast();
 
         console.log("SUCCESS: Implementation deployed");
@@ -393,7 +393,7 @@ contract UpgradeToken is BaseScript {
         inputs[0] = "forge";
         inputs[1] = "verify-contract";
         inputs[2] = vm.toString(newImplementation);
-        inputs[3] = "src/CNSTokenL2.sol:CNSTokenL2";
+        inputs[3] = "src/CNSTokenL2.sol:ShoTokenL2";
         inputs[4] = "--verifier-url";
         inputs[5] = verifierUrl;
         inputs[6] = "--etherscan-api-key";
@@ -405,7 +405,7 @@ contract UpgradeToken is BaseScript {
         } catch {
             console.log("WARNING: Verification submission failed");
             console.log("You can verify manually using:");
-            console.log("forge verify-contract", newImplementation, "src/CNSTokenL2.sol:CNSTokenL2");
+            console.log("forge verify-contract", newImplementation, "src/CNSTokenL2.sol:ShoTokenL2");
             console.log("  --verifier-url", verifierUrl);
             console.log("  --etherscan-api-key <your_key>");
         }

@@ -6,9 +6,9 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import "../src/CNSTokenL2.sol";
 import "../src/CNSTokenL2V2.sol";
 
-contract CNSTokenL2V2Test is Test {
-    CNSTokenL2 public tokenV1;
-    CNSTokenL2V2 public tokenV2;
+contract ShoTokenL2V2Test is Test {
+    ShoTokenL2 public tokenV1;
+    ShoTokenL2V2 public tokenV2;
     ERC1967Proxy public proxy;
 
     address public admin;
@@ -33,12 +33,12 @@ contract CNSTokenL2V2Test is Test {
         user2 = makeAddr("user2");
 
         // Deploy V1 implementation
-        tokenV1 = new CNSTokenL2();
+        tokenV1 = new ShoTokenL2();
 
         // Prepare initialization data
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector,
+            ShoTokenL2.initialize.selector,
             admin,
             admin,
             admin,
@@ -57,16 +57,16 @@ contract CNSTokenL2V2Test is Test {
 
     function test_UpgradeToV2() public {
         // Deploy V2 implementation
-        tokenV2 = new CNSTokenL2V2();
+        tokenV2 = new ShoTokenL2V2();
 
         // Upgrade to V2
-        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        bytes memory initV2Data = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
 
         vm.prank(admin);
-        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        ShoTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
 
         // Verify upgrade
-        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        ShoTokenL2V2 upgradedProxy = ShoTokenL2V2(address(proxy));
         assertEq(upgradedProxy.name(), TOKEN_NAME);
         assertEq(upgradedProxy.symbol(), TOKEN_SYMBOL);
         assertEq(upgradedProxy.decimals(), DECIMALS);
@@ -74,13 +74,13 @@ contract CNSTokenL2V2Test is Test {
 
     function test_VotingFunctionalityAfterUpgrade() public {
         // Upgrade to V2
-        tokenV2 = new CNSTokenL2V2();
-        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        tokenV2 = new ShoTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
 
         vm.prank(admin);
-        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        ShoTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
 
-        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        ShoTokenL2V2 upgradedProxy = ShoTokenL2V2(address(proxy));
 
         // Add users to allowlist
         vm.startPrank(admin);
@@ -115,13 +115,13 @@ contract CNSTokenL2V2Test is Test {
 
     function test_V2MaintainsV1Functionality() public {
         // Upgrade to V2
-        tokenV2 = new CNSTokenL2V2();
-        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        tokenV2 = new ShoTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
 
         vm.prank(admin);
-        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        ShoTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
 
-        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        ShoTokenL2V2 upgradedProxy = ShoTokenL2V2(address(proxy));
 
         // Test pause functionality
         vm.prank(admin);
@@ -152,13 +152,13 @@ contract CNSTokenL2V2Test is Test {
 
     function test_AllowlistStillEnforced() public {
         // Upgrade to V2
-        tokenV2 = new CNSTokenL2V2();
-        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        tokenV2 = new ShoTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
 
         vm.prank(admin);
-        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        ShoTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
 
-        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        ShoTokenL2V2 upgradedProxy = ShoTokenL2V2(address(proxy));
 
         // Add user1 to sender allowlist only
         vm.prank(admin);
@@ -178,13 +178,13 @@ contract CNSTokenL2V2Test is Test {
 
     function test_VotePowerTracksTransfers() public {
         // Upgrade to V2
-        tokenV2 = new CNSTokenL2V2();
-        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        tokenV2 = new ShoTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
 
         vm.prank(admin);
-        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        ShoTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
 
-        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        ShoTokenL2V2 upgradedProxy = ShoTokenL2V2(address(proxy));
 
         // Add users to allowlist
         vm.startPrank(admin);
@@ -220,13 +220,13 @@ contract CNSTokenL2V2Test is Test {
 
     function test_ClockModeIsBlock() public {
         // Upgrade to V2
-        tokenV2 = new CNSTokenL2V2();
-        bytes memory initV2Data = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        tokenV2 = new ShoTokenL2V2();
+        bytes memory initV2Data = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
 
         vm.prank(admin);
-        CNSTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
+        ShoTokenL2V2(address(proxy)).upgradeToAndCall(address(tokenV2), initV2Data);
 
-        CNSTokenL2V2 upgradedProxy = CNSTokenL2V2(address(proxy));
+        ShoTokenL2V2 upgradedProxy = ShoTokenL2V2(address(proxy));
 
         // ERC20Votes uses block.number by default
         assertEq(upgradedProxy.clock(), block.number);

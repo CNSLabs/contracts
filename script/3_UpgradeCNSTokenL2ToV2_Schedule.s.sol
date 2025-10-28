@@ -8,8 +8,8 @@ import "../src/CNSTokenL2V2.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /**
- * @title UpgradeCNSTokenL2ToV2_Schedule
- * @dev Script to schedule CNSTokenL2 upgrade from V1 to V2 via TimelockController
+ * @title UpgradeShoTokenL2ToV2_Schedule
+ * @dev Script to schedule ShoTokenL2 upgrade from V1 to V2 via TimelockController
  * @notice Deploys new implementation and schedules the upgrade via timelock
  *
  * Environment Variables:
@@ -19,13 +19,13 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet
  *
  * Usage:
- *   ENV=dev forge script script/3_UpgradeCNSTokenL2ToV2_Schedule.s.sol:UpgradeCNSTokenL2ToV2_Schedule \
+ *   ENV=dev forge script script/3_UpgradeCNSTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
  *     --rpc-url linea-sepolia --broadcast
  *
  * Output:
  *   - Prints NEW_IMPL_ADDRESS and TIMELOCK_SALT needed for execution
  */
-contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
+contract UpgradeShoTokenL2ToV2_Schedule is BaseScript {
     address public proxyAddress;
     address public newImplementation;
     address public timelockAddress;
@@ -48,7 +48,7 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
         _requireNonZeroAddress(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
         _requireContract(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
 
-        _logDeploymentHeader("Scheduling CNSTokenL2 to V2 Upgrade");
+        _logDeploymentHeader("Scheduling ShoTokenL2 to V2 Upgrade");
         console.log("Proxy address:", proxyAddress);
         console.log("Proposer address:", owner);
 
@@ -65,18 +65,18 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
         vm.startBroadcast(ownerPrivateKey);
 
         // Deploy new V2 implementation
-        console.log("\n1. Deploying CNSTokenL2V2 implementation...");
-        CNSTokenL2V2 implementationV2 = new CNSTokenL2V2();
+        console.log("\n1. Deploying ShoTokenL2V2 implementation...");
+        ShoTokenL2V2 implementationV2 = new ShoTokenL2V2();
         newImplementation = address(implementationV2);
-        console.log("CNSTokenL2V2 implementation deployed at:", newImplementation);
+        console.log("ShoTokenL2V2 implementation deployed at:", newImplementation);
 
         // Schedule upgrade
         console.log("\n2. Scheduling upgrade via Timelock...");
-        bytes memory initData = abi.encodeWithSelector(CNSTokenL2V2.initializeV2.selector);
+        bytes memory initData = abi.encodeWithSelector(ShoTokenL2V2.initializeV2.selector);
         bytes memory callData =
             abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, newImplementation, initData);
 
-        bytes32 salt = keccak256(abi.encodePacked("CNSTokenL2V2", newImplementation));
+        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL2V2", newImplementation));
         uint256 delay = tl.getMinDelay();
 
         tl.schedule({target: proxyAddress, value: 0, data: callData, predecessor: bytes32(0), salt: salt, delay: delay});
@@ -104,6 +104,6 @@ contract UpgradeCNSTokenL2ToV2_Schedule is BaseScript {
         console.log("  --rpc-url %s --broadcast", _getRpcEndpointName(block.chainid));
 
         // Log verification command for V2 implementation
-        _logVerificationCommand(newImplementation, "src/CNSTokenL2V2.sol:CNSTokenL2V2");
+        _logVerificationCommand(newImplementation, "src/CNSTokenL2V2.sol:ShoTokenL2V2");
     }
 }

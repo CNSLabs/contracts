@@ -3,14 +3,14 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {CNSTokenL2} from "../src/CNSTokenL2.sol";
+import {ShoTokenL2} from "../src/CNSTokenL2.sol";
 
 /**
- * @title CNSTokenL2UpgradeTest
- * @notice Comprehensive upgrade safety tests for UUPS upgradeable CNSTokenL2
+ * @title ShoTokenL2UpgradeTest
+ * @notice Comprehensive upgrade safety tests for UUPS upgradeable ShoTokenL2
  */
-contract CNSTokenL2UpgradeTest is Test {
-    CNSTokenL2 internal token;
+contract ShoTokenL2UpgradeTest is Test {
+    ShoTokenL2 internal token;
 
     address internal admin;
     address internal bridge;
@@ -48,10 +48,10 @@ contract CNSTokenL2UpgradeTest is Test {
         vm.stopPrank();
     }
 
-    function _deployInitializedProxy(address admin_, address bridge_, address l1Token_) internal returns (CNSTokenL2) {
-        CNSTokenL2 implementation = new CNSTokenL2();
+    function _deployInitializedProxy(address admin_, address bridge_, address l1Token_) internal returns (ShoTokenL2) {
+        ShoTokenL2 implementation = new ShoTokenL2();
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
-        CNSTokenL2 proxied = CNSTokenL2(address(proxy));
+        ShoTokenL2 proxied = ShoTokenL2(address(proxy));
         address[] memory emptyAllowlist = new address[](0);
         proxied.initialize(admin_, admin_, admin_, admin_, bridge_, l1Token_, NAME, SYMBOL, DECIMALS, emptyAllowlist);
         return proxied;
@@ -69,11 +69,11 @@ contract CNSTokenL2UpgradeTest is Test {
         bool user2AllowlistedBefore = token.isSenderAllowlisted(user2);
 
         // Upgrade to V2
-        CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
+        ShoTokenL2V2 newImplementation = new ShoTokenL2V2();
         vm.prank(admin);
         token.upgradeToAndCall(address(newImplementation), "");
 
-        CNSTokenL2V2 upgradedToken = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 upgradedToken = ShoTokenL2V2(address(token));
 
         // Verify all state preserved
         assertEq(upgradedToken.balanceOf(user1), user1BalanceBefore, "Balance not preserved");
@@ -107,11 +107,11 @@ contract CNSTokenL2UpgradeTest is Test {
         bool pausedBefore = token.paused();
 
         // Upgrade
-        CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
+        ShoTokenL2V2 newImplementation = new ShoTokenL2V2();
         vm.prank(admin);
         token.upgradeToAndCall(address(newImplementation), "");
 
-        CNSTokenL2V2 upgradedToken = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 upgradedToken = ShoTokenL2V2(address(token));
 
         // Verify paused state preserved
         assertEq(upgradedToken.paused(), pausedBefore, "Paused state not preserved");
@@ -120,11 +120,11 @@ contract CNSTokenL2UpgradeTest is Test {
 
     function testUpgradedContractFunctionality() public {
         // Upgrade to V2
-        CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
+        ShoTokenL2V2 newImplementation = new ShoTokenL2V2();
         vm.prank(admin);
         token.upgradeToAndCall(address(newImplementation), "");
 
-        CNSTokenL2V2 upgradedToken = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 upgradedToken = ShoTokenL2V2(address(token));
 
         // Test old functionality still works
         vm.prank(user1);
@@ -143,11 +143,11 @@ contract CNSTokenL2UpgradeTest is Test {
         address l1TokenBefore = token.l1Token();
 
         // Upgrade
-        CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
+        ShoTokenL2V2 newImplementation = new ShoTokenL2V2();
         vm.prank(admin);
         token.upgradeToAndCall(address(newImplementation), "");
 
-        CNSTokenL2V2 upgradedToken = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 upgradedToken = ShoTokenL2V2(address(token));
 
         // Critical: ensure storage slots haven't shifted
         assertEq(upgradedToken.bridge(), bridgeBefore, "Storage collision: bridge");
@@ -157,7 +157,7 @@ contract CNSTokenL2UpgradeTest is Test {
     // ============ Authorization Tests ============
 
     function testOnlyUpgraderCanUpgrade() public {
-        CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
+        ShoTokenL2V2 newImplementation = new ShoTokenL2V2();
 
         // Non-upgrader should fail
         vm.expectRevert();
@@ -176,17 +176,17 @@ contract CNSTokenL2UpgradeTest is Test {
 
     function testUpgradeWithCalldata() public {
         // Create V2 with initializer
-        CNSTokenL2V2WithInit newImplementation = new CNSTokenL2V2WithInit();
+        ShoTokenL2V2WithInit newImplementation = new ShoTokenL2V2WithInit();
 
         // Upgrade with initialization
-        bytes memory initData = abi.encodeWithSelector(CNSTokenL2V2WithInit.initializeV2.selector, 100);
+        bytes memory initData = abi.encodeWithSelector(ShoTokenL2V2WithInit.initializeV2.selector, 100);
 
         vm.prank(admin);
         vm.expectEmit(true, false, false, false);
         emit Upgraded(address(newImplementation));
         token.upgradeToAndCall(address(newImplementation), initData);
 
-        CNSTokenL2V2WithInit upgraded = CNSTokenL2V2WithInit(address(token));
+        ShoTokenL2V2WithInit upgraded = ShoTokenL2V2WithInit(address(token));
         assertEq(upgraded.newFeatureValue(), 100);
     }
 
@@ -201,12 +201,12 @@ contract CNSTokenL2UpgradeTest is Test {
     }
 
     function testCannotReinitializeAfterUpgrade() public {
-        CNSTokenL2V2 newImplementation = new CNSTokenL2V2();
+        ShoTokenL2V2 newImplementation = new ShoTokenL2V2();
 
         vm.prank(admin);
         token.upgradeToAndCall(address(newImplementation), "");
 
-        CNSTokenL2V2 upgraded = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 upgraded = ShoTokenL2V2(address(token));
 
         // Should not be able to call initialize again
         vm.expectRevert();
@@ -220,20 +220,20 @@ contract CNSTokenL2UpgradeTest is Test {
         uint256 balanceBefore = token.balanceOf(user1);
 
         // Upgrade to V2
-        CNSTokenL2V2 implV2 = new CNSTokenL2V2();
+        ShoTokenL2V2 implV2 = new ShoTokenL2V2();
         vm.prank(admin);
         token.upgradeToAndCall(address(implV2), "");
 
-        CNSTokenL2V2 tokenV2 = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 tokenV2 = ShoTokenL2V2(address(token));
         assertEq(tokenV2.version(), "2.0.0");
         assertEq(tokenV2.balanceOf(user1), balanceBefore);
 
         // Upgrade to V3
-        CNSTokenL2V3 implV3 = new CNSTokenL2V3();
+        ShoTokenL2V3 implV3 = new ShoTokenL2V3();
         vm.prank(admin);
         tokenV2.upgradeToAndCall(address(implV3), "");
 
-        CNSTokenL2V3 tokenV3 = CNSTokenL2V3(address(token));
+        ShoTokenL2V3 tokenV3 = ShoTokenL2V3(address(token));
         assertEq(tokenV3.version(), "3.0.0");
         assertEq(tokenV3.balanceOf(user1), balanceBefore);
     }
@@ -244,31 +244,31 @@ contract CNSTokenL2UpgradeTest is Test {
         // This test verifies that the __gap prevents storage collisions in upgrades
         // The gap should shrink when new variables are added in V2
 
-        CNSTokenL2V2 newImpl = new CNSTokenL2V2();
+        ShoTokenL2V2 newImpl = new ShoTokenL2V2();
         vm.prank(admin);
         token.upgradeToAndCall(address(newImpl), "");
 
         // If storage layout is correct, this should not cause any issues
-        CNSTokenL2V2 upgraded = CNSTokenL2V2(address(token));
+        ShoTokenL2V2 upgraded = ShoTokenL2V2(address(token));
         assertEq(upgraded.balanceOf(user1), INITIAL_SUPPLY);
     }
 }
 
 // ============ Mock Upgrade Contracts ============
 
-contract CNSTokenL2V2 is CNSTokenL2 {
+contract ShoTokenL2V2 is ShoTokenL2 {
     function version() public pure override returns (string memory) {
         return "2.0.0";
     }
 }
 
-contract CNSTokenL2V3 is CNSTokenL2 {
+contract ShoTokenL2V3 is ShoTokenL2 {
     function version() public pure override returns (string memory) {
         return "3.0.0";
     }
 }
 
-contract CNSTokenL2V2WithInit is CNSTokenL2 {
+contract ShoTokenL2V2WithInit is ShoTokenL2 {
     uint256 public newFeatureValue;
 
     function initializeV2(uint256 _value) external reinitializer(2) {
