@@ -23,7 +23,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
  * @dev Adds ERC20VotesUpgradeable to enable delegation and voting power tracking.
  *      Maintains all v1 functionality: bridging, pausing, and allowlist controls.
  */
-/// @custom:oz-upgrades-from src/CNSTokenL2.sol:ShoTokenL2
+/// @custom:oz-upgrades-from src/ShoTokenL2.sol:ShoTokenL2
 contract ShoTokenL2V2 is
     Initializable,
     CustomBridgedToken,

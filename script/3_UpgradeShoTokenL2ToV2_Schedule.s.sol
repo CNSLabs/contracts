@@ -3,8 +3,8 @@ pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "../src/CNSTokenL2.sol";
-import "../src/CNSTokenL2V2.sol";
+import "../src/ShoTokenL2.sol";
+import "../src/ShoTokenL2V2.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /**
@@ -19,7 +19,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet
  *
  * Usage:
- *   ENV=dev forge script script/3_UpgradeCNSTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
+ *   ENV=dev forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
  *     --rpc-url linea-sepolia --broadcast
  *
  * Output:

@@ -3,23 +3,23 @@ pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
 import "./ConfigLoader.sol";
-import "../src/CNSTokenL1.sol";
+import "../src/ShoTokenL1.sol";
 import {StdStyle} from "forge-std/StdStyle.sol";
 
 /**
  * @title DeployShoTokenL1
- * @notice Deploys CNS Token on L1 (Ethereum) with fixed supply
+ * @notice Deploys SHO Token on L1 (Ethereum) with fixed supply
  * @dev This is a simple ERC20 with ERC20Permit, designed to be bridged to L2
  *
  * Usage:
  *   # Default (dev): infer config from ENV
- *   forge script script/1_DeployCNSTokenL1.s.sol:DeployShoTokenL1 \
+ *   forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
  *     --rpc-url sepolia \
  *     --broadcast \
  *     --verify
  *
  *   # Explicit non-default environment via ENV
- *   ENV=production forge script script/1_DeployCNSTokenL1.s.sol:DeployShoTokenL1 \
+ *   ENV=production forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
  *     --rpc-url mainnet \
  *     --broadcast \
  *     --verify
@@ -55,7 +55,7 @@ contract DeployShoTokenL1 is BaseScript {
         _requireNonZeroAddress(admin, "Admin");
 
         // Log deployment info
-        _logDeploymentHeader("Deploying CNS Token L1");
+        _logDeploymentHeader("Deploying SHO Token L1");
         console.log("Token Name:", tokenName);
         console.log("Token Symbol:", tokenSymbol);
         console.log("Initial Supply:", initialSupply / 10 ** 18, "tokens");
@@ -76,7 +76,7 @@ contract DeployShoTokenL1 is BaseScript {
         _logDeploymentResults(admin, tokenName, tokenSymbol);
 
         // Log verification command
-        _logVerificationCommand(address(token), "src/CNSTokenL1.sol:ShoTokenL1");
+        _logVerificationCommand(address(token), "src/ShoTokenL1.sol:ShoTokenL1");
     }
 
     function _logDeploymentResults(address owner, string memory tokenName, string memory tokenSymbol) internal view {

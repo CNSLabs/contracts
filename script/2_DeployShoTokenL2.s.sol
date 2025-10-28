@@ -5,11 +5,11 @@ import "./BaseScript.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {StdStyle} from "forge-std/StdStyle.sol";
-import "../src/CNSTokenL2.sol";
+import "../src/ShoTokenL2.sol";
 
 /**
  * @title DeployShoTokenL2
- * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
+ * @notice Deploys SHO Token on L2 (Linea) as a bridged token with role separation
  * @dev This script deploys ShoTokenL2 with:
  *      - Role separation (defaultAdmin, upgrader via timelock, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
@@ -20,20 +20,20 @@ import "../src/CNSTokenL2.sol";
  *
  * Usage:
  *   # Linea Sepolia testnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployShoTokenL2 \
+ *   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url linea-sepolia \
  *     --broadcast \
  *     --verify
  *
  *   # Linea Mainnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployShoTokenL2 \
+ *   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url linea \
  *     --broadcast \
  *     --verify \
  *     --slow
  *
  *   # Local testing
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployShoTokenL2 \
+ *   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url local \
  *     --broadcast
  *
@@ -388,7 +388,7 @@ contract DeployShoTokenL2 is BaseScript {
         console.log("6. Bridge tokens from L1 using Linea bridge");
         console.log("7. Test transfers between allowlisted addresses");
         console.log("8. Test Hedgey integration with allowlisted addresses");
-        console.log("9. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol (routed through timelock)");
+        console.log("9. For upgrades, use 3_UpgradeShoTokenL2ToV2.s.sol (routed through timelock)");
 
         // Final prominent contract addresses display
         console.log("\n");
@@ -411,7 +411,7 @@ contract DeployShoTokenL2 is BaseScript {
 
         // Implementation verification
         console.log("\n1. Verify implementation:");
-        _logVerificationCommand(address(implementation), "src/CNSTokenL2.sol:ShoTokenL2");
+        _logVerificationCommand(address(implementation), "src/ShoTokenL2.sol:ShoTokenL2");
 
         // Proxy verification
         console.log("\n2. Verify proxy:");

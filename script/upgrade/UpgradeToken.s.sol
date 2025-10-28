@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "../BaseScript.sol";
-import "../../src/CNSTokenL2.sol";
+import "../../src/ShoTokenL2.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
@@ -393,7 +393,7 @@ contract UpgradeToken is BaseScript {
         inputs[0] = "forge";
         inputs[1] = "verify-contract";
         inputs[2] = vm.toString(newImplementation);
-        inputs[3] = "src/CNSTokenL2.sol:ShoTokenL2";
+        inputs[3] = "src/ShoTokenL2.sol:ShoTokenL2";
         inputs[4] = "--verifier-url";
         inputs[5] = verifierUrl;
         inputs[6] = "--etherscan-api-key";
@@ -405,7 +405,7 @@ contract UpgradeToken is BaseScript {
         } catch {
             console.log("WARNING: Verification submission failed");
             console.log("You can verify manually using:");
-            console.log("forge verify-contract", newImplementation, "src/CNSTokenL2.sol:ShoTokenL2");
+            console.log("forge verify-contract", newImplementation, "src/ShoTokenL2.sol:ShoTokenL2");
             console.log("  --verifier-url", verifierUrl);
             console.log("  --etherscan-api-key <your_key>");
         }

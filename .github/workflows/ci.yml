@@ -134,7 +134,7 @@ jobs:
           name: storage-layouts
           path: |
             layouts/*.json
-            out/CNSTokenL2.sol/CNSTokenL2.json
-            out/CNSTokenL2V2.sol/CNSTokenL2V2.json
+            out/ShoTokenL2.sol/ShoTokenL2.json
+            out/ShoTokenL2V2.sol/ShoTokenL2V2.json
           retention-days: 30
 

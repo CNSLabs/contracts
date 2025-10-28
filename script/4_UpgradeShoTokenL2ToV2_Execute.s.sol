@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import "./BaseScript.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "../src/CNSTokenL2V2.sol";
+import "../src/ShoTokenL2V2.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /**

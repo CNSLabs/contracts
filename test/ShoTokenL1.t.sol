@@ -2,7 +2,7 @@
 pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
-import "../src/CNSTokenL1.sol";
+import "../src/ShoTokenL1.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract ShoTokenL1Test is Test {

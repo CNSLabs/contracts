@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-import {ShoTokenL2} from "../src/CNSTokenL2.sol";
+import {ShoTokenL2} from "../src/ShoTokenL2.sol";
 
 contract ShoTokenL2Test is Test {
     ShoTokenL2 internal token;
