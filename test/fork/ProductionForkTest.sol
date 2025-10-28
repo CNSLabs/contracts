@@ -56,22 +56,6 @@ abstract contract ProductionForkTest is Test, BaseScript {
     }
 
     /**
-     * @notice Impersonate the Safe multisig to bypass signature requirements
-     * @param safeAddress The Safe multisig address to impersonate
-     */
-    function _impersonateSafe(address safeAddress) internal {
-        vm.startPrank(safeAddress);
-        emit SafeImpersonated(safeAddress);
-    }
-
-    /**
-     * @notice Stop impersonating the Safe
-     */
-    function _stopImpersonatingSafe() internal {
-        vm.stopPrank();
-    }
-
-    /**
      * @notice Bypass timelock delay by advancing time
      * @param timelockAddress The timelock controller address
      */
