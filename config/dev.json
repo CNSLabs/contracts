@@ -3,7 +3,7 @@
   "l1": {
     "name": "Canonical CNS Token",
     "symbol": "CNS",
-    "initialSupply": 100000000000000000000000000,
+    "initialSupply": 1000000000000000000000000000,
     "roles": {
       "admin": "0x42f04534d384673a884227b8a347598916003270"
     }
