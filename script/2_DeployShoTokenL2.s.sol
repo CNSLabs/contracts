@@ -45,8 +45,8 @@ import "../src/ShoTokenL2.sol";
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
  *
  * Optional Configuration (with defaults):
- *   - L2_TOKEN_NAME: Token name (default: "CNS Linea Token")
- *   - L2_TOKEN_SYMBOL: Token symbol (default: "CNSL")
+ *   - L2_TOKEN_NAME: Token name (default: "Sho Token")
+ *   - L2_TOKEN_SYMBOL: Token symbol (default: "SHO")
  *   - L2_TOKEN_DECIMALS: Token decimals (default: 18)
  *   - CNS_UPGRADER: Contract upgrader address (defaults to CNS_DEFAULT_ADMIN)
  *   - CNS_PAUSER: Emergency pause address (defaults to CNS_DEFAULT_ADMIN)

@@ -21,7 +21,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *
  * Usage:
  *   ENV=dev CNS_NEW_IMPLEMENTATION=0x... CNS_TIMELOCK_SALT=0x... \
- *   forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:UpgradeShoTokenL2ToV2_Execute \
+ *   forge script script/4_UpgradeShoTokenL2ToV2_Execute.s.sol:UpgradeShoTokenL2ToV2_Execute \
  *     --rpc-url linea-sepolia --broadcast
  */
 contract UpgradeShoTokenL2ToV2_Execute is BaseScript {

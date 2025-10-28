@@ -99,11 +99,11 @@ contract UpgradeShoTokenL2ToV2_Schedule is BaseScript {
         console.log("CNS_NEW_IMPLEMENTATION=%s \\", newImplementation);
         console.log("CNS_TIMELOCK_SALT=%s \\", vm.toString(salt));
         console.log(
-            "ENV=dev forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:UpgradeCNSTokenL2ToV2_Execute \\"
+            "ENV=dev forge script script/4_UpgradeShoTokenL2ToV2_Execute.s.sol:UpgradeShoTokenL2ToV2_Execute \\"
         );
         console.log("  --rpc-url %s --broadcast", _getRpcEndpointName(block.chainid));
 
         // Log verification command for V2 implementation
-        _logVerificationCommand(newImplementation, "src/CNSTokenL2V2.sol:ShoTokenL2V2");
+        _logVerificationCommand(newImplementation, "src/ShoTokenL2V2.sol:ShoTokenL2V2");
     }
 }
