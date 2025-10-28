@@ -34,9 +34,9 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Run Forge tests (excluding fork tests)
         run: |
-          forge test -vvv
+          forge test --match-path "test/**/*" --no-match-path "test/fork/*" -vvv
         id: test
 
   format:
