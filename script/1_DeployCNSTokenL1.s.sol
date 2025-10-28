@@ -32,11 +32,6 @@ import {StdStyle} from "forge-std/StdStyle.sol";
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
  */
 contract DeployCNSTokenL1 is BaseScript {
-    // Token parameters
-    string TOKEN_NAME;
-    string TOKEN_SYMBOL;
-    uint256 constant INITIAL_SUPPLY = 100_000_000 * 10 ** 18; // 100M tokens
-
     CNSTokenL1 public token;
 
     // Convenience no-arg entrypoint: infer config path
@@ -46,8 +41,10 @@ contract DeployCNSTokenL1 is BaseScript {
     }
 
     function _runWithConfig(EnvConfig memory cfg) internal {
-        TOKEN_NAME = cfg.l1.name;
-        TOKEN_SYMBOL = cfg.l1.symbol;
+        // Load token parameters: env overrides take precedence, fall back to config
+        string memory tokenName = vm.envOr("L1_TOKEN_NAME", cfg.l1.name);
+        string memory tokenSymbol = vm.envOr("L1_TOKEN_SYMBOL", cfg.l1.symbol);
+        uint256 initialSupply = vm.envOr("L1_INITIAL_SUPPLY", cfg.l1.initialSupply);
 
         // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
@@ -59,9 +56,9 @@ contract DeployCNSTokenL1 is BaseScript {
 
         // Log deployment info
         _logDeploymentHeader("Deploying CNS Token L1");
-        console.log("Token Name:", TOKEN_NAME);
-        console.log("Token Symbol:", TOKEN_SYMBOL);
-        console.log("Initial Supply:", INITIAL_SUPPLY / 10 ** 18, "tokens");
+        console.log("Token Name:", tokenName);
+        console.log("Token Symbol:", tokenSymbol);
+        console.log("Initial Supply:", initialSupply / 10 ** 18, "tokens");
         console.log("Supply Recipient (Owner):", admin);
         console.log("Deployer:", deployer);
 
@@ -71,26 +68,26 @@ contract DeployCNSTokenL1 is BaseScript {
         // Deploy L1 token
         vm.startBroadcast(deployerPrivateKey);
 
-        token = new CNSTokenL1(TOKEN_NAME, TOKEN_SYMBOL, INITIAL_SUPPLY, admin);
+        token = new CNSTokenL1(tokenName, tokenSymbol, initialSupply, admin);
 
         vm.stopBroadcast();
 
         // Log deployment results
-        _logDeploymentResults(admin);
+        _logDeploymentResults(admin, tokenName, tokenSymbol);
 
         // Log verification command
         _logVerificationCommand(address(token), "src/CNSTokenL1.sol:CNSTokenL1");
     }
 
-    function _logDeploymentResults(address owner) internal view {
+    function _logDeploymentResults(address owner, string memory tokenName, string memory tokenSymbol) internal view {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
         console.log("CNSTokenL1:", address(token));
         console.log("Owner Balance:", token.balanceOf(owner) / 10 ** 18, "tokens");
         console.log("Total Supply:", token.totalSupply() / 10 ** 18, "tokens");
         console.log("\n=== Token Info ===");
-        console.log("Name:", token.name());
-        console.log("Symbol:", token.symbol());
+        console.log("Name:", tokenName);
+        console.log("Symbol:", tokenSymbol);
         console.log("Decimals:", token.decimals());
 
         // Log next steps
