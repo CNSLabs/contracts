@@ -14,7 +14,6 @@ import {CNSTokenL2} from "../../src/CNSTokenL2.sol";
  *      and executing upgrades on production-like state
  */
 abstract contract ProductionForkTest is Test, BaseScript {
-
     // Configuration loaded from JSON files
     EnvConfig config = _loadEnvConfig();
 
@@ -22,23 +21,23 @@ abstract contract ProductionForkTest is Test, BaseScript {
     address internal cnsTokenL2Proxy;
     address internal timelockController;
     address internal safeMultisig;
-    
+
     // Test configuration
     uint256 internal forkBlockNumber;
     string internal forkUrl;
-    
+
     // Events for tracking
     event SafeImpersonated(address safe);
     event TimelockBypassed(uint256 delay);
     event UpgradeExecuted(address newImplementation);
 
-    function setUp() public virtual {        
+    function setUp() public virtual {
         // Determine fork parameters
         forkUrl = _getForkUrl();
         forkBlockNumber = _getForkBlockNumber();
 
         uint256 forkId;
-        
+
         // Create fork
         if (forkBlockNumber != 0) {
             forkId = vm.createFork(forkUrl, forkBlockNumber);
@@ -48,10 +47,10 @@ abstract contract ProductionForkTest is Test, BaseScript {
             console.log("Fork created at latest block");
         }
         vm.selectFork(forkId);
-        
+
         // Load production contract addresses
         _loadProductionAddresses();
-        
+
         // Verify fork state
         _verifyForkState();
     }
@@ -81,14 +80,14 @@ abstract contract ProductionForkTest is Test, BaseScript {
         bytes memory delayCall = abi.encodeWithSignature("getMinDelay()");
         (, bytes memory delayData) = timelockAddress.call(delayCall);
         uint256 delay = abi.decode(delayData, (uint256));
-        
+
         // Advance time past the delay
         uint256 currentTime = block.timestamp;
         vm.warp(currentTime + delay + 1);
-        
+
         // Mine a new block to ensure timestamp is updated
         vm.roll(block.number + 1);
-        
+
         emit TimelockBypassed(delay);
     }
 
@@ -105,14 +104,17 @@ abstract contract ProductionForkTest is Test, BaseScript {
         uint256 value,
         bytes memory data,
         uint8 /* operation */
-    ) internal returns (bool success, bytes memory returnData) {
+    )
+        internal
+        returns (bool success, bytes memory returnData)
+    {
         // Impersonate the Safe
         vm.startPrank(safeAddress);
-        
+
         (success, returnData) = to.call{value: value}(data);
-        
+
         vm.stopPrank();
-        
+
         if (!success) {
             console.log("Safe transaction failed:");
             console.logBytes(returnData);
@@ -126,22 +128,22 @@ abstract contract ProductionForkTest is Test, BaseScript {
      */
     function _scheduleUpgrade(
         address timelockAddress,
-        address /* target */,
+        address,
+        /* target */
         address newImplementation
-    ) internal {
+    )
+        internal
+    {
         // Encode the initialization data for V2 upgrade (like the working script)
         bytes memory initData = abi.encodeWithSignature("initializeV2()");
-        
+
         // Encode the upgradeToAndCall call (like the working script)
-        bytes memory upgradeCalldata = abi.encodeWithSignature(
-            "upgradeToAndCall(address,bytes)",
-            newImplementation,
-            initData
-        );
-        
+        bytes memory upgradeCalldata =
+            abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, initData);
+
         // Generate a proper salt (like the working script)
         bytes32 salt = keccak256(abi.encodePacked("CNSTokenL2V2", newImplementation));
-        
+
         // Encode the timelock schedule call
         bytes memory scheduleCalldata = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
@@ -152,16 +154,10 @@ abstract contract ProductionForkTest is Test, BaseScript {
             salt, // use proper salt instead of bytes32(0)
             _getTimelockDelay(timelockAddress)
         );
-        
+
         // Execute through Safe
-        (bool success,) = _executeSafeTransaction(
-            safeMultisig,
-            timelockAddress,
-            0,
-            scheduleCalldata,
-            0
-        );
-        
+        (bool success,) = _executeSafeTransaction(safeMultisig, timelockAddress, 0, scheduleCalldata, 0);
+
         require(success, "Failed to schedule upgrade");
         console.log("Upgrade scheduled successfully");
     }
@@ -173,22 +169,22 @@ abstract contract ProductionForkTest is Test, BaseScript {
      */
     function _executeUpgrade(
         address timelockAddress,
-        address /* target */,
+        address,
+        /* target */
         address newImplementation
-    ) internal {
+    )
+        internal
+    {
         // Encode the initialization data for V2 upgrade (like the working script)
         bytes memory initData = abi.encodeWithSignature("initializeV2()");
-        
+
         // Encode the upgradeToAndCall call (like the working script)
-        bytes memory upgradeCalldata = abi.encodeWithSignature(
-            "upgradeToAndCall(address,bytes)",
-            newImplementation,
-            initData
-        );
-        
+        bytes memory upgradeCalldata =
+            abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, initData);
+
         // Generate the same salt used in scheduling (like the working script)
         bytes32 salt = keccak256(abi.encodePacked("CNSTokenL2V2", newImplementation));
-        
+
         // Encode the timelock execute call
         bytes memory executeCalldata = abi.encodeWithSignature(
             "execute(address,uint256,bytes,bytes32,bytes32)",
@@ -198,16 +194,10 @@ abstract contract ProductionForkTest is Test, BaseScript {
             bytes32(0), // predecessor
             salt // use the same salt as scheduling
         );
-        
+
         // Execute through Safe
-        (bool success,) = _executeSafeTransaction(
-            safeMultisig,
-            timelockAddress,
-            0,
-            executeCalldata,
-            0
-        );
-        
+        (bool success,) = _executeSafeTransaction(safeMultisig, timelockAddress, 0, executeCalldata, 0);
+
         require(success, "Failed to execute upgrade");
         emit UpgradeExecuted(newImplementation);
         console.log("Upgrade executed successfully");
@@ -231,12 +221,12 @@ abstract contract ProductionForkTest is Test, BaseScript {
         require(cnsTokenL2Proxy != address(0), "CNS Token L2 proxy not found");
         require(timelockController != address(0), "Timelock controller not found");
         require(safeMultisig != address(0), "Safe multisig not found");
-        
+
         // Verify contracts exist
         require(cnsTokenL2Proxy.code.length > 0, "CNS Token L2 proxy has no code");
         require(timelockController.code.length > 0, "Timelock controller has no code");
         require(safeMultisig.code.length > 0, "Safe multisig has no code");
-        
+
         console.log("Fork state verified successfully");
         console.log("CNS Token L2 Proxy:", cnsTokenL2Proxy);
         console.log("Timelock Controller:", timelockController);
@@ -248,7 +238,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
      */
     function _loadProductionAddresses() internal {
         console.log("Loading addresses from config for env:", config.env);
-        
+
         cnsTokenL2Proxy = config.l2.proxy;
         timelockController = config.l2.timelock.addr;
         safeMultisig = config.l2.roles.admin; // Assuming admin is the Safe
@@ -256,7 +246,6 @@ abstract contract ProductionForkTest is Test, BaseScript {
         console.log("CNS Token L2 Proxy:", cnsTokenL2Proxy);
         console.log("Timelock Controller:", timelockController);
         console.log("Safe Multisig:", safeMultisig);
-        
     }
 
     /**
@@ -271,7 +260,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
             url = vm.envOr("LINEA_SEPOLIA_RPC_URL", string(""));
             console.log("Using dev RPC URL:", url);
         }
-        
+
         require(bytes(url).length > 0, "RPC URL not set - check your environment variables");
         return url;
     }
@@ -298,7 +287,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
         // Get the current implementation from storage (like the working script)
         bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
         address currentImpl = address(uint160(uint256(vm.load(cnsTokenL2Proxy, implementationSlot))));
-        
+
         require(currentImpl == newImplementation, "Upgrade verification failed");
         console.log("Upgrade verified successfully");
         console.log("Current implementation:", currentImpl);
