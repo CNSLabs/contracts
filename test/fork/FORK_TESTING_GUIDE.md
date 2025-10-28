@@ -11,7 +11,6 @@ The fork testing infrastructure allows you to:
 - Test complete upgrade flows on production-like state
 - Verify state preservation and new functionality
 
-
 ## Setup
 
 ### 1. Environment Configuration
