@@ -69,7 +69,7 @@ jobs:
       - name: Check gas snapshots
         id: gas-check
         run: |
-          forge snapshot --check --tolerance 5
+          forge snapshot --check --tolerance 5 --match-path "test/**/*" --no-match-path "test/fork/*"
         continue-on-error: true
 
       - name: Generate new snapshot on changes
@@ -81,10 +81,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Show the diff
-          forge snapshot --diff .gas-snapshot || true
+          forge snapshot --diff .gas-snapshot --match-path "test/**/*" --no-match-path "test/fork/*" || true
           
           # Generate new snapshot for comparison
-          forge snapshot --snap .gas-snapshot.new
+          forge snapshot --snap .gas-snapshot.new --match-path "test/**/*" --no-match-path "test/fork/*"
           
           echo "\`\`\`diff" >> $GITHUB_STEP_SUMMARY
           diff .gas-snapshot .gas-snapshot.new >> $GITHUB_STEP_SUMMARY || true
