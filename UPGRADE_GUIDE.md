@@ -79,7 +79,7 @@ uint256[47-N] private __gap; // Update accordingly
 anvil
 
 # 2. Deploy V1 and initialize
-forge script script/DeployCNSTokenL2.s.sol --rpc-url http://localhost:8545 --broadcast
+forge script script/2_DeployShoTokenL2.s.sol --rpc-url http://localhost:8545 --broadcast
 
 # 3. Record proxy address from deployment
 export PROXY_ADDRESS=0x...

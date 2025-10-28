@@ -12,12 +12,12 @@ anvil
 cd contract-prototyping
 
 # Deploy L1 token
-forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
   --rpc-url http://localhost:8545 \
   --broadcast
 
 # Deploy L2 token (after setting CNS_TOKEN_L1)
-forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
   --rpc-url http://localhost:8545 \
   --broadcast
 ```
@@ -93,7 +93,7 @@ cd /Users/vlado/projects/contract-prototyping
 source .env.local
 
 # Deploy L1 token
-forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
   --rpc-url http://localhost:8545 \
   --broadcast
 ```
@@ -124,7 +124,7 @@ Now deploy the L2 token (in the same terminal):
 echo $CNS_TOKEN_L1
 
 # Deploy L2 token
-forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
   --rpc-url http://localhost:8545 \
   --broadcast
 ```
@@ -221,7 +221,7 @@ echo $CNS_TOKEN_L2_PROXY
 export PRIVATE_KEY=$OWNER_PK
 
 # Upgrade to V2
-forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
   --rpc-url http://localhost:8545 \
   --broadcast
 
@@ -271,25 +271,25 @@ export CNS_OWNER=$OWNER
 export LINEA_L2_BRIDGE=$BRIDGE
 
 echo -e "${BLUE}Step 1: Deploying L1 Token${NC}"
-forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
   --rpc-url $RPC \
   --broadcast \
   --silent 2>/dev/null
 
 # Extract L1 token address from broadcast
-CNS_TOKEN_L1=$(jq -r '.transactions[0].contractAddress' broadcast/1_DeployCNSTokenL1.s.sol/31337/run-latest.json)
+CNS_TOKEN_L1=$(jq -r '.transactions[0].contractAddress' broadcast/1_DeployShoTokenL1.s.sol/31337/run-latest.json)
 echo -e "${GREEN}✓ L1 Token deployed: $CNS_TOKEN_L1${NC}"
 export CNS_TOKEN_L1
 
 echo ""
 echo -e "${BLUE}Step 2: Deploying L2 Token${NC}"
-forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
   --rpc-url $RPC \
   --broadcast \
   --silent 2>/dev/null
 
 # Extract L2 proxy address
-CNS_TOKEN_L2_PROXY=$(jq -r '.transactions[-1].contractAddress' broadcast/2_DeployCNSTokenL2.s.sol/31337/run-latest.json)
+CNS_TOKEN_L2_PROXY=$(jq -r '.transactions[-1].contractAddress' broadcast/2_DeployShoTokenL2.s.sol/31337/run-latest.json)
 echo -e "${GREEN}✓ L2 Token deployed: $CNS_TOKEN_L2_PROXY${NC}"
 export CNS_TOKEN_L2_PROXY
 
@@ -320,7 +320,7 @@ echo -e "${GREEN}✓ Transferred tokens. User1 balance: $USER1_BALANCE${NC}"
 
 echo ""
 echo -e "${BLUE}Step 7: Upgrading to V2${NC}"
-forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
   --rpc-url $RPC \
   --broadcast \
   --silent 2>/dev/null
@@ -396,7 +396,7 @@ In our local test setup:
 When upgrading, make sure to:
 ```bash
 export PRIVATE_KEY=$OWNER_PRIVATE_KEY  # Use owner's key, not deployer's
-forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 --rpc-url ... --broadcast
+forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule --rpc-url ... --broadcast
 ```
 
 This is a **security feature** - it separates the deployment permission (anyone) from the upgrade permission (only authorized accounts).

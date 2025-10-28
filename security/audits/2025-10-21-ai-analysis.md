@@ -795,14 +795,14 @@ function setSenderAllowedBatch(address[] calldata accounts, bool allowed)
 ### 11. ✅ RESOLVED: Timelock for Upgrades Implemented
 
 **Severity**: MEDIUM  
-**Location**: `script/2_DeployCNSTokenL2.s.sol:298`  
+**Location**: `script/2_DeployShoTokenL2.s.sol:298`  
 **CWE**: CWE-269 (Improper Privilege Management)  
 **Status**: ✅ **IMPLEMENTED** (TimelockController deployed with configurable delays)
 
 #### Implementation Details
 
 ```solidity
-// script/2_DeployCNSTokenL2.s.sol:298
+// script/2_DeployShoTokenL2.s.sol:298
 timelock = new TimelockController(minDelay, proposers, executors, tlAdmin);
 
 // Grant UPGRADER_ROLE to timelock instead of EOA
@@ -815,8 +815,8 @@ token.grantRole(UPGRADER_ROLE, address(timelock));
 - **Alpha**: 1 hour delay (`minDelay: 3600`)
 
 **Upgrade Process**:
-1. **Schedule**: `3_UpgradeCNSTokenL2ToV2_Schedule.s.sol` - Propose upgrade via timelock
-2. **Execute**: `4_UpgradeCNSTokenL2ToV2_Execute.s.sol` - Execute after delay period
+1. **Schedule**: `3_UpgradeShoTokenL2ToV2_Schedule.s.sol` - Propose upgrade via timelock
+2. **Execute**: `4_UpgradeShoTokenL2ToV2_Execute.s.sol` - Execute after delay period
 
 #### Impact
 
@@ -855,15 +855,15 @@ token.grantRole(UPGRADER_ROLE, address(timelock));
 
 **Upgrade Workflow**:
 
-1. **Schedule Upgrade** (`3_UpgradeCNSTokenL2ToV2_Schedule.s.sol`):
+1. **Schedule Upgrade** (`3_UpgradeShoTokenL2ToV2_Schedule.s.sol`):
    ```bash
-   forge script script/3_UpgradeCNSTokenL2ToV2_Schedule.s.sol:UpgradeCNSTokenL2ToV2 \
+   forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
      --rpc-url linea_mainnet --broadcast
    ```
 
-2. **Execute After Delay** (`4_UpgradeCNSTokenL2ToV2_Execute.s.sol`):
+2. **Execute After Delay** (`4_UpgradeShoTokenL2ToV2_Execute.s.sol`):
    ```bash
-   forge script script/4_UpgradeCNSTokenL2ToV2_Execute.s.sol:ExecuteUpgrade \
+   forge script script/4_UpgradeShoTokenL2ToV2_Execute.s.sol:ExecuteUpgrade \
      --rpc-url linea_mainnet --broadcast
    ```
 

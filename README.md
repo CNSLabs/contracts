@@ -73,18 +73,18 @@ Load automatically with `direnv` (`use dotenv` already in `.envrc`) or export ma
 
 ```bash
 # Deploy L1 Token on Sepolia
-forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 --rpc-url sepolia --broadcast --verify
+forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 --rpc-url sepolia --broadcast --verify
 
 # Set CNS_TOKEN_L1 in .env with the deployed address
 
 # Deploy L2 Token on Linea Sepolia
-forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 --rpc-url linea_sepolia --broadcast --verify
+forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 --rpc-url linea_sepolia --broadcast --verify
 ```
 You can optionally override the token name and symbol values by setting the corresponding env variables, or .env file values:
 ```bash
-TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 --rpc-url sepolia --broadcast --verify
+TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 --rpc-url sepolia --broadcast --verify
 
-TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 --rpc-url linea_sepolia --broadcast --verify
+TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 --rpc-url linea_sepolia --broadcast --verify
 ```
 
 See [`script/README.md`](./script/README.md) for complete deployment workflow.
