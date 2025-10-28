@@ -64,16 +64,6 @@ import "../src/CNSTokenL2.sol";
  *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
 contract DeployCNSTokenL2 is BaseScript {
-    // Token configuration defaults (can be overridden via environment)
-    string constant DEFAULT_L2_NAME = "CNS Linea Token";
-    string constant DEFAULT_L2_SYMBOL = "CNSL";
-    uint8 constant DEFAULT_L2_DECIMALS = 18;
-
-    // Configuration with environment overrides
-    string L2_NAME = vm.envOr("L2_TOKEN_NAME", DEFAULT_L2_NAME);
-    string L2_SYMBOL = vm.envOr("L2_TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
-    uint8 L2_DECIMALS = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(DEFAULT_L2_DECIMALS)));
-
     // Deployed contracts
     CNSTokenL2 public implementation;
     ERC1967Proxy public proxy;
@@ -84,6 +74,11 @@ contract DeployCNSTokenL2 is BaseScript {
         EnvConfig memory cfg = _loadEnvConfig();
         // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
+
+        // Load token parameters from config with environment overrides
+        string memory l2Name = vm.envOr("L2_TOKEN_NAME", cfg.l2.name);
+        string memory l2Symbol = vm.envOr("L2_TOKEN_SYMBOL", cfg.l2.symbol);
+        uint8 l2Decimals = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(cfg.l2.decimals)));
 
         // Get and validate required addresses
         address defaultAdmin = vm.envOr("CNS_DEFAULT_ADMIN", cfg.l2.roles.admin);
@@ -114,9 +109,9 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Log deployment info
         _logDeploymentHeader("Deploying CNS Token L2 with Role Separation");
-        console.log("Token Name:", L2_NAME);
-        console.log("Token Symbol:", L2_SYMBOL);
-        console.log("Decimals:", L2_DECIMALS);
+        console.log("Token Name:", l2Name);
+        console.log("Token Symbol:", l2Symbol);
+        console.log("Decimals:", l2Decimals);
         console.log("\n=== Role Assignment ===");
         console.log("Default Admin:", defaultAdmin);
         console.log("Pauser:", pauser);
@@ -192,9 +187,9 @@ contract DeployCNSTokenL2 is BaseScript {
             allowlistAdmin,
             bridge,
             l1Token,
-            L2_NAME,
-            L2_SYMBOL,
-            L2_DECIMALS,
+            l2Name,
+            l2Symbol,
+            l2Decimals,
             senderAllowlist
         );
 
@@ -231,7 +226,16 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Verify deployment
         _verifyDeployment(
-            defaultAdmin, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
+            defaultAdmin,
+            pauser,
+            allowlistAdmin,
+            bridge,
+            l1Token,
+            hedgeyBatchPlanner,
+            hedgeyTokenVestingPlans,
+            l2Name,
+            l2Symbol,
+            l2Decimals
         );
 
         _logDeploymentResults(
@@ -242,7 +246,10 @@ contract DeployCNSTokenL2 is BaseScript {
             l1Token,
             hedgeyBatchPlanner,
             hedgeyTokenVestingPlans,
-            initCalldata
+            initCalldata,
+            l2Name,
+            l2Symbol,
+            l2Decimals
         );
     }
 
@@ -253,7 +260,10 @@ contract DeployCNSTokenL2 is BaseScript {
         address bridge,
         address l1Token,
         address hedgeyBatchPlanner,
-        address hedgeyTokenVestingPlans
+        address hedgeyTokenVestingPlans,
+        string memory l2Name,
+        string memory l2Symbol,
+        uint8 l2Decimals
     ) internal view {
         console.log("\n=== Running Additional Deployment Checks ===");
 
@@ -264,9 +274,9 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("[OK] Proxy points to correct implementation");
 
         // Check token initialization
-        require(keccak256(bytes(token.name())) == keccak256(bytes(L2_NAME)), "Name mismatch");
-        require(keccak256(bytes(token.symbol())) == keccak256(bytes(L2_SYMBOL)), "Symbol mismatch");
-        require(token.decimals() == L2_DECIMALS, "Decimals mismatch");
+        require(keccak256(bytes(token.name())) == keccak256(bytes(l2Name)), "Name mismatch");
+        require(keccak256(bytes(token.symbol())) == keccak256(bytes(l2Symbol)), "Symbol mismatch");
+        require(token.decimals() == l2Decimals, "Decimals mismatch");
         require(token.bridge() == bridge, "Bridge mismatch");
         require(token.l1Token() == l1Token, "L1 token mismatch");
         console.log("[OK] Token initialized correctly");
@@ -324,7 +334,10 @@ contract DeployCNSTokenL2 is BaseScript {
         address l1Token,
         address hedgeyBatchPlanner,
         address hedgeyTokenVestingPlans,
-        bytes memory initCalldata
+        bytes memory initCalldata,
+        string memory l2Name,
+        string memory l2Symbol,
+        uint8 l2Decimals
     ) internal view {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
@@ -336,9 +349,9 @@ contract DeployCNSTokenL2 is BaseScript {
         }
 
         console.log("\n=== Token Configuration ===");
-        console.log("Name:", token.name());
-        console.log("Symbol:", token.symbol());
-        console.log("Decimals:", token.decimals());
+        console.log("Name:", l2Name);
+        console.log("Symbol:", l2Symbol);
+        console.log("Decimals:", l2Decimals);
         console.log("L1 Token:", l1Token);
         console.log("Bridge:", bridge);
         console.log("Paused:", token.paused());
