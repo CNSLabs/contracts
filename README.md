@@ -1,6 +1,6 @@
-# CNS Contract Prototyping
+# SHO Contract Prototyping
 
-Smart contracts and tooling for the CNS token stack across L1 ↔ Linea L2.
+Smart contracts and tooling for the SHO token stack across L1 ↔ Linea L2.
 
 ## Components
 

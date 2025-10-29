@@ -108,7 +108,7 @@ contract DeployShoTokenL2 is BaseScript {
         _requireNonZeroAddress(bridge, "LINEA_L2_BRIDGE");
 
         // Log deployment info
-        _logDeploymentHeader("Deploying CNS Token L2 with Role Separation");
+        _logDeploymentHeader("Deploying SHO Token L2 with Role Separation");
         console.log("Token Name:", l2Name);
         console.log("Token Symbol:", l2Symbol);
         console.log("Decimals:", l2Decimals);

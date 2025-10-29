@@ -17,8 +17,8 @@ contract ShoTokenL2V2Test is Test {
     address public user1;
     address public user2;
 
-    string constant TOKEN_NAME = "CNS Linea Token";
-    string constant TOKEN_SYMBOL = "CNSL";
+    string constant TOKEN_NAME = "SHO Linea Token";
+    string constant TOKEN_SYMBOL = "SHOL";
     uint8 constant DECIMALS = 18;
 
     event SenderAllowlistUpdated(address indexed account, bool allowed);

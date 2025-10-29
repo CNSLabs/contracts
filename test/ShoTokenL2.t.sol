@@ -19,8 +19,8 @@ contract ShoTokenL2Test is Test {
     uint8 internal constant DECIMALS = 18;
     uint256 internal constant INITIAL_BRIDGE_MINT = 1_000 ether;
 
-    string internal constant NAME = "CNS Linea Token";
-    string internal constant SYMBOL = "CNSL";
+    string internal constant NAME = "SHO Linea Token";
+    string internal constant SYMBOL = "SHOL";
 
     // Role constants
     bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;

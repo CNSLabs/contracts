@@ -1,6 +1,6 @@
 # Security Documentation
 
-This directory contains security audit reports and analysis for the CNS Token contracts.
+This directory contains security audit reports and analysis for the SHO Token contracts.
 
 ## Directory Structure
 

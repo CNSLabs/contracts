@@ -1,6 +1,6 @@
 # Local Testing Guide with Anvil
 
-This guide shows you how to test CNS token deployments locally using Anvil before deploying to testnet/mainnet.
+This guide shows you how to test SHO token deployments locally using Anvil before deploying to testnet/mainnet.
 
 ## Quick Start
 
@@ -100,7 +100,7 @@ forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
 
 **Expected output:**
 ```
-=== Deploying CNS Token L1 ===
+=== Deploying SHO Token L1 ===
 Network: Local Anvil
 Chain ID: 31337
 ...
@@ -131,7 +131,7 @@ forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
 
 **Expected output:**
 ```
-=== Deploying CNS Token L2 ===
+=== Deploying SHO Token L2 ===
 Network: Local Anvil
 Chain ID: 31337
 ...
@@ -247,7 +247,7 @@ Save this as `test-local-deployment.sh`:
 #!/bin/bash
 set -e
 
-echo "🧪 Testing CNS Token Deployment Locally"
+echo "🧪 Testing SHO Token Deployment Locally"
 echo ""
 
 # Colors

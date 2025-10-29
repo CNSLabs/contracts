@@ -21,8 +21,8 @@ contract ShoTokenL2UpgradeTest is Test {
     uint8 internal constant DECIMALS = 18;
     uint256 internal constant INITIAL_SUPPLY = 1_000_000 ether;
 
-    string internal constant NAME = "CNS Linea Token";
-    string internal constant SYMBOL = "CNSL";
+    string internal constant NAME = "SHO Linea Token";
+    string internal constant SYMBOL = "SHOL";
 
     event Upgraded(address indexed implementation);
 

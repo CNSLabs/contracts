@@ -1,6 +1,6 @@
 # Security Audits
 
-This directory contains security audit reports for the CNS Token contracts.
+This directory contains security audit reports for the SHO Token contracts.
 
 ## Audit Index
 

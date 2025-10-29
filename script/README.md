@@ -1,6 +1,6 @@
 # Deployment Scripts
 
-This directory contains deployment and utility scripts for the CNS token contracts.
+This directory contains deployment and utility scripts for the SHO token contracts.
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ contract MyScript is BaseScript {
 
 ### Deployment Scripts
 
-- **`1_DeployShoTokenL1.s.sol`** - Deploy CNS Token on L1 (Ethereum)
+- **`1_DeployShoTokenL1.s.sol`** - Deploy SHO Token on L1 (Ethereum)
   ```bash
   # New: zero-arg run() with inferred config
   # Select env via ENV (default: dev)
@@ -42,7 +42,7 @@ contract MyScript is BaseScript {
     --slow
   ```
 
-- **`2_DeployShoTokenL2.s.sol`** - Deploy CNS Token on L2 (Linea) with proxy
+- **`2_DeployShoTokenL2.s.sol`** - Deploy SHO Token on L2 (Linea) with proxy
   ```bash
   # New: zero-arg run() with inferred config
   # Select env via ENV (default: dev)
