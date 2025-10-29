@@ -28,7 +28,7 @@ import "./ConfigLoader.sol";
  *       HEDGEY_INVESTOR_LOCKUP, HEDGEY_BATCH_PLANNER,
  *       HEDGEY_RECIPIENT, HEDGEY_AMOUNT, HEDGEY_START,
  *       HEDGEY_CLIFF, HEDGEY_RATE, HEDGEY_PERIOD,
- *       CNS_TOKEN_L2_PROXY
+ *       SHO_TOKEN_L2_PROXY
  *
  * Notes:
  *   - Configure the parameters above in your `.env` or export them in shell.
@@ -119,7 +119,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         address token = cfg.l2.proxy;
         if (token == address(0)) {
             // fallback: env variable or broadcast inference used in other scripts
-            try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+            try vm.envAddress("SHO_TOKEN_L2_PROXY") returns (address a) {
                 token = a;
             } catch {
                 token = _inferL2ProxyFromBroadcast(block.chainid);
@@ -132,7 +132,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         uint256 period = cfg.hedgey.period != 0 ? cfg.hedgey.period : vm.envUint("HEDGEY_PERIOD");
 
         _requireNonZeroAddress(recipient, "HEDGEY_RECIPIENT");
-        _requireNonZeroAddress(token, "CNS_TOKEN_L2_PROXY");
+        _requireNonZeroAddress(token, "SHO_TOKEN_L2_PROXY");
         require(amount > 0, "HEDGEY_AMOUNT must be > 0");
         require(period > 0, "HEDGEY_PERIOD must be > 0");
         require(rate > 0, "HEDGEY_RATE must be > 0");

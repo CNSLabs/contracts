@@ -351,7 +351,7 @@ abstract contract BaseScript is Script {
      */
     function _resolveL2ProxyAddress(EnvConfig memory cfg) internal view returns (address) {
         address fromEnv = address(0);
-        try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+        try vm.envAddress("SHO_TOKEN_L2_PROXY") returns (address a) {
             fromEnv = a;
         } catch {}
         if (fromEnv != address(0)) return fromEnv;
@@ -371,7 +371,7 @@ abstract contract BaseScript is Script {
      * @return The resolved timelock address, or 0x0 if not found
      */
     function _resolveL2TimelockAddress(EnvConfig memory cfg, address proxyAddress) internal view returns (address) {
-        address timelockAddress = vm.envOr("CNS_L2_TIMELOCK", cfg.l2.timelock.addr);
+        address timelockAddress = vm.envOr("SHO_L2_TIMELOCK", cfg.l2.timelock.addr);
         if (timelockAddress == address(0)) {
             address inferred = _inferTimelockFromBroadcast(block.chainid);
             if (inferred != address(0) && inferred != proxyAddress) {

@@ -16,7 +16,7 @@ forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
   --rpc-url http://localhost:8545 \
   --broadcast
 
-# Deploy L2 token (after setting CNS_TOKEN_L1)
+# Deploy L2 token (after setting SHO_TOKEN_L1)
 forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
   --rpc-url http://localhost:8545 \
   --broadcast
@@ -62,16 +62,16 @@ Create a `.env.local` file for testing (don't commit this):
 PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 # Use second Anvil account as owner
-CNS_OWNER=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+SHO_OWNER=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 
 # For L2 deployment, use any address as mock bridge
 LINEA_L2_BRIDGE=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
 
 # Will be set after L1 deployment
-CNS_TOKEN_L1=
+SHO_TOKEN_L1=
 
 # Will be set after L2 deployment
-CNS_TOKEN_L2_PROXY=
+SHO_TOKEN_L2_PROXY=
 
 # Not needed for local testing
 MAINNET_DEPLOYMENT_ALLOWED=false
@@ -112,7 +112,7 @@ Total Supply: 100000000 tokens
 **Save the L1 token address!**
 
 ```bash
-export CNS_TOKEN_L1=0x5FbDB2315678afecb367f032d93F642f64180aa3  # Use your actual address
+export SHO_TOKEN_L1=0x5FbDB2315678afecb367f032d93F642f64180aa3  # Use your actual address
 ```
 
 ### Step 4: Deploy L2 Token
@@ -120,8 +120,8 @@ export CNS_TOKEN_L1=0x5FbDB2315678afecb367f032d93F642f64180aa3  # Use your actua
 Now deploy the L2 token (in the same terminal):
 
 ```bash
-# Make sure CNS_TOKEN_L1 is set from Step 3
-echo $CNS_TOKEN_L1
+# Make sure SHO_TOKEN_L1 is set from Step 3
+echo $SHO_TOKEN_L1
 
 # Deploy L2 token
 forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
@@ -144,7 +144,7 @@ Proxy (Token): 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
 **Save the L2 proxy address!**
 
 ```bash
-export CNS_TOKEN_L2_PROXY=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0  # Use your actual address
+export SHO_TOKEN_L2_PROXY=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0  # Use your actual address
 ```
 
 ### Step 5: Test the Deployed Contracts
@@ -153,16 +153,16 @@ export CNS_TOKEN_L2_PROXY=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0  # Use your
 
 ```bash
 # Check balance of owner
-cast call $CNS_TOKEN_L1 "balanceOf(address)" $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "balanceOf(address)" $SHO_OWNER --rpc-url http://localhost:8545
 
 # Check token name
-cast call $CNS_TOKEN_L1 "name()" --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "name()" --rpc-url http://localhost:8545
 
 # Check token symbol  
-cast call $CNS_TOKEN_L1 "symbol()" --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "symbol()" --rpc-url http://localhost:8545
 
 # Transfer tokens from owner to another address
-cast send $CNS_TOKEN_L1 \
+cast send $SHO_TOKEN_L1 \
   "transfer(address,uint256)" \
   0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
   1000000000000000000 \
@@ -174,16 +174,16 @@ cast send $CNS_TOKEN_L1 \
 
 ```bash
 # Check token name
-cast call $CNS_TOKEN_L2_PROXY "name()" --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L2_PROXY "name()" --rpc-url http://localhost:8545
 
 # Check if owner is allowlisted
-cast call $CNS_TOKEN_L2_PROXY "isAllowlisted(address)" $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L2_PROXY "isAllowlisted(address)" $SHO_OWNER --rpc-url http://localhost:8545
 
 # Add a new address to allowlist (as owner)
 OWNER_PK=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 USER1=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 
-cast send $CNS_TOKEN_L2_PROXY \
+cast send $SHO_TOKEN_L2_PROXY \
   "setAllowlist(address,bool)" \
   $USER1 \
   true \
@@ -192,18 +192,18 @@ cast send $CNS_TOKEN_L2_PROXY \
 
 # Simulate minting (as bridge)
 BRIDGE_PK=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a  # Account 2
-cast send $CNS_TOKEN_L2_PROXY \
+cast send $SHO_TOKEN_L2_PROXY \
   "mint(address,uint256)" \
-  $CNS_OWNER \
+  $SHO_OWNER \
   1000000000000000000 \
   --private-key $BRIDGE_PK \
   --rpc-url http://localhost:8545
 
 # Check balance
-cast call $CNS_TOKEN_L2_PROXY "balanceOf(address)" $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L2_PROXY "balanceOf(address)" $SHO_OWNER --rpc-url http://localhost:8545
 
 # Try transfer between allowlisted addresses
-cast send $CNS_TOKEN_L2_PROXY \
+cast send $SHO_TOKEN_L2_PROXY \
   "transfer(address,uint256)" \
   $USER1 \
   100000000000000000 \
@@ -214,8 +214,8 @@ cast send $CNS_TOKEN_L2_PROXY \
 ### Step 6: Test Upgrade to V2 (Optional)
 
 ```bash
-# Make sure CNS_TOKEN_L2_PROXY is set
-echo $CNS_TOKEN_L2_PROXY
+# Make sure SHO_TOKEN_L2_PROXY is set
+echo $SHO_TOKEN_L2_PROXY
 
 # IMPORTANT: Switch to owner's private key (owner has UPGRADER_ROLE)
 export PRIVATE_KEY=$OWNER_PK
@@ -229,14 +229,14 @@ forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2
 export PRIVATE_KEY=$DEPLOYER_PK
 
 # Test V2 features (delegation)
-cast send $CNS_TOKEN_L2_PROXY \
+cast send $SHO_TOKEN_L2_PROXY \
   "delegate(address)" \
-  $CNS_OWNER \
+  $SHO_OWNER \
   --private-key $OWNER_PK \
   --rpc-url http://localhost:8545
 
 # Check voting power
-cast call $CNS_TOKEN_L2_PROXY "getVotes(address)" $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L2_PROXY "getVotes(address)" $SHO_OWNER --rpc-url http://localhost:8545
 ```
 
 ## Complete Test Script
@@ -267,7 +267,7 @@ RPC=http://localhost:8545
 
 # Set environment
 export PRIVATE_KEY=$DEPLOYER_PK
-export CNS_OWNER=$OWNER
+export SHO_OWNER=$OWNER
 export LINEA_L2_BRIDGE=$BRIDGE
 
 echo -e "${BLUE}Step 1: Deploying L1 Token${NC}"
@@ -277,9 +277,9 @@ forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
   --silent 2>/dev/null
 
 # Extract L1 token address from broadcast
-CNS_TOKEN_L1=$(jq -r '.transactions[0].contractAddress' broadcast/1_DeployShoTokenL1.s.sol/31337/run-latest.json)
-echo -e "${GREEN}✓ L1 Token deployed: $CNS_TOKEN_L1${NC}"
-export CNS_TOKEN_L1
+SHO_TOKEN_L1=$(jq -r '.transactions[0].contractAddress' broadcast/1_DeployShoTokenL1.s.sol/31337/run-latest.json)
+echo -e "${GREEN}✓ L1 Token deployed: $SHO_TOKEN_L1${NC}"
+export SHO_TOKEN_L1
 
 echo ""
 echo -e "${BLUE}Step 2: Deploying L2 Token${NC}"
@@ -289,33 +289,33 @@ forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
   --silent 2>/dev/null
 
 # Extract L2 proxy address
-CNS_TOKEN_L2_PROXY=$(jq -r '.transactions[-1].contractAddress' broadcast/2_DeployShoTokenL2.s.sol/31337/run-latest.json)
-echo -e "${GREEN}✓ L2 Token deployed: $CNS_TOKEN_L2_PROXY${NC}"
-export CNS_TOKEN_L2_PROXY
+SHO_TOKEN_L2_PROXY=$(jq -r '.transactions[-1].contractAddress' broadcast/2_DeployShoTokenL2.s.sol/31337/run-latest.json)
+echo -e "${GREEN}✓ L2 Token deployed: $SHO_TOKEN_L2_PROXY${NC}"
+export SHO_TOKEN_L2_PROXY
 
 echo ""
 echo -e "${BLUE}Step 3: Testing L1 Token${NC}"
-OWNER_BALANCE=$(cast call $CNS_TOKEN_L1 "balanceOf(address)(uint256)" $OWNER --rpc-url $RPC)
+OWNER_BALANCE=$(cast call $SHO_TOKEN_L1 "balanceOf(address)(uint256)" $OWNER --rpc-url $RPC)
 echo -e "${GREEN}✓ Owner L1 balance: $OWNER_BALANCE${NC}"
 
 echo ""
 echo -e "${BLUE}Step 4: Testing L2 Token - Allowlist${NC}"
-cast send $CNS_TOKEN_L2_PROXY "setAllowlist(address,bool)" $USER1 true \
+cast send $SHO_TOKEN_L2_PROXY "setAllowlist(address,bool)" $USER1 true \
   --private-key $OWNER_PK --rpc-url $RPC > /dev/null 2>&1
 echo -e "${GREEN}✓ Added $USER1 to allowlist${NC}"
 
 echo ""
 echo -e "${BLUE}Step 5: Testing L2 Token - Minting${NC}"
-cast send $CNS_TOKEN_L2_PROXY "mint(address,uint256)" $OWNER 1000000000000000000 \
+cast send $SHO_TOKEN_L2_PROXY "mint(address,uint256)" $OWNER 1000000000000000000 \
   --private-key $BRIDGE_PK --rpc-url $RPC > /dev/null 2>&1
-L2_BALANCE=$(cast call $CNS_TOKEN_L2_PROXY "balanceOf(address)(uint256)" $OWNER --rpc-url $RPC)
+L2_BALANCE=$(cast call $SHO_TOKEN_L2_PROXY "balanceOf(address)(uint256)" $OWNER --rpc-url $RPC)
 echo -e "${GREEN}✓ Minted tokens. Owner L2 balance: $L2_BALANCE${NC}"
 
 echo ""
 echo -e "${BLUE}Step 6: Testing L2 Token - Transfer${NC}"
-cast send $CNS_TOKEN_L2_PROXY "transfer(address,uint256)" $USER1 100000000000000000 \
+cast send $SHO_TOKEN_L2_PROXY "transfer(address,uint256)" $USER1 100000000000000000 \
   --private-key $OWNER_PK --rpc-url $RPC > /dev/null 2>&1
-USER1_BALANCE=$(cast call $CNS_TOKEN_L2_PROXY "balanceOf(address)(uint256)" $USER1 --rpc-url $RPC)
+USER1_BALANCE=$(cast call $SHO_TOKEN_L2_PROXY "balanceOf(address)(uint256)" $USER1 --rpc-url $RPC)
 echo -e "${GREEN}✓ Transferred tokens. User1 balance: $USER1_BALANCE${NC}"
 
 echo ""
@@ -328,17 +328,17 @@ echo -e "${GREEN}✓ Upgraded to V2${NC}"
 
 echo ""
 echo -e "${BLUE}Step 8: Testing V2 - Delegation${NC}"
-cast send $CNS_TOKEN_L2_PROXY "delegate(address)" $OWNER \
+cast send $SHO_TOKEN_L2_PROXY "delegate(address)" $OWNER \
   --private-key $OWNER_PK --rpc-url $RPC > /dev/null 2>&1
-VOTES=$(cast call $CNS_TOKEN_L2_PROXY "getVotes(address)(uint256)" $OWNER --rpc-url $RPC)
+VOTES=$(cast call $SHO_TOKEN_L2_PROXY "getVotes(address)(uint256)" $OWNER --rpc-url $RPC)
 echo -e "${GREEN}✓ Delegated. Owner voting power: $VOTES${NC}"
 
 echo ""
 echo -e "${GREEN}✅ All tests passed!${NC}"
 echo ""
 echo "Deployed Addresses:"
-echo "  L1 Token: $CNS_TOKEN_L1"
-echo "  L2 Proxy: $CNS_TOKEN_L2_PROXY"
+echo "  L1 Token: $SHO_TOKEN_L1"
+echo "  L2 Proxy: $SHO_TOKEN_L2_PROXY"
 ```
 
 Make it executable and run:
@@ -358,35 +358,35 @@ Once deployed, you can interact with the contracts using `cast`:
 
 ```bash
 # Get token info
-cast call $CNS_TOKEN_L1 "name()(string)" --rpc-url http://localhost:8545
-cast call $CNS_TOKEN_L1 "symbol()(string)" --rpc-url http://localhost:8545
-cast call $CNS_TOKEN_L1 "totalSupply()(uint256)" --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "name()(string)" --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "symbol()(string)" --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "totalSupply()(uint256)" --rpc-url http://localhost:8545
 
 # Check balances
-cast call $CNS_TOKEN_L1 "balanceOf(address)(uint256)" $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L1 "balanceOf(address)(uint256)" $SHO_OWNER --rpc-url http://localhost:8545
 
 # Check roles on L2
 ADMIN_ROLE=0x0000000000000000000000000000000000000000000000000000000000000000
-cast call $CNS_TOKEN_L2_PROXY "hasRole(bytes32,address)(bool)" $ADMIN_ROLE $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L2_PROXY "hasRole(bytes32,address)(bool)" $ADMIN_ROLE $SHO_OWNER --rpc-url http://localhost:8545
 
 # Check allowlist
-cast call $CNS_TOKEN_L2_PROXY "isAllowlisted(address)(bool)" $CNS_OWNER --rpc-url http://localhost:8545
+cast call $SHO_TOKEN_L2_PROXY "isAllowlisted(address)(bool)" $SHO_OWNER --rpc-url http://localhost:8545
 
 # Pause L2 token
-cast send $CNS_TOKEN_L2_PROXY "pause()" --private-key $OWNER_PK --rpc-url http://localhost:8545
+cast send $SHO_TOKEN_L2_PROXY "pause()" --private-key $OWNER_PK --rpc-url http://localhost:8545
 
 # Unpause
-cast send $CNS_TOKEN_L2_PROXY "unpause()" --private-key $OWNER_PK --rpc-url http://localhost:8545
+cast send $SHO_TOKEN_L2_PROXY "unpause()" --private-key $OWNER_PK --rpc-url http://localhost:8545
 ```
 
 ## Important Notes
 
 ### UPGRADER_ROLE and Private Keys
 
-**Key Point**: The L2 token grants `UPGRADER_ROLE` to the `CNS_OWNER` during deployment, **not** to the deployer.
+**Key Point**: The L2 token grants `UPGRADER_ROLE` to the `SHO_OWNER` during deployment, **not** to the deployer.
 
 This means:
-- 🔐 **For upgrades**, you must use the private key of the account that has `UPGRADER_ROLE` (typically `CNS_OWNER`)
+- 🔐 **For upgrades**, you must use the private key of the account that has `UPGRADER_ROLE` (typically `SHO_OWNER`)
 - 👷 **For deployments**, you can use any account with enough ETH (the deployer)
 
 In our local test setup:
@@ -481,8 +481,8 @@ forge script ... --rpc-url http://localhost:8545 --broadcast -vvvv
 **Solution**: Make sure all required variables are set:
 ```bash
 echo $PRIVATE_KEY
-echo $CNS_OWNER
-echo $CNS_TOKEN_L1  # After L1 deployment
+echo $SHO_OWNER
+echo $SHO_TOKEN_L1  # After L1 deployment
 echo $LINEA_L2_BRIDGE
 ```
 

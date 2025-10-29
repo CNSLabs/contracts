@@ -64,7 +64,7 @@ contract MyScript is BaseScript {
     --slow
   ```
   
-  > 💡 **Note:** Ensure `CNS_TOKEN_L1` is set in your `.env` file before deployment.
+  > 💡 **Note:** Ensure `SHO_TOKEN_L1` is set in your `.env` file before deployment.
   > If you encounter "Replacement transaction underpriced" errors, clear the broadcast cache:
   > ```bash
   > rm -rf broadcast/2_DeployShoTokenL2.s.sol/59141/
@@ -232,7 +232,7 @@ contract DeployMyContract is BaseScript {
 1. **Deploy L1 Token on Ethereum**
    ```bash
    # Set environment variables
-   export CNS_OWNER=0xYourMultisigAddress
+   export SHO_OWNER=0xYourMultisigAddress
    
    # Deploy to Sepolia
    forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
@@ -241,12 +241,12 @@ contract DeployMyContract is BaseScript {
      --verify
    
    # Save the deployed L1 token address
-   export CNS_TOKEN_L1=0xDeployedL1Address
+   export SHO_TOKEN_L1=0xDeployedL1Address
    ```
 
 2. **Deploy L2 Token on Linea**
    ```bash
-   # Make sure CNS_TOKEN_L1 is set from step 1 (or in .env)
+   # Make sure SHO_TOKEN_L1 is set from step 1 (or in .env)
    # Bridge address should already be in your .env file
    
    # Deploy to Linea Sepolia
@@ -256,13 +256,13 @@ contract DeployMyContract is BaseScript {
      --verify
    
    # Save the deployed L2 proxy address to .env
-   echo "CNS_TOKEN_L2_PROXY=<deployed_address>" >> .env
+   echo "SHO_TOKEN_L2_PROXY=<deployed_address>" >> .env
    ```
 
 3. **Test the Deployment**
    ```bash
    # Add addresses to allowlist
-   cast send $CNS_TOKEN_L2_PROXY \
+   cast send $SHO_TOKEN_L2_PROXY \
      "setAllowlist(address,bool)" \
      0xUserAddress \
      true \
@@ -288,14 +288,14 @@ Required variables in `.env`:
 ```bash
 # Required for all scripts
 PRIVATE_KEY=0x...
-CNS_OWNER=0x...
+SHO_OWNER=0x...
 
 # Required for L2 deployment
-CNS_TOKEN_L1=0x...                    # L1 token address (deploy L1 first)
+SHO_TOKEN_L1=0x...                    # L1 token address (deploy L1 first)
 LINEA_L2_BRIDGE=0x...                 # Linea bridge address for your network
 
 # Required for upgrade scripts
-CNS_TOKEN_L2_PROXY=0x...              # L2 proxy address (after L2 deployment)
+SHO_TOKEN_L2_PROXY=0x...              # L2 proxy address (after L2 deployment)
 
 # Required for mainnet deployments
 MAINNET_DEPLOYMENT_ALLOWED=true

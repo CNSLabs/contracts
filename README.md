@@ -58,7 +58,7 @@ All critical and high priority security issues have been resolved. See the [late
 
 - `PRIVATE_KEY`: broadcaster key used by Forge (keep in `.env`, never commit).
 - `LINEA_L2_BRIDGE`: network-specific Linea TokenBridge address.
-- `CNS_OWNER`: Safe receiving admin, pauser, allowlist, upgrader roles.
+- `SHO_ADMIN`: Safe receiving admin, pauser, allowlist, upgrader roles.
 
 Optional RPC overrides (if you want to use custom RPC endpoints):
 
@@ -75,7 +75,7 @@ Load automatically with `direnv` (`use dotenv` already in `.envrc`) or export ma
 # Deploy L1 Token on Sepolia
 forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 --rpc-url sepolia --broadcast --verify
 
-# Set CNS_TOKEN_L1 in .env with the deployed address
+# Set SHO_TOKEN_L1 in .env with the deployed address
 
 # Deploy L2 Token on Linea Sepolia
 forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 --rpc-url linea_sepolia --broadcast --verify

@@ -12,15 +12,15 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  * @notice Executes an upgrade after the timelock delay has elapsed
  *
  * Environment Variables (Required):
- *   - PRIVATE_KEY or CNS_TIMELOCK_PROPOSER_PRIVATE_KEY: Executor key (must have EXECUTOR_ROLE on timelock,
+ *   - PRIVATE_KEY or SHO_TIMELOCK_PROPOSER_PRIVATE_KEY: Executor key (must have EXECUTOR_ROLE on timelock,
  *     though we're currently not restricting proposal execution by granding 0x0 the EXECUTOR_ROLE role)
- *   - CNS_NEW_IMPLEMENTATION: Address of deployed V2 implementation
- *   - CNS_TIMELOCK_SALT: Salt used when scheduling
+ *   - SHO_NEW_IMPLEMENTATION: Address of deployed V2 implementation
+ *   - SHO_TIMELOCK_SALT: Salt used when scheduling
  *   - ENV: Select public config JSON
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet
  *
  * Usage:
- *   ENV=dev CNS_NEW_IMPLEMENTATION=0x... CNS_TIMELOCK_SALT=0x... \
+ *   ENV=dev SHO_NEW_IMPLEMENTATION=0x... SHO_TIMELOCK_SALT=0x... \
  *   forge script script/4_UpgradeShoTokenL2ToV2_Execute.s.sol:UpgradeShoTokenL2ToV2_Execute \
  *     --rpc-url linea-sepolia --broadcast
  */
@@ -34,24 +34,24 @@ contract UpgradeShoTokenL2ToV2_Execute is BaseScript {
         uint256 executorPrivateKey;
         address executor;
 
-        try vm.envUint("CNS_TIMELOCK_PROPOSER_PRIVATE_KEY") returns (uint256 key) {
+        try vm.envUint("SHO_TIMELOCK_PROPOSER_PRIVATE_KEY") returns (uint256 key) {
             executorPrivateKey = key;
             executor = vm.addr(executorPrivateKey);
-            console.log("Using CNS_TIMELOCK_PROPOSER_PRIVATE_KEY");
+            console.log("Using SHO_TIMELOCK_PROPOSER_PRIVATE_KEY");
         } catch {
-            console.log("CNS_TIMELOCK_PROPOSER_PRIVATE_KEY not found, using PRIVATE_KEY");
+            console.log("SHO_TIMELOCK_PROPOSER_PRIVATE_KEY not found, using PRIVATE_KEY");
             (executorPrivateKey, executor) = _getDeployer();
         }
 
         // Get addresses from env vars
-        newImplementation = vm.envAddress("CNS_NEW_IMPLEMENTATION");
-        bytes32 salt = vm.envBytes32("CNS_TIMELOCK_SALT");
+        newImplementation = vm.envAddress("SHO_NEW_IMPLEMENTATION");
+        bytes32 salt = vm.envBytes32("SHO_TIMELOCK_SALT");
 
-        _requireNonZeroAddress(newImplementation, "CNS_NEW_IMPLEMENTATION");
+        _requireNonZeroAddress(newImplementation, "SHO_NEW_IMPLEMENTATION");
 
         proxyAddress = _resolveL2ProxyAddress(cfg);
-        _requireNonZeroAddress(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
-        _requireContract(proxyAddress, "CNS_TOKEN_L2_PROXY (resolved)");
+        _requireNonZeroAddress(proxyAddress, "SHO_TOKEN_L2_PROXY (resolved)");
+        _requireContract(proxyAddress, "SHO_TOKEN_L2_PROXY (resolved)");
 
         _logDeploymentHeader("Executing ShoTokenL2 to V2 Upgrade");
         console.log("Proxy address:", proxyAddress);
@@ -62,7 +62,7 @@ contract UpgradeShoTokenL2ToV2_Execute is BaseScript {
         _requireMainnetConfirmation();
 
         timelockAddress = _resolveL2TimelockAddress(cfg, proxyAddress);
-        require(timelockAddress != address(0), "Missing TimelockController (set CNS_L2_TIMELOCK or config)");
+        require(timelockAddress != address(0), "Missing TimelockController (set SHO_L2_TIMELOCK or config)");
         console.log("Using TimelockController:", timelockAddress);
 
         TimelockController tl = TimelockController(payable(timelockAddress));

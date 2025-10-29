@@ -51,7 +51,7 @@ contract DeployShoTokenL1 is BaseScript {
 
         // Owner comes from config (admin field)
         address admin = cfg.l1.roles.admin;
-        admin = vm.envOr("CNS_DEFAULT_ADMIN", admin);
+        admin = vm.envOr("SHO_DEFAULT_ADMIN", admin);
         _requireNonZeroAddress(admin, "Admin");
 
         // Log deployment info

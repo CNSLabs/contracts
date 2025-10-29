@@ -62,9 +62,9 @@ The script uses a priority system for configuration values:
 
 Set these in your `.env` file or environment:
 
-- `CNS_DEFAULT_ADMIN`: Default admin address (used for token holder safe)
-- `CNS_TOKEN_L1`: L1 token contract address
-- `CNS_TOKEN_L2_PROXY`: L2 token proxy address
+- `SHO_DEFAULT_ADMIN`: Default admin address (used for token holder safe)
+- `SHO_TOKEN_L1`: L1 token contract address
+- `SHO_TOKEN_L2_PROXY`: L2 token proxy address
 - `LINEA_L1_BRIDGE`: Linea L1 bridge contract address
 - `LINEA_L2_BRIDGE`: Linea L2 bridge contract address
 

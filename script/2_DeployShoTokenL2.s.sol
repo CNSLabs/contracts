@@ -39,8 +39,8 @@ import "../src/ShoTokenL2.sol";
  *
  * Environment Variables Required:
  *   - PRIVATE_KEY: Deployer private key (secret)
- *   - CNS_DEFAULT_ADMIN: Address for DEFAULT_ADMIN_ROLE (governance address)
- *   - CNS_TOKEN_L1: L1 canonical token address
+ *   - SHO_DEFAULT_ADMIN: Address for DEFAULT_ADMIN_ROLE (governance address)
+ *   - SHO_TOKEN_L1: L1 canonical token address
  *   - LINEA_L2_BRIDGE: Linea L2 bridge contract address
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
  *
@@ -48,9 +48,9 @@ import "../src/ShoTokenL2.sol";
  *   - L2_TOKEN_NAME: Token name (default: "Sho Token")
  *   - L2_TOKEN_SYMBOL: Token symbol (default: "SHO")
  *   - L2_TOKEN_DECIMALS: Token decimals (default: 18)
- *   - CNS_UPGRADER: Contract upgrader address (defaults to CNS_DEFAULT_ADMIN)
- *   - CNS_PAUSER: Emergency pause address (defaults to CNS_DEFAULT_ADMIN)
- *   - CNS_ALLOWLIST_ADMIN: Allowlist manager address (defaults to CNS_DEFAULT_ADMIN)
+ *   - SHO_UPGRADER: Contract upgrader address (defaults to SHO_DEFAULT_ADMIN)
+ *   - SHO_PAUSER: Emergency pause address (defaults to SHO_DEFAULT_ADMIN)
+ *   - SHO_ALLOWLIST_ADMIN: Allowlist manager address (defaults to SHO_DEFAULT_ADMIN)
  *
  * Notes:
  *   - Hedgey contract addresses (HEDGEY_BATCH_PLANNER, HEDGEY_TOKEN_VESTING_PLANS)
@@ -81,13 +81,13 @@ contract DeployShoTokenL2 is BaseScript {
         uint8 l2Decimals = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(cfg.l2.decimals)));
 
         // Get and validate required addresses
-        address defaultAdmin = vm.envOr("CNS_DEFAULT_ADMIN", cfg.l2.roles.admin);
-        address pauser = vm.envOr("CNS_PAUSER", cfg.l2.roles.pauser); // Defaults to defaultAdmin if not set
-        address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", cfg.l2.roles.allowlistAdmin); // Defaults to defaultAdmin if not set
+        address defaultAdmin = vm.envOr("SHO_DEFAULT_ADMIN", cfg.l2.roles.admin);
+        address pauser = vm.envOr("SHO_PAUSER", cfg.l2.roles.pauser); // Defaults to defaultAdmin if not set
+        address allowlistAdmin = vm.envOr("SHO_ALLOWLIST_ADMIN", cfg.l2.roles.allowlistAdmin); // Defaults to defaultAdmin if not set
 
-        _requireNonZeroAddress(defaultAdmin, "CNS_DEFAULT_ADMIN");
-        _requireNonZeroAddress(pauser, "CNS_PAUSER");
-        _requireNonZeroAddress(allowlistAdmin, "CNS_ALLOWLIST_ADMIN");
+        _requireNonZeroAddress(defaultAdmin, "SHO_DEFAULT_ADMIN");
+        _requireNonZeroAddress(pauser, "SHO_PAUSER");
+        _requireNonZeroAddress(allowlistAdmin, "SHO_ALLOWLIST_ADMIN");
 
         // Load Hedgey addresses from config
         address hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
@@ -101,10 +101,10 @@ contract DeployShoTokenL2 is BaseScript {
                 l1Token = inferred;
             }
         }
-        l1Token = vm.envOr("CNS_TOKEN_L1", l1Token);
+        l1Token = vm.envOr("SHO_TOKEN_L1", l1Token);
         address bridge = vm.envOr("LINEA_L2_BRIDGE", cfg.l2.bridge);
 
-        _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
+        _requireNonZeroAddress(l1Token, "SHO_TOKEN_L1");
         _requireNonZeroAddress(bridge, "LINEA_L2_BRIDGE");
 
         // Log deployment info
@@ -125,10 +125,10 @@ contract DeployShoTokenL2 is BaseScript {
 
         // Pre-deployment validation
         console.log("\n=== Pre-Deployment Validation ===");
-        require(defaultAdmin != address(0), "FATAL: CNS_DEFAULT_ADMIN cannot be zero address");
-        require(pauser != address(0), "FATAL: CNS_PAUSER cannot be zero address");
-        require(allowlistAdmin != address(0), "FATAL: CNS_ALLOWLIST_ADMIN cannot be zero address");
-        require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
+        require(defaultAdmin != address(0), "FATAL: SHO_DEFAULT_ADMIN cannot be zero address");
+        require(pauser != address(0), "FATAL: SHO_PAUSER cannot be zero address");
+        require(allowlistAdmin != address(0), "FATAL: SHO_ALLOWLIST_ADMIN cannot be zero address");
+        require(l1Token != address(0), "FATAL: SHO_TOKEN_L1 cannot be zero address");
         require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
 
         // Validate Hedgey addresses - required
@@ -151,7 +151,7 @@ contract DeployShoTokenL2 is BaseScript {
         uint256 minDelay = cfg.l2.timelock.minDelay;
         address tlAdmin = cfg.l2.timelock.admin;
         address[] memory proposers = cfg.l2.timelock.proposers;
-        address proposerOverride = vm.envOr("CNS_TIMELOCK_PROPOSER", address(0));
+        address proposerOverride = vm.envOr("SHO_TIMELOCK_PROPOSER", address(0));
         if (proposerOverride != address(0)) {
             proposers = new address[](1);
             proposers[0] = proposerOverride;
