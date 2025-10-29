@@ -33,15 +33,11 @@
     "investorLockup": "0xA600EC7Db69DFCD21f19face5B209a55EAb7a7C0",
     "batchPlanner": "0x3466EB008EDD8d5052446293D1a7D212cb65C646",
     "tokenVestingPlans": "0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C",
-    "recipient": "0x0000000000000000000000000000000000000000",
-    "amount": 0,
-    "start": 0,
-    "cliff": 0,
-    "rate": 0,
-    "period": 0,
-    "useInvestorLockup": 0,
     "vestingAdmin": "0x0000000000000000000000000000000000000000",
-    "adminTransferOBO": 0
+    "adminTransferOBO": 0,
+    "useInvestorLockup": 0,
+    "period": 1,
+    "plans": []
   }
 }
 
