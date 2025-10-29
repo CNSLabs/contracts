@@ -1,7 +1,7 @@
-# Storage Layout Analysis: CNSTokenL2 V1 → V2 Upgrade
+# Storage Layout Analysis: ShoTokenL2 V1 → V2 Upgrade
 
 **Analysis Date**: October 21, 2025  
-**Contracts Analyzed**: `CNSTokenL2` (V1) → `CNSTokenL2V2` (V2)
+**Contracts Analyzed**: `ShoTokenL2` (V1) → `ShoTokenL2V2` (V2)
 
 ---
 
@@ -15,33 +15,33 @@ The V1 → V2 upgrade is **SAFE** from a storage layout perspective. All storage
 
 ## Storage Layout Comparison
 
-### V1 Storage Layout (CNSTokenL2)
+### V1 Storage Layout (ShoTokenL2)
 
 | Name | Type | Slot | Offset | Bytes | Source |
 |------|------|------|--------|-------|--------|
 | `bridge` | address | 0 | 0 | 20 | BridgedToken (inherited) |
 | `_decimals` | uint8 | 0 | 20 | 1 | BridgedToken (inherited) |
 | `__gap` | uint256[50] | 1-50 | 0 | 1600 | BridgedToken (inherited) |
-| `l1Token` | address | 51 | 0 | 20 | CNSTokenL2 |
-| `_senderAllowlisted` | mapping(address => bool) | 52 | 0 | 32 | CNSTokenL2 |
-| `_senderAllowlistEnabled` | bool | 53 | 0 | 1 | CNSTokenL2 |
-| `__gap` | uint256[46] | 54-99 | 0 | 1472 | CNSTokenL2 |
+| `l1Token` | address | 51 | 0 | 20 | ShoTokenL2 |
+| `_senderAllowlisted` | mapping(address => bool) | 52 | 0 | 32 | ShoTokenL2 |
+| `_senderAllowlistEnabled` | bool | 53 | 0 | 1 | ShoTokenL2 |
+| `__gap` | uint256[46] | 54-99 | 0 | 1472 | ShoTokenL2 |
 
 **Total Storage Slots Used**: 100 (0-99)  
 **Direct Storage Variables**: 3 (l1Token, _senderAllowlisted, _senderAllowlistEnabled)  
 **Storage Gap**: 46 slots (54-99)
 
-### V2 Storage Layout (CNSTokenL2V2)
+### V2 Storage Layout (ShoTokenL2V2)
 
 | Name | Type | Slot | Offset | Bytes | Source |
 |------|------|------|--------|-------|--------|
 | `bridge` | address | 0 | 0 | 20 | BridgedToken (inherited) |
 | `_decimals` | uint8 | 0 | 20 | 1 | BridgedToken (inherited) |
 | `__gap` | uint256[50] | 1-50 | 0 | 1600 | BridgedToken (inherited) |
-| `l1Token` | address | 51 | 0 | 20 | CNSTokenL2V2 |
-| `_senderAllowlisted` | mapping(address => bool) | 52 | 0 | 32 | CNSTokenL2V2 |
-| `_senderAllowlistEnabled` | bool | 53 | 0 | 1 | CNSTokenL2V2 |
-| `__gap` | uint256[46] | 54-99 | 0 | 1472 | CNSTokenL2V2 |
+| `l1Token` | address | 51 | 0 | 20 | ShoTokenL2V2 |
+| `_senderAllowlisted` | mapping(address => bool) | 52 | 0 | 32 | ShoTokenL2V2 |
+| `_senderAllowlistEnabled` | bool | 53 | 0 | 1 | ShoTokenL2V2 |
+| `__gap` | uint256[46] | 54-99 | 0 | 1472 | ShoTokenL2V2 |
 
 **Total Storage Slots Used**: 100 (0-99)  
 **Direct Storage Variables**: 3 (l1Token, _senderAllowlisted, _senderAllowlistEnabled)  
@@ -61,7 +61,7 @@ All V1 storage variables maintain their exact positions in V2:
 - ✅ `l1Token` remains at slot 51
 - ✅ `_senderAllowlisted` remains at slot 52
 - ✅ `_senderAllowlistEnabled` remains at slot 53
-- ✅ CNSTokenL2 `__gap[46]` remains at slots 54-99
+- ✅ ShoTokenL2 `__gap[46]` remains at slots 54-99
 
 **Conclusion**: No storage collision detected. All existing data will be preserved during upgrade.
 
@@ -108,8 +108,8 @@ ERC20VotesUpgradeable is designed to work **within the storage space already all
 **Calculation**:
 ```
 BridgedToken gap: 50 slots (slots 1-50)
-CNSTokenL2 direct storage: 3 slots (slots 51-53)
-CNSTokenL2 gap: 46 slots (slots 54-99)
+ShoTokenL2 direct storage: 3 slots (slots 51-53)
+ShoTokenL2 gap: 46 slots (slots 54-99)
 Total reserved: 100 slots
 ```
 
@@ -128,7 +128,7 @@ ERC20VotesUpgradeable does **not** consume additional contract-level storage slo
 ### Complete Storage Hierarchy
 
 ```
-CNSTokenL2V2
+ShoTokenL2V2
 ├── Initializable (transient/special storage)
 ├── CustomBridgedToken → BridgedToken
 │   ├── bridge (slot 0)
@@ -204,7 +204,7 @@ When adding future versions:
 Track storage layout in CI/CD:
 ```bash
 # Add to GitHub Actions workflow
-forge inspect src/CNSTokenL2V2.sol:CNSTokenL2V2 storage-layout > current-layout.json
+forge inspect src/ShoTokenL2V2.sol:ShoTokenL2V2 storage-layout > current-layout.json
 diff storage-layouts/v2-storage.json current-layout.json || exit 1
 ```
 

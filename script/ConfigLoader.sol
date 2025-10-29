@@ -161,7 +161,7 @@ library ConfigLoader {
         cfg.l2.timelock.admin = _readAddress(vm_, json, ".l2.timelock.admin", address(0));
         cfg.l2.timelock.proposers = _readAddressArray(vm_, json, ".l2.timelock.proposers");
         cfg.l2.timelock.executors = _readAddressArray(vm_, json, ".l2.timelock.executors");
-        cfg.l2.timelock.addr = _readAddress(vm_, json, ".l2.timelock.address", address(0));
+        cfg.l2.timelock.addr = _readAddress(vm_, json, ".l2.timelock.addr", address(0));
 
         // Hedgey (optional)
         cfg.hedgey.investorLockup = _readAddress(vm_, json, ".hedgey.investorLockup", address(0));

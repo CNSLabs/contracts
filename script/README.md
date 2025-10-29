@@ -1,6 +1,6 @@
 # Deployment Scripts
 
-This directory contains deployment and utility scripts for the CNS token contracts.
+This directory contains deployment and utility scripts for the SHO token contracts.
 
 ## Quick Start
 
@@ -20,68 +20,68 @@ contract MyScript is BaseScript {
 
 ### Deployment Scripts
 
-- **`1_DeployCNSTokenL1.s.sol`** - Deploy CNS Token on L1 (Ethereum)
+- **`1_DeployShoTokenL1.s.sol`** - Deploy SHO Token on L1 (Ethereum)
   ```bash
   # New: zero-arg run() with inferred config
   # Select env via ENV (default: dev)
-  forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+  forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
     --rpc-url sepolia \
     --broadcast --verify
 
   # Sepolia testnet
-  forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+  forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
     --rpc-url sepolia \
     --broadcast \
     --verify
   
   # Mainnet
-  forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+  forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
     --rpc-url mainnet \
     --broadcast \
     --verify \
     --slow
   ```
 
-- **`2_DeployCNSTokenL2.s.sol`** - Deploy CNS Token on L2 (Linea) with proxy
+- **`2_DeployShoTokenL2.s.sol`** - Deploy SHO Token on L2 (Linea) with proxy
   ```bash
   # New: zero-arg run() with inferred config
   # Select env via ENV (default: dev)
-  forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+  forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
     --rpc-url linea-sepolia \
     --broadcast --verify
 
   # Linea Sepolia testnet
-  forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+  forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
     --rpc-url linea-sepolia \
     --broadcast \
     --verify
   
   # Linea Mainnet
-  forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+  forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
     --rpc-url linea \
     --broadcast \
     --verify \
     --slow
   ```
   
-  > 💡 **Note:** Ensure `CNS_TOKEN_L1` is set in your `.env` file before deployment.
+  > 💡 **Note:** Ensure `SHO_TOKEN_L1` is set in your `.env` file before deployment.
   > If you encounter "Replacement transaction underpriced" errors, clear the broadcast cache:
   > ```bash
-  > rm -rf broadcast/2_DeployCNSTokenL2.s.sol/59141/
+  > rm -rf broadcast/2_DeployShoTokenL2.s.sol/59141/
   > ```
 
 ### Upgrade Scripts
 
-- **`3_UpgradeCNSTokenL2ToV2.s.sol`** - Upgrade L2 token from V1 to V2 (adds voting)
+- **`3_UpgradeShoTokenL2ToV2_Schedule.s.sol`** - Upgrade L2 token from V1 to V2 (adds voting)
   ```bash
   # Testnet
-  forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+  forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
     --rpc-url linea-sepolia \
     --broadcast \
     --verify
   
   # Local testing
-  forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+  forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
     --rpc-url http://localhost:8545 \
     --broadcast
   ```
@@ -232,37 +232,37 @@ contract DeployMyContract is BaseScript {
 1. **Deploy L1 Token on Ethereum**
    ```bash
    # Set environment variables
-   export CNS_OWNER=0xYourMultisigAddress
+   export SHO_OWNER=0xYourMultisigAddress
    
    # Deploy to Sepolia
-   forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 \
+   forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
      --rpc-url sepolia \
      --broadcast \
      --verify
    
    # Save the deployed L1 token address
-   export CNS_TOKEN_L1=0xDeployedL1Address
+   export SHO_TOKEN_L1=0xDeployedL1Address
    ```
 
 2. **Deploy L2 Token on Linea**
    ```bash
-   # Make sure CNS_TOKEN_L1 is set from step 1 (or in .env)
+   # Make sure SHO_TOKEN_L1 is set from step 1 (or in .env)
    # Bridge address should already be in your .env file
    
    # Deploy to Linea Sepolia
-   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
      --rpc-url linea-sepolia \
      --broadcast \
      --verify
    
    # Save the deployed L2 proxy address to .env
-   echo "CNS_TOKEN_L2_PROXY=<deployed_address>" >> .env
+   echo "SHO_TOKEN_L2_PROXY=<deployed_address>" >> .env
    ```
 
 3. **Test the Deployment**
    ```bash
    # Add addresses to allowlist
-   cast send $CNS_TOKEN_L2_PROXY \
+   cast send $SHO_TOKEN_L2_PROXY \
      "setAllowlist(address,bool)" \
      0xUserAddress \
      true \
@@ -275,7 +275,7 @@ contract DeployMyContract is BaseScript {
 4. **Upgrade to V2 (Optional)**
    ```bash
    # Upgrade to add voting capabilities
-   forge script script/3_UpgradeCNSTokenL2ToV2.s.sol:UpgradeCNSTokenL2ToV2 \
+   forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
      --rpc-url linea-sepolia \
      --broadcast \
      --verify
@@ -288,14 +288,14 @@ Required variables in `.env`:
 ```bash
 # Required for all scripts
 PRIVATE_KEY=0x...
-CNS_OWNER=0x...
+SHO_OWNER=0x...
 
 # Required for L2 deployment
-CNS_TOKEN_L1=0x...                    # L1 token address (deploy L1 first)
+SHO_TOKEN_L1=0x...                    # L1 token address (deploy L1 first)
 LINEA_L2_BRIDGE=0x...                 # Linea bridge address for your network
 
 # Required for upgrade scripts
-CNS_TOKEN_L2_PROXY=0x...              # L2 proxy address (after L2 deployment)
+SHO_TOKEN_L2_PROXY=0x...              # L2 proxy address (after L2 deployment)
 
 # Required for mainnet deployments
 MAINNET_DEPLOYMENT_ALLOWED=true

@@ -2,18 +2,18 @@
 ╭-------------------------+--------------------------+------+--------+-------+-------------------------------╮
 | Name                    | Type                     | Slot | Offset | Bytes | Contract                      |
 +============================================================================================================+
-| bridge                  | address                  | 0    | 0      | 20    | src/CNSTokenL2.sol:CNSTokenL2 |
+| bridge                  | address                  | 0    | 0      | 20    | src/ShoTokenL2.sol:ShoTokenL2 |
 |-------------------------+--------------------------+------+--------+-------+-------------------------------|
-| _decimals               | uint8                    | 0    | 20     | 1     | src/CNSTokenL2.sol:CNSTokenL2 |
+| _decimals               | uint8                    | 0    | 20     | 1     | src/ShoTokenL2.sol:ShoTokenL2 |
 |-------------------------+--------------------------+------+--------+-------+-------------------------------|
-| __gap                   | uint256[50]              | 1    | 0      | 1600  | src/CNSTokenL2.sol:CNSTokenL2 |
+| __gap                   | uint256[50]              | 1    | 0      | 1600  | src/ShoTokenL2.sol:ShoTokenL2 |
 |-------------------------+--------------------------+------+--------+-------+-------------------------------|
-| l1Token                 | address                  | 51   | 0      | 20    | src/CNSTokenL2.sol:CNSTokenL2 |
+| l1Token                 | address                  | 51   | 0      | 20    | src/ShoTokenL2.sol:ShoTokenL2 |
 |-------------------------+--------------------------+------+--------+-------+-------------------------------|
-| _senderAllowlisted      | mapping(address => bool) | 52   | 0      | 32    | src/CNSTokenL2.sol:CNSTokenL2 |
+| _senderAllowlisted      | mapping(address => bool) | 52   | 0      | 32    | src/ShoTokenL2.sol:ShoTokenL2 |
 |-------------------------+--------------------------+------+--------+-------+-------------------------------|
-| _senderAllowlistEnabled | bool                     | 53   | 0      | 1     | src/CNSTokenL2.sol:CNSTokenL2 |
+| _senderAllowlistEnabled | bool                     | 53   | 0      | 1     | src/ShoTokenL2.sol:ShoTokenL2 |
 |-------------------------+--------------------------+------+--------+-------+-------------------------------|
-| __gap                   | uint256[46]              | 54   | 0      | 1472  | src/CNSTokenL2.sol:CNSTokenL2 |
+| __gap                   | uint256[46]              | 54   | 0      | 1472  | src/ShoTokenL2.sol:ShoTokenL2 |
 ╰-------------------------+--------------------------+------+--------+-------+-------------------------------╯
 

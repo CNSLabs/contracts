@@ -5,12 +5,12 @@ import "./BaseScript.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {StdStyle} from "forge-std/StdStyle.sol";
-import "../src/CNSTokenL2.sol";
+import "../src/ShoTokenL2.sol";
 
 /**
- * @title DeployCNSTokenL2
- * @notice Deploys CNS Token on L2 (Linea) as a bridged token with role separation
- * @dev This script deploys CNSTokenL2 with:
+ * @title DeployShoTokenL2
+ * @notice Deploys SHO Token on L2 (Linea) as a bridged token with role separation
+ * @dev This script deploys ShoTokenL2 with:
  *      - Role separation (defaultAdmin, upgrader via timelock, pauser, allowlist admin)
  *      - Bridge integration (Linea canonical bridge)
  *      - Pausability and allowlist controls
@@ -20,37 +20,37 @@ import "../src/CNSTokenL2.sol";
  *
  * Usage:
  *   # Linea Sepolia testnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url linea-sepolia \
  *     --broadcast \
  *     --verify
  *
  *   # Linea Mainnet
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url linea \
  *     --broadcast \
  *     --verify \
  *     --slow
  *
  *   # Local testing
- *   forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 \
+ *   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
  *     --rpc-url local \
  *     --broadcast
  *
  * Environment Variables Required:
  *   - PRIVATE_KEY: Deployer private key (secret)
- *   - CNS_DEFAULT_ADMIN: Address for DEFAULT_ADMIN_ROLE (governance address)
- *   - CNS_TOKEN_L1: L1 canonical token address
+ *   - SHO_DEFAULT_ADMIN: Address for DEFAULT_ADMIN_ROLE (governance address)
+ *   - SHO_TOKEN_L1: L1 canonical token address
  *   - LINEA_L2_BRIDGE: Linea L2 bridge contract address
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
  *
  * Optional Configuration (with defaults):
- *   - L2_TOKEN_NAME: Token name (default: "CNS Linea Token")
- *   - L2_TOKEN_SYMBOL: Token symbol (default: "CNSL")
+ *   - L2_TOKEN_NAME: Token name (default: "Sho Token")
+ *   - L2_TOKEN_SYMBOL: Token symbol (default: "SHO")
  *   - L2_TOKEN_DECIMALS: Token decimals (default: 18)
- *   - CNS_UPGRADER: Contract upgrader address (defaults to CNS_DEFAULT_ADMIN)
- *   - CNS_PAUSER: Emergency pause address (defaults to CNS_DEFAULT_ADMIN)
- *   - CNS_ALLOWLIST_ADMIN: Allowlist manager address (defaults to CNS_DEFAULT_ADMIN)
+ *   - SHO_UPGRADER: Contract upgrader address (defaults to SHO_DEFAULT_ADMIN)
+ *   - SHO_PAUSER: Emergency pause address (defaults to SHO_DEFAULT_ADMIN)
+ *   - SHO_ALLOWLIST_ADMIN: Allowlist manager address (defaults to SHO_DEFAULT_ADMIN)
  *
  * Notes:
  *   - Hedgey contract addresses (HEDGEY_BATCH_PLANNER, HEDGEY_TOKEN_VESTING_PLANS)
@@ -63,21 +63,11 @@ import "../src/CNSTokenL2.sol";
  *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
  *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
  */
-contract DeployCNSTokenL2 is BaseScript {
-    // Token configuration defaults (can be overridden via environment)
-    string constant DEFAULT_L2_NAME = "CNS Linea Token";
-    string constant DEFAULT_L2_SYMBOL = "CNSL";
-    uint8 constant DEFAULT_L2_DECIMALS = 18;
-
-    // Configuration with environment overrides
-    string L2_NAME = vm.envOr("L2_TOKEN_NAME", DEFAULT_L2_NAME);
-    string L2_SYMBOL = vm.envOr("L2_TOKEN_SYMBOL", DEFAULT_L2_SYMBOL);
-    uint8 L2_DECIMALS = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(DEFAULT_L2_DECIMALS)));
-
+contract DeployShoTokenL2 is BaseScript {
     // Deployed contracts
-    CNSTokenL2 public implementation;
+    ShoTokenL2 public implementation;
     ERC1967Proxy public proxy;
-    CNSTokenL2 public token;
+    ShoTokenL2 public token;
     TimelockController public timelock;
 
     function run() external {
@@ -85,14 +75,19 @@ contract DeployCNSTokenL2 is BaseScript {
         // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        // Get and validate required addresses
-        address defaultAdmin = vm.envOr("CNS_DEFAULT_ADMIN", cfg.l2.roles.admin);
-        address pauser = vm.envOr("CNS_PAUSER", cfg.l2.roles.pauser); // Defaults to defaultAdmin if not set
-        address allowlistAdmin = vm.envOr("CNS_ALLOWLIST_ADMIN", cfg.l2.roles.allowlistAdmin); // Defaults to defaultAdmin if not set
+        // Load token parameters from config with environment overrides
+        string memory l2Name = vm.envOr("L2_TOKEN_NAME", cfg.l2.name);
+        string memory l2Symbol = vm.envOr("L2_TOKEN_SYMBOL", cfg.l2.symbol);
+        uint8 l2Decimals = uint8(vm.envOr("L2_TOKEN_DECIMALS", uint256(cfg.l2.decimals)));
 
-        _requireNonZeroAddress(defaultAdmin, "CNS_DEFAULT_ADMIN");
-        _requireNonZeroAddress(pauser, "CNS_PAUSER");
-        _requireNonZeroAddress(allowlistAdmin, "CNS_ALLOWLIST_ADMIN");
+        // Get and validate required addresses
+        address defaultAdmin = vm.envOr("SHO_DEFAULT_ADMIN", cfg.l2.roles.admin);
+        address pauser = vm.envOr("SHO_PAUSER", cfg.l2.roles.pauser); // Defaults to defaultAdmin if not set
+        address allowlistAdmin = vm.envOr("SHO_ALLOWLIST_ADMIN", cfg.l2.roles.allowlistAdmin); // Defaults to defaultAdmin if not set
+
+        _requireNonZeroAddress(defaultAdmin, "SHO_DEFAULT_ADMIN");
+        _requireNonZeroAddress(pauser, "SHO_PAUSER");
+        _requireNonZeroAddress(allowlistAdmin, "SHO_ALLOWLIST_ADMIN");
 
         // Load Hedgey addresses from config
         address hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
@@ -106,17 +101,17 @@ contract DeployCNSTokenL2 is BaseScript {
                 l1Token = inferred;
             }
         }
-        l1Token = vm.envOr("CNS_TOKEN_L1", l1Token);
+        l1Token = vm.envOr("SHO_TOKEN_L1", l1Token);
         address bridge = vm.envOr("LINEA_L2_BRIDGE", cfg.l2.bridge);
 
-        _requireNonZeroAddress(l1Token, "CNS_TOKEN_L1");
+        _requireNonZeroAddress(l1Token, "SHO_TOKEN_L1");
         _requireNonZeroAddress(bridge, "LINEA_L2_BRIDGE");
 
         // Log deployment info
-        _logDeploymentHeader("Deploying CNS Token L2 with Role Separation");
-        console.log("Token Name:", L2_NAME);
-        console.log("Token Symbol:", L2_SYMBOL);
-        console.log("Decimals:", L2_DECIMALS);
+        _logDeploymentHeader("Deploying SHO Token L2 with Role Separation");
+        console.log("Token Name:", l2Name);
+        console.log("Token Symbol:", l2Symbol);
+        console.log("Decimals:", l2Decimals);
         console.log("\n=== Role Assignment ===");
         console.log("Default Admin:", defaultAdmin);
         console.log("Pauser:", pauser);
@@ -130,10 +125,10 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Pre-deployment validation
         console.log("\n=== Pre-Deployment Validation ===");
-        require(defaultAdmin != address(0), "FATAL: CNS_DEFAULT_ADMIN cannot be zero address");
-        require(pauser != address(0), "FATAL: CNS_PAUSER cannot be zero address");
-        require(allowlistAdmin != address(0), "FATAL: CNS_ALLOWLIST_ADMIN cannot be zero address");
-        require(l1Token != address(0), "FATAL: CNS_TOKEN_L1 cannot be zero address");
+        require(defaultAdmin != address(0), "FATAL: SHO_DEFAULT_ADMIN cannot be zero address");
+        require(pauser != address(0), "FATAL: SHO_PAUSER cannot be zero address");
+        require(allowlistAdmin != address(0), "FATAL: SHO_ALLOWLIST_ADMIN cannot be zero address");
+        require(l1Token != address(0), "FATAL: SHO_TOKEN_L1 cannot be zero address");
         require(bridge != address(0), "FATAL: LINEA_L2_BRIDGE cannot be zero address");
 
         // Validate Hedgey addresses - required
@@ -156,7 +151,7 @@ contract DeployCNSTokenL2 is BaseScript {
         uint256 minDelay = cfg.l2.timelock.minDelay;
         address tlAdmin = cfg.l2.timelock.admin;
         address[] memory proposers = cfg.l2.timelock.proposers;
-        address proposerOverride = vm.envOr("CNS_TIMELOCK_PROPOSER", address(0));
+        address proposerOverride = vm.envOr("SHO_TIMELOCK_PROPOSER", address(0));
         if (proposerOverride != address(0)) {
             proposers = new address[](1);
             proposers[0] = proposerOverride;
@@ -175,8 +170,8 @@ contract DeployCNSTokenL2 is BaseScript {
         // Deploy L2 token (implementation + proxy)
         vm.startBroadcast(deployerPrivateKey);
 
-        console.log("\n1. Deploying CNSTokenL2 implementation...");
-        implementation = new CNSTokenL2();
+        console.log("\n1. Deploying ShoTokenL2 implementation...");
+        implementation = new ShoTokenL2();
         console.log("   Implementation:", address(implementation));
 
         // Prepare initialization data with senderAllowlist
@@ -185,22 +180,22 @@ contract DeployCNSTokenL2 is BaseScript {
         senderAllowlist[1] = hedgeyTokenVestingPlans;
 
         bytes memory initCalldata = abi.encodeWithSelector(
-            CNSTokenL2.initialize.selector,
+            ShoTokenL2.initialize.selector,
             defaultAdmin,
             address(timelock),
             pauser,
             allowlistAdmin,
             bridge,
             l1Token,
-            L2_NAME,
-            L2_SYMBOL,
-            L2_DECIMALS,
+            l2Name,
+            l2Symbol,
+            l2Decimals,
             senderAllowlist
         );
 
         console.log("\n2. Deploying ERC1967 proxy...");
         proxy = new ERC1967Proxy(address(implementation), initCalldata);
-        token = CNSTokenL2(address(proxy));
+        token = ShoTokenL2(address(proxy));
         console.log("   Proxy:", address(proxy));
 
         // CRITICAL: Verify initialization happened successfully
@@ -231,7 +226,16 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Verify deployment
         _verifyDeployment(
-            defaultAdmin, pauser, allowlistAdmin, bridge, l1Token, hedgeyBatchPlanner, hedgeyTokenVestingPlans
+            defaultAdmin,
+            pauser,
+            allowlistAdmin,
+            bridge,
+            l1Token,
+            hedgeyBatchPlanner,
+            hedgeyTokenVestingPlans,
+            l2Name,
+            l2Symbol,
+            l2Decimals
         );
 
         _logDeploymentResults(
@@ -242,7 +246,10 @@ contract DeployCNSTokenL2 is BaseScript {
             l1Token,
             hedgeyBatchPlanner,
             hedgeyTokenVestingPlans,
-            initCalldata
+            initCalldata,
+            l2Name,
+            l2Symbol,
+            l2Decimals
         );
     }
 
@@ -253,7 +260,10 @@ contract DeployCNSTokenL2 is BaseScript {
         address bridge,
         address l1Token,
         address hedgeyBatchPlanner,
-        address hedgeyTokenVestingPlans
+        address hedgeyTokenVestingPlans,
+        string memory l2Name,
+        string memory l2Symbol,
+        uint8 l2Decimals
     ) internal view {
         console.log("\n=== Running Additional Deployment Checks ===");
 
@@ -264,9 +274,9 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("[OK] Proxy points to correct implementation");
 
         // Check token initialization
-        require(keccak256(bytes(token.name())) == keccak256(bytes(L2_NAME)), "Name mismatch");
-        require(keccak256(bytes(token.symbol())) == keccak256(bytes(L2_SYMBOL)), "Symbol mismatch");
-        require(token.decimals() == L2_DECIMALS, "Decimals mismatch");
+        require(keccak256(bytes(token.name())) == keccak256(bytes(l2Name)), "Name mismatch");
+        require(keccak256(bytes(token.symbol())) == keccak256(bytes(l2Symbol)), "Symbol mismatch");
+        require(token.decimals() == l2Decimals, "Decimals mismatch");
         require(token.bridge() == bridge, "Bridge mismatch");
         require(token.l1Token() == l1Token, "L1 token mismatch");
         console.log("[OK] Token initialized correctly");
@@ -324,7 +334,10 @@ contract DeployCNSTokenL2 is BaseScript {
         address l1Token,
         address hedgeyBatchPlanner,
         address hedgeyTokenVestingPlans,
-        bytes memory initCalldata
+        bytes memory initCalldata,
+        string memory l2Name,
+        string memory l2Symbol,
+        uint8 l2Decimals
     ) internal view {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
@@ -336,9 +349,9 @@ contract DeployCNSTokenL2 is BaseScript {
         }
 
         console.log("\n=== Token Configuration ===");
-        console.log("Name:", token.name());
-        console.log("Symbol:", token.symbol());
-        console.log("Decimals:", token.decimals());
+        console.log("Name:", l2Name);
+        console.log("Symbol:", l2Symbol);
+        console.log("Decimals:", l2Decimals);
         console.log("L1 Token:", l1Token);
         console.log("Bridge:", bridge);
         console.log("Paused:", token.paused());
@@ -375,7 +388,7 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log("6. Bridge tokens from L1 using Linea bridge");
         console.log("7. Test transfers between allowlisted addresses");
         console.log("8. Test Hedgey integration with allowlisted addresses");
-        console.log("9. For upgrades, use 3_UpgradeCNSTokenL2ToV2.s.sol (routed through timelock)");
+        console.log("9. For upgrades, use 3_UpgradeShoTokenL2ToV2.s.sol (routed through timelock)");
 
         // Final prominent contract addresses display
         console.log("\n");
@@ -385,10 +398,10 @@ contract DeployCNSTokenL2 is BaseScript {
         console.log(StdStyle.cyan(StdStyle.bold("Timelock Controller:")));
         console.log(StdStyle.cyan(vm.toString(address(timelock))));
         console.log("");
-        console.log(StdStyle.magenta(StdStyle.bold("CNSTokenL2 Implementation:")));
+        console.log(StdStyle.magenta(StdStyle.bold("ShoTokenL2 Implementation:")));
         console.log(StdStyle.magenta(vm.toString(address(implementation))));
         console.log("");
-        console.log(StdStyle.blue(StdStyle.bold("CNSTokenL2 Proxy (Main Contract):")));
+        console.log(StdStyle.blue(StdStyle.bold("ShoTokenL2 Proxy (Main Contract):")));
         console.log(StdStyle.blue(vm.toString(address(proxy))));
         console.log(StdStyle.green("================================================================================"));
     }
@@ -398,7 +411,7 @@ contract DeployCNSTokenL2 is BaseScript {
 
         // Implementation verification
         console.log("\n1. Verify implementation:");
-        _logVerificationCommand(address(implementation), "src/CNSTokenL2.sol:CNSTokenL2");
+        _logVerificationCommand(address(implementation), "src/ShoTokenL2.sol:ShoTokenL2");
 
         // Proxy verification
         console.log("\n2. Verify proxy:");

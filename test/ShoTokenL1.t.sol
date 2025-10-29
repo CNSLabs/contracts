@@ -2,11 +2,11 @@
 pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
-import "../src/CNSTokenL1.sol";
+import "../src/ShoTokenL1.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-contract CNSTokenL1Test is Test {
-    CNSTokenL1 public token;
+contract ShoTokenL1Test is Test {
+    ShoTokenL1 public token;
     address public owner = address(0x123);
     address public user1 = address(0x456);
     address public user2 = address(0x789);
@@ -14,7 +14,7 @@ contract CNSTokenL1Test is Test {
     uint256 public constant INITIAL_SUPPLY = 100_000_000 * 10 ** 18;
 
     function setUp() public {
-        token = new CNSTokenL1("Canonical CNS Token", "CNS", INITIAL_SUPPLY, owner);
+        token = new ShoTokenL1("Canonical SHO Token", "SHO", INITIAL_SUPPLY, owner);
     }
 
     function testInitialSupply() public view {
@@ -23,14 +23,14 @@ contract CNSTokenL1Test is Test {
     }
 
     function testTokenMetadata() public view {
-        assertEq(token.name(), "Canonical CNS Token");
-        assertEq(token.symbol(), "CNS");
+        assertEq(token.name(), "Canonical SHO Token");
+        assertEq(token.symbol(), "SHO");
         assertEq(token.decimals(), 18);
     }
 
     function testConstructorZeroRecipient() public {
         vm.expectRevert("recipient=0");
-        new CNSTokenL1("Test Token", "TEST", 1000, address(0));
+        new ShoTokenL1("Test Token", "TEST", 1000, address(0));
     }
 
     // Basic ERC20 functionality tests
@@ -98,7 +98,7 @@ contract CNSTokenL1Test is Test {
         address signer = vm.addr(privateKey);
 
         // Create a new token instance with the signer as the initial recipient
-        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+        ShoTokenL1 permitToken = new ShoTokenL1("Test SHO Token", "TSHO", 1000 * 10 ** 18, signer);
 
         uint256 value = 100 * 10 ** 18;
         uint256 deadline = block.timestamp + 1 hours;
@@ -131,7 +131,7 @@ contract CNSTokenL1Test is Test {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
 
-        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+        ShoTokenL1 permitToken = new ShoTokenL1("Test SHO Token", "TSHO", 1000 * 10 ** 18, signer);
 
         uint256 value = 100 * 10 ** 18;
         uint256 deadline = block.timestamp - 1; // Expired deadline
@@ -159,7 +159,7 @@ contract CNSTokenL1Test is Test {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
 
-        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+        ShoTokenL1 permitToken = new ShoTokenL1("Test SHO Token", "TSHO", 1000 * 10 ** 18, signer);
 
         uint256 value = 100 * 10 ** 18;
         uint256 deadline = block.timestamp + 1 hours;
@@ -188,7 +188,7 @@ contract CNSTokenL1Test is Test {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
 
-        CNSTokenL1 permitToken = new CNSTokenL1("Test CNS Token", "TCNS", 1000 * 10 ** 18, signer);
+        ShoTokenL1 permitToken = new ShoTokenL1("Test SHO Token", "TSHO", 1000 * 10 ** 18, signer);
 
         uint256 value = 100 * 10 ** 18;
         uint256 deadline = block.timestamp + 1 hours;

@@ -110,15 +110,11 @@ The script uses a priority system for configuration values:
 
 Set these in your `.env` file or environment:
 
-```bash
-# Required addresses
-CNS_DEFAULT_ADMIN=0x1234567890123456789012345678901234567890
-CNS_TOKEN_L1=0x0987654321098765432109876543210987654321
-
-# Optional overrides
-BRIDGE_CONTRACT=0x1111111111111111111111111111111111111111
-RECIPIENT_ADDRESS=0x2222222222222222222222222222222222222222
-```
+- `SHO_DEFAULT_ADMIN`: Default admin address (used for token holder safe)
+- `SHO_TOKEN_L1`: L1 token contract address
+- `SHO_TOKEN_L2_PROXY`: L2 token proxy address
+- `LINEA_L1_BRIDGE`: Linea L1 bridge contract address
+- `LINEA_L2_BRIDGE`: Linea L2 bridge contract address
 
 ### Config Files
 

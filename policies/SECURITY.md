@@ -50,21 +50,21 @@ aderyn . --output report.md
 pip3 install mythril
 
 # Analyze specific contract
-myth analyze src/CNSTokenL2.sol --solc-json mythril.config.json
+myth analyze src/ShoTokenL2.sol --solc-json mythril.config.json
 ```
 
 ### Storage Layout Verification
 
-For upgradeable contracts (CNSTokenL2), verify storage layout compatibility:
+For upgradeable contracts (ShoTokenL2), verify storage layout compatibility:
 
 ```bash
 # Generate storage layout
-forge inspect CNSTokenL2 storage-layout
+forge inspect ShoTokenL2 storage-layout
 
 # Compare layouts between versions
-forge inspect CNSTokenL2 storage-layout > ../storage-layouts/layout-v1.json
+forge inspect ShoTokenL2 storage-layout > ../storage-layouts/layout-v1.json
 # After upgrade
-forge inspect CNSTokenL2V2 storage-layout > ../storage-layouts/layout-v2.json
+forge inspect ShoTokenL2V2 storage-layout > ../storage-layouts/layout-v2.json
 diff ../storage-layouts/layout-v1.json ../storage-layouts/layout-v2.json
 ```
 

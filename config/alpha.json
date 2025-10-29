@@ -1,20 +1,21 @@
 {
   "env": "alpha",
   "l1": {
-    "name": "Canonical CNS Token",
-    "symbol": "CNS",
-    "initialSupply": 1000000000000000000000000,
+    "name": "Shodai Token",
+    "symbol": "SHO",
+    "initialSupply": 1000000000000000000000000000,
     "roles": {
       "admin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d"
     }
   },
   "l2": {
-    "name": "CNS Linea Token",
-    "symbol": "CNSL",
+    "name": "Shodai Token",
+    "symbol": "SHO",
     "decimals": 18,
-    "bridge": "0x42f04534d384673a884227b8a347598916003270",
-    "l1Token": "0xeb8708cafb403c90d5475bb623636896ce78facf",
-    "proxy": "0xc4E60963Bba97217EdB5b6FBAaFDF57255fcAA9E",
+    "bridge": "0x93DcAdf238932e6e6a85852caC89cBd71798F463",
+    "l1Token": "0xCFE498a38274dA49B31b79c0aE82CA0E5157d989",
+    "addr": "0xdcFd8285339F0F2dFaBCEbfddbd9Da77c9532247",
+    "proxy": "0x0689441307692ED00ffCd8eCB8385B8e10D43277",
     "roles": {
       "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
       "allowlistAdmin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
@@ -25,10 +26,9 @@
       "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
       "proposers": ["0xD7C8FD8F38683110B15771392Eb74209c15495ac"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": "0x3F5e21086280444255d63C7B2BB78E92d98f8C97"
+      "addr": "0xbc92828dB07ddd279D953Dd6AD26D71CB9d9467c"
     }
-  }
-  ,
+  },
   "hedgey": {
     "investorLockup": "0xaA8d13b9c2A9368aa108dde629237EF719eEC14e",
     "batchPlanner": "0x642581ed679E77e0D9AebFdBCA2a0B4ab194532c",

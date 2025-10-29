@@ -198,7 +198,7 @@ function generateBatch() {
     const tokenHolderSafe = validateAddress(
       getValue(
         options.tokenHolder,
-        'CNS_DEFAULT_ADMIN',
+        'SHO_DEFAULT_ADMIN',
         `l1.roles.admin`,
         config
       ),
@@ -207,7 +207,7 @@ function generateBatch() {
     
     const tokenContractValue = getValue(
       options.tokenContract,
-      'CNS_TOKEN_L1', // Always L2 proxy since we're dealing with L2 chains
+      'SHO_TOKEN_L1', // Always L2 proxy since we're dealing with L2 chains
       'l2.l1Token',
       config
     );
@@ -216,7 +216,7 @@ function generateBatch() {
       throw new Error(
         `Token contract address not found. Please provide it via:\n` +
         `  - Command line: --token-contract <address>\n` +
-        `  - Environment variable: CNS_TOKEN_L2_PROXY\n` +
+        `  - Environment variable: SHO_TOKEN_L2_PROXY\n` +
         `  - Config file: l2.proxy`
       );
     }

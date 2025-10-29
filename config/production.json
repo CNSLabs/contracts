@@ -1,16 +1,16 @@
 {
   "env": "production",
   "l1": {
-    "name": "Canonical CNS Token",
-    "symbol": "CNS",
-    "initialSupply": 100000000000000000000000000,
+    "name": "Shodai Token",
+    "symbol": "SHO",
+    "initialSupply": 1000000000000000000000000000,
     "roles": {
-      "admin": "0x42f04534d384673a884227b8a347598916003270"
+      "admin": ""
     }
   },
   "l2": {
-    "name": "CNS Linea Token",
-    "symbol": "CNSL",
+    "name": "Shodai Token",
+    "symbol": "SHO",
     "decimals": 18,
     "bridge": "0x353012dc4a9A6cF55c941bADC267f82004A8ceB9",
     "l1Token": "",

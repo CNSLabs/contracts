@@ -282,8 +282,8 @@ abstract contract BaseScript is Script {
     /**
      * @notice Generic reader for Foundry broadcast run-latest.json to fetch the last deployed address for a contract
      * @param chainId The chain id subdirectory to look under
-     * @param scriptBasename The script basename under broadcast/ (e.g., "1_DeployCNSTokenL1.s.sol")
-     * @param desiredContractName The simple contract name to look for (e.g., "CNSTokenL1" or "ERC1967Proxy")
+     * @param scriptBasename The script basename under broadcast/ (e.g., "1_DeployShoTokenL1.s.sol")
+     * @param desiredContractName The simple contract name to look for (e.g., "ShoTokenL1" or "ERC1967Proxy")
      */
     function _inferFromBroadcast(uint256 chainId, string memory scriptBasename, string memory desiredContractName)
         internal
@@ -324,19 +324,19 @@ abstract contract BaseScript is Script {
     }
 
     function _inferL1TokenFromBroadcast(uint256 l1ChainId) internal view returns (address) {
-        return _inferFromBroadcast(l1ChainId, "1_DeployCNSTokenL1.s.sol", "CNSTokenL1");
+        return _inferFromBroadcast(l1ChainId, "1_DeployShoTokenL1.s.sol", "ShoTokenL1");
     }
 
     function _inferL2ProxyFromBroadcast(uint256 l2ChainId) internal view returns (address) {
-        return _inferFromBroadcast(l2ChainId, "2_DeployCNSTokenL2.s.sol", "ERC1967Proxy");
+        return _inferFromBroadcast(l2ChainId, "2_DeployShoTokenL2.s.sol", "ERC1967Proxy");
     }
 
     function _inferTimelockFromBroadcast(uint256 l2ChainId) internal view returns (address) {
         // Try from L2 deploy script first (may deploy timelock)
-        address addr = _inferFromBroadcast(l2ChainId, "2_DeployCNSTokenL2.s.sol", "TimelockController");
+        address addr = _inferFromBroadcast(l2ChainId, "2_DeployShoTokenL2.s.sol", "TimelockController");
         if (addr != address(0)) return addr;
         // Also try upgrade script in case timelock was deployed there earlier
-        addr = _inferFromBroadcast(l2ChainId, "3_UpgradeCNSTokenL2ToV2.s.sol", "TimelockController");
+        addr = _inferFromBroadcast(l2ChainId, "3_UpgradeShoTokenL2ToV2.s.sol", "TimelockController");
         return addr;
     }
 
@@ -351,7 +351,7 @@ abstract contract BaseScript is Script {
      */
     function _resolveL2ProxyAddress(EnvConfig memory cfg) internal view returns (address) {
         address fromEnv = address(0);
-        try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+        try vm.envAddress("SHO_TOKEN_L2_PROXY") returns (address a) {
             fromEnv = a;
         } catch {}
         if (fromEnv != address(0)) return fromEnv;
@@ -371,7 +371,7 @@ abstract contract BaseScript is Script {
      * @return The resolved timelock address, or 0x0 if not found
      */
     function _resolveL2TimelockAddress(EnvConfig memory cfg, address proxyAddress) internal view returns (address) {
-        address timelockAddress = vm.envOr("CNS_L2_TIMELOCK", cfg.l2.timelock.addr);
+        address timelockAddress = vm.envOr("SHO_L2_TIMELOCK", cfg.l2.timelock.addr);
         if (timelockAddress == address(0)) {
             address inferred = _inferTimelockFromBroadcast(block.chainid);
             if (inferred != address(0) && inferred != proxyAddress) {
