@@ -1,18 +1,24 @@
 {
   "name": "safe-batch-generator",
-  "version": "1.0.0",
-  "description": "Generate Safe transaction batch JSON from template with config substitution",
-  "main": "generate-safe-batch.js",
-  "bin": {
-    "generate-safe-batch": "./generate-safe-batch.js"
-  },
+  "version": "2.0.0",
+  "description": "Generic Safe transaction batch generator supporting any set of transactions",
   "scripts": {
-    "start": "node generate-safe-batch.js",
-    "test": "node generate-safe-batch.js --dry-run --env dev"
+    "start": "node generic-batch-generator.js",
+    "legacy": "node generate-safe-batch.js",
+    "test": "node generic-batch-generator.js --validate-only --config batch-config.json",
+    "example:token": "node generic-batch-generator.js --config examples/multi-token-batch.json --dry-run",
+    "example:eth": "node generic-batch-generator.js --config examples/eth-transfer-batch.json --dry-run",
+    "example:raw": "node generic-batch-generator.js --config examples/raw-call-batch.json --dry-run",
+    "generate-token-bridge-batch": "node src/token-bridge-batch.js",
+    "generate-token-bridge-batch-test": "node src/token-bridge-batch.js --testnet",
+    "generate-vesting-plans-batch": "node src/create-vesting-plans-batch.js",
+    "generate-vesting-plans-batch-test": "node src/create-vesting-plans-batch.js --testnet"
   },
   "dependencies": {
+    "@morpho-labs/gnosis-tx-builder": "^2.0.0",
     "commander": "^11.1.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "ethers": "^6.0.0"
   },
   "engines": {
     "node": ">=14.0.0"
@@ -23,7 +29,9 @@
     "ethereum",
     "transaction",
     "batch",
-    "template"
+    "generic",
+    "template",
+    "multisig"
   ],
   "author": "",
   "license": "MIT"
