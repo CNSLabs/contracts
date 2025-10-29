@@ -188,11 +188,11 @@ library ConfigLoader {
             if (testRecipient == address(0)) break;
             planCount++;
         }
-        
+
         if (planCount == 0) return new Plan[](0);
-        
+
         Plan[] memory plans = new Plan[](planCount);
-        
+
         for (uint256 i = 0; i < planCount; i++) {
             string memory planPath = string(abi.encodePacked(key, "[", vm_.toString(i), "]"));
             plans[i] = Plan({
@@ -203,7 +203,7 @@ library ConfigLoader {
                 rate: _readUint(vm_, json, string(abi.encodePacked(planPath, ".rate")), 0)
             });
         }
-        
+
         return plans;
     }
 }

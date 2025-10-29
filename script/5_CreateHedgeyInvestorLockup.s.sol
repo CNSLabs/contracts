@@ -137,7 +137,6 @@ contract CreateHedgeyInvestorLockup is BaseScript {
     address public hedgeyBatchPlanner;
     address public hedgeyTokenVestingPlans;
 
-
     function run() external {
         EnvConfig memory cfg = _loadEnvConfig();
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
@@ -166,7 +165,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         // Load plans from config
         Plan[] memory plans = cfg.hedgey.plans;
         require(plans.length > 0, "hedgey.plans array is empty");
-        
+
         // Validate all plans
         for (uint256 i = 0; i < plans.length; i++) {
             Plan memory plan = plans[i];
@@ -216,7 +215,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
             console.log("Vesting Admin:", vestingAdmin);
             console.log("Admin Transfer OBO:", adminTransferOBO);
         }
-        
+
         // Log individual plans
         console.log("\nPlans:");
         for (uint256 i = 0; i < plans.length; i++) {
