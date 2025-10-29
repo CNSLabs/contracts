@@ -45,6 +45,14 @@ struct L2Config {
     TimelockConfig timelock;
 }
 
+struct Plan {
+    address recipient;
+    uint256 amount;
+    uint256 start;
+    uint256 cliff;
+    uint256 rate;
+}
+
 struct HedgeyConfig {
     address investorLockup;
     address batchPlanner;
@@ -58,6 +66,7 @@ struct HedgeyConfig {
     bool useInvestorLockup;
     address vestingAdmin;
     bool adminTransferOBO;
+    Plan[] plans;
 }
 
 struct EnvConfig {
@@ -158,19 +167,43 @@ library ConfigLoader {
         cfg.hedgey.investorLockup = _readAddress(vm_, json, ".hedgey.investorLockup", address(0));
         cfg.hedgey.batchPlanner = _readAddress(vm_, json, ".hedgey.batchPlanner", address(0));
         cfg.hedgey.tokenVestingPlans = _readAddress(vm_, json, ".hedgey.tokenVestingPlans", address(0));
-        cfg.hedgey.recipient = _readAddress(vm_, json, ".hedgey.recipient", address(0));
-        cfg.hedgey.amount = _readUint(vm_, json, ".hedgey.amount", 0);
-        cfg.hedgey.start = _readUint(vm_, json, ".hedgey.start", 0);
-        cfg.hedgey.cliff = _readUint(vm_, json, ".hedgey.cliff", 0);
-        cfg.hedgey.rate = _readUint(vm_, json, ".hedgey.rate", 0);
         cfg.hedgey.period = _readUint(vm_, json, ".hedgey.period", 0);
         cfg.hedgey.useInvestorLockup = _readUint(vm_, json, ".hedgey.useInvestorLockup", 0) != 0;
         cfg.hedgey.vestingAdmin = _readAddress(vm_, json, ".hedgey.vestingAdmin", address(0));
         cfg.hedgey.adminTransferOBO = _readUint(vm_, json, ".hedgey.adminTransferOBO", 0) != 0;
+        cfg.hedgey.plans = _readPlansArray(vm_, json, ".hedgey.plans");
     }
 
     function loadEnv(Vm vm_, string memory envName) internal view returns (EnvConfig memory cfg) {
         string memory path = string.concat("config/", envName, ".json");
         return loadFromPath(vm_, path);
+    }
+
+    function _readPlansArray(Vm vm_, string memory json, string memory key) private pure returns (Plan[] memory) {
+        // Count how many plans exist by checking if recipient exists
+        uint256 planCount = 0;
+        while (true) {
+            string memory testPath = string(abi.encodePacked(key, "[", vm_.toString(planCount), "].recipient"));
+            address testRecipient = _readAddress(vm_, json, testPath, address(0));
+            if (testRecipient == address(0)) break;
+            planCount++;
+        }
+        
+        if (planCount == 0) return new Plan[](0);
+        
+        Plan[] memory plans = new Plan[](planCount);
+        
+        for (uint256 i = 0; i < planCount; i++) {
+            string memory planPath = string(abi.encodePacked(key, "[", vm_.toString(i), "]"));
+            plans[i] = Plan({
+                recipient: _readAddress(vm_, json, string(abi.encodePacked(planPath, ".recipient")), address(0)),
+                amount: _readUint(vm_, json, string(abi.encodePacked(planPath, ".amount")), 0),
+                start: _readUint(vm_, json, string(abi.encodePacked(planPath, ".start")), 0),
+                cliff: _readUint(vm_, json, string(abi.encodePacked(planPath, ".cliff")), 0),
+                rate: _readUint(vm_, json, string(abi.encodePacked(planPath, ".rate")), 0)
+            });
+        }
+        
+        return plans;
     }
 }
