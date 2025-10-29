@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Setup script for CNS Contract Prototyping pre-commit hooks
+# Setup script for SHO Contract Prototyping pre-commit hooks
 # This script installs the pre-commit hook that ensures code formatting
 
 set -e
 
-echo "🔧 Setting up pre-commit hooks for CNS Contract Prototyping..."
+echo "🔧 Setting up pre-commit hooks for SHO Contract Prototyping..."
 
 # Check if we're in a git repository
 if [ ! -d ".git" ]; then

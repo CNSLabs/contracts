@@ -4,16 +4,16 @@ pragma solidity ^0.8.25;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "./ProductionForkTest.sol";
-import "../../src/CNSTokenL2V2.sol";
+import "../../src/ShoTokenL2V2.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
- * @title CNSTokenL2ProductionUpgradeTest
- * @notice Comprehensive test suite for upgrading CNSTokenL2 on production-like forked state
+ * @title ShoTokenL2ProductionUpgradeTest
+ * @notice Comprehensive test suite for upgrading ShoTokenL2 on production-like forked state
  * @dev Tests the complete upgrade flow: schedule -> wait -> execute -> verify
  */
-contract CNSTokenL2ProductionUpgradeTest is ProductionForkTest {
-    CNSTokenL2V2 internal newImplementation;
+contract ShoTokenL2ProductionUpgradeTest is ProductionForkTest {
+    ShoTokenL2V2 internal newImplementation;
     address internal proxyAdmin;
 
     // Test state tracking
@@ -27,7 +27,7 @@ contract CNSTokenL2ProductionUpgradeTest is ProductionForkTest {
         super.setUp();
 
         // Deploy new implementation
-        newImplementation = new CNSTokenL2V2();
+        newImplementation = new ShoTokenL2V2();
 
         // Find proxy admin (this would need to be configured or inferred)
         proxyAdmin = _findProxyAdmin();
@@ -69,7 +69,7 @@ contract CNSTokenL2ProductionUpgradeTest is ProductionForkTest {
      * @notice Capture state before upgrade
      */
     function _capturePreUpgradeState() internal {
-        CNSTokenL2 token = CNSTokenL2(cnsTokenL2Proxy);
+        ShoTokenL2 token = ShoTokenL2(shoTokenL2Proxy);
 
         // Capture critical state
         preUpgradeBalance = token.balanceOf(address(this));
@@ -85,7 +85,7 @@ contract CNSTokenL2ProductionUpgradeTest is ProductionForkTest {
      * @notice Verify that all state was preserved after upgrade
      */
     function _verifyStatePreservation() internal view {
-        CNSTokenL2 token = CNSTokenL2(cnsTokenL2Proxy);
+        ShoTokenL2 token = ShoTokenL2(shoTokenL2Proxy);
 
         // Verify critical state preservation
         assertEq(token.balanceOf(address(this)), preUpgradeBalance, "Balance not preserved");
@@ -104,7 +104,7 @@ contract CNSTokenL2ProductionUpgradeTest is ProductionForkTest {
      * @notice Test new functionality after upgrade
      */
     function _testNewFunctionality() internal {
-        CNSTokenL2V2 upgradedToken = CNSTokenL2V2(cnsTokenL2Proxy);
+        ShoTokenL2V2 upgradedToken = ShoTokenL2V2(shoTokenL2Proxy);
 
         // Test that voting functionality is available
         assertTrue(upgradedToken.supportsInterface(type(IERC165).interfaceId), "Should support ERC165");

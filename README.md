@@ -1,11 +1,11 @@
-# CNS Contract Prototyping
+# SHO Contract Prototyping
 
-Smart contracts and tooling for the CNS token stack across L1 ↔ Linea L2.
+Smart contracts and tooling for the SHO token stack across L1 ↔ Linea L2.
 
 ## Components
 
-- `CNSTokenL1`: canonical ERC20 on Ethereum L1 with ERC20Permit support.
-- `CNSTokenL2`: upgradeable Linea bridged token with pause + transfer allowlist, inheriting Linea's `CustomBridgedToken`.
+- `ShoTokenL1`: canonical ERC20 on Ethereum L1 with ERC20Permit support.
+- `ShoTokenL2`: upgradeable Linea bridged token with pause + transfer allowlist, inheriting Linea's `CustomBridgedToken`.
 - Foundry scripts/tests for deployment, upgrade rehearsals, and bridge validation.
 
 ## Local Development
@@ -19,9 +19,9 @@ forge test
 
 Key tests:
 
-- `forge test --match-contract CNSTokenL2Test`
-- `forge test --match-contract CNSTokenL1Test`
-- `forge test --match-contract CNSTokenL2V2Test`
+- `forge test --match-contract ShoTokenL2Test`
+- `forge test --match-contract ShoTokenL1Test`
+- `forge test --match-contract ShoTokenL2V2Test`
 
 ### Local Testing with Anvil
 
@@ -58,7 +58,7 @@ All critical and high priority security issues have been resolved. See the [late
 
 - `PRIVATE_KEY`: broadcaster key used by Forge (keep in `.env`, never commit).
 - `LINEA_L2_BRIDGE`: network-specific Linea TokenBridge address.
-- `CNS_OWNER`: Safe receiving admin, pauser, allowlist, upgrader roles.
+- `SHO_ADMIN`: Safe receiving admin, pauser, allowlist, upgrader roles.
 
 Optional RPC overrides (if you want to use custom RPC endpoints):
 
@@ -73,18 +73,18 @@ Load automatically with `direnv` (`use dotenv` already in `.envrc`) or export ma
 
 ```bash
 # Deploy L1 Token on Sepolia
-forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 --rpc-url sepolia --broadcast --verify
+forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 --rpc-url sepolia --broadcast --verify
 
-# Set CNS_TOKEN_L1 in .env with the deployed address
+# Set SHO_TOKEN_L1 in .env with the deployed address
 
 # Deploy L2 Token on Linea Sepolia
-forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 --rpc-url linea_sepolia --broadcast --verify
+forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 --rpc-url linea_sepolia --broadcast --verify
 ```
 You can optionally override the token name and symbol values by setting the corresponding env variables, or .env file values:
 ```bash
-TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/1_DeployCNSTokenL1.s.sol:DeployCNSTokenL1 --rpc-url sepolia --broadcast --verify
+TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 --rpc-url sepolia --broadcast --verify
 
-TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/2_DeployCNSTokenL2.s.sol:DeployCNSTokenL2 --rpc-url linea_sepolia --broadcast --verify
+TOKEN_NAME="Foo Token" TOKEN_SYMBOL=FOO forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 --rpc-url linea_sepolia --broadcast --verify
 ```
 
 See [`script/README.md`](./script/README.md) for complete deployment workflow.
@@ -93,7 +93,7 @@ See [`script/README.md`](./script/README.md) for complete deployment workflow.
 
 - **Pin dependencies**: Vendor `src/linea/BridgedToken.sol` and `CustomBridgedToken.sol` from Linea commit `c7bc6313a6309d31ac532ce0801d1c3ad3426842`. Record this hash in deployment notes.
 - **Bridge addresses**: Supply the correct Linea TokenBridge (L2) address through `LINEA_L2_BRIDGE` env var during scripts. Refer to Consensys docs or deployment manifests (e.g., `linea-deployment-manifests`) for network-specific values (Mainnet vs Sepolia).
-- **Initializer params**: When calling `CNSTokenL2.initialize`, provide admin Safe, TokenBridge address, linked L1 token, L2 metadata (`name`, `symbol`, `decimals`). Ensure non-zero addresses to satisfy runtime guards.
+- **Initializer params**: When calling `ShoTokenL2.initialize`, provide admin Safe, TokenBridge address, linked L1 token, L2 metadata (`name`, `symbol`, `decimals`). Ensure non-zero addresses to satisfy runtime guards.
 - **Role separation**:
   - `DEFAULT_ADMIN_ROLE` / `UPGRADER_ROLE`: governance Safe (timelock if possible).
   - `PAUSER_ROLE`: fast-response Safe for incident handling.

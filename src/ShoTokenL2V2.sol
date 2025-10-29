@@ -18,13 +18,13 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
- * @title CNSTokenL2V2
- * @notice Version 2 of CNS Token on L2 (Linea) - adds governance voting capabilities
+ * @title ShoTokenL2V2
+ * @notice Version 2 of SHO Token on L2 (Linea) - adds governance voting capabilities
  * @dev Adds ERC20VotesUpgradeable to enable delegation and voting power tracking.
  *      Maintains all v1 functionality: bridging, pausing, and allowlist controls.
  */
-/// @custom:oz-upgrades-from src/CNSTokenL2.sol:CNSTokenL2
-contract CNSTokenL2V2 is
+/// @custom:oz-upgrades-from src/ShoTokenL2.sol:ShoTokenL2
+contract ShoTokenL2V2 is
     Initializable,
     CustomBridgedToken,
     ERC20VotesUpgradeable,
@@ -149,7 +149,7 @@ contract CNSTokenL2V2 is
 
     /**
      * @notice Initializes V2-specific features when upgrading from V1
-     * @dev Call this after upgrading the implementation from CNSTokenL2 to CNSTokenL2V2
+     * @dev Call this after upgrading the implementation from ShoTokenL2 to ShoTokenL2V2
      */
     function initializeV2() external reinitializer(2) {
         __ERC20Votes_init();

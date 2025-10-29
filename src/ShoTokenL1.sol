@@ -14,7 +14,7 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
  *         ERC20Permit (EIP-2612) is included to optionally allow single-tx approvals where supported
  *         (many bridges/wrappers can use permit if available, but it isn't strictly required).
  */
-contract CNSTokenL1 is ERC20, ERC20Permit {
+contract ShoTokenL1 is ERC20, ERC20Permit {
     /**
      * @param name_   Token name (also used for EIP-712 domain for Permit)
      * @param symbol_ Token symbol

@@ -28,7 +28,7 @@ import "./ConfigLoader.sol";
  *       HEDGEY_INVESTOR_LOCKUP, HEDGEY_BATCH_PLANNER,
  *       HEDGEY_RECIPIENT, HEDGEY_AMOUNT, HEDGEY_START,
  *       HEDGEY_CLIFF, HEDGEY_RATE, HEDGEY_PERIOD,
- *       CNS_TOKEN_L2_PROXY
+ *       SHO_TOKEN_L2_PROXY
  *
  * Notes:
  *   - Configure the parameters above in your `.env` or export them in shell.
@@ -58,14 +58,14 @@ interface IERC20Minimal {
     function allowance(address owner, address spender) external view returns (uint256);
 }
 
-interface ICNSAllowlistViews {
+interface ISHOAllowlistViews {
     function isSenderAllowlisted(address account) external view returns (bool);
     function senderAllowlistEnabled() external view returns (bool);
     function hasRole(bytes32 role, address account) external view returns (bool);
     function paused() external view returns (bool);
 }
 
-interface ICNSAllowlistAdmin {
+interface ISHOAllowlistAdmin {
     function setSenderAllowed(address account, bool allowed) external;
 }
 
@@ -119,7 +119,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         address token = cfg.l2.proxy;
         if (token == address(0)) {
             // fallback: env variable or broadcast inference used in other scripts
-            try vm.envAddress("CNS_TOKEN_L2_PROXY") returns (address a) {
+            try vm.envAddress("SHO_TOKEN_L2_PROXY") returns (address a) {
                 token = a;
             } catch {
                 token = _inferL2ProxyFromBroadcast(block.chainid);
@@ -132,7 +132,7 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         uint256 period = cfg.hedgey.period != 0 ? cfg.hedgey.period : vm.envUint("HEDGEY_PERIOD");
 
         _requireNonZeroAddress(recipient, "HEDGEY_RECIPIENT");
-        _requireNonZeroAddress(token, "CNS_TOKEN_L2_PROXY");
+        _requireNonZeroAddress(token, "SHO_TOKEN_L2_PROXY");
         require(amount > 0, "HEDGEY_AMOUNT must be > 0");
         require(period > 0, "HEDGEY_PERIOD must be > 0");
         require(rate > 0, "HEDGEY_RATE must be > 0");
@@ -162,26 +162,26 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         // TODO: This should ideally be run by the deployment script for the L2 contract. We'd want to allowlist the proper Hedgey contracts immediately
         {
             bytes32 ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
-            bool canManage = ICNSAllowlistViews(token).hasRole(ALLOWLIST_ADMIN_ROLE, deployer);
-            bool isPaused = ICNSAllowlistViews(token).paused();
-            bool allowlistEnabled = ICNSAllowlistViews(token).senderAllowlistEnabled();
+            bool canManage = ISHOAllowlistViews(token).hasRole(ALLOWLIST_ADMIN_ROLE, deployer);
+            bool isPaused = ISHOAllowlistViews(token).paused();
+            bool allowlistEnabled = ISHOAllowlistViews(token).senderAllowlistEnabled();
             console.log("Token paused:", isPaused);
             console.log("Sender allowlist enabled:", allowlistEnabled);
             if (canManage && allowlistEnabled) {
-                bool depAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(deployer);
-                bool hedgeyAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(hedgeyInvestorLockup);
-                bool batchPlannerAllowed = ICNSAllowlistViews(token).isSenderAllowlisted(hedgeyBatchPlanner);
+                bool depAllowed = ISHOAllowlistViews(token).isSenderAllowlisted(deployer);
+                bool hedgeyAllowed = ISHOAllowlistViews(token).isSenderAllowlisted(hedgeyInvestorLockup);
+                bool batchPlannerAllowed = ISHOAllowlistViews(token).isSenderAllowlisted(hedgeyBatchPlanner);
                 if (!depAllowed) {
-                    ICNSAllowlistAdmin(token).setSenderAllowed(deployer, true);
-                    console.log("Allowlisted deployer on CNS token");
+                    ISHOAllowlistAdmin(token).setSenderAllowed(deployer, true);
+                    console.log("Allowlisted deployer on SHO token");
                 }
                 if (!hedgeyAllowed) {
-                    ICNSAllowlistAdmin(token).setSenderAllowed(hedgeyInvestorLockup, true);
-                    console.log("Allowlisted Hedgey InvestorLockup on CNS token");
+                    ISHOAllowlistAdmin(token).setSenderAllowed(hedgeyInvestorLockup, true);
+                    console.log("Allowlisted Hedgey InvestorLockup on SHO token");
                 }
                 if (!batchPlannerAllowed) {
-                    ICNSAllowlistAdmin(token).setSenderAllowed(hedgeyBatchPlanner, true);
-                    console.log("Allowlisted Hedgey Batch Planner on CNS token");
+                    ISHOAllowlistAdmin(token).setSenderAllowed(hedgeyBatchPlanner, true);
+                    console.log("Allowlisted Hedgey Batch Planner on SHO token");
                 }
             }
         }

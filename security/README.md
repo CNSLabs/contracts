@@ -1,6 +1,6 @@
 # Security Documentation
 
-This directory contains security audit reports and analysis for the CNS Token contracts.
+This directory contains security audit reports and analysis for the SHO Token contracts.
 
 ## Directory Structure
 
@@ -16,7 +16,7 @@ security/
 
 - **[2025-10-21 AI Analysis](audits/2025-10-21-ai-analysis.md)** - Initial security analysis and implementation checklist
   - **Status**: ✅ All critical and high priority issues resolved
-  - **Coverage**: CNSTokenL2 V1 & V2, upgrade safety, access controls
+  - **Coverage**: ShoTokenL2 V1 & V2, upgrade safety, access controls
   - **Findings**: 14/15 items completed (93%)
 
 ### Future Audits
@@ -55,12 +55,12 @@ Please report security vulnerabilities to: **security@cnslabs.com**
 ### Automated Analysis
 - **Slither**: `slither . --config-file slither.config.json`
 - **Aderyn**: `aderyn .`
-- **Mythril**: `myth analyze src/CNSTokenL2.sol`
+- **Mythril**: `myth analyze src/ShoTokenL2.sol`
 
 ### Storage Layout Verification
 ```bash
-forge inspect CNSTokenL2 storage-layout > storage-layouts/v1-layout.json
-forge inspect CNSTokenL2V2 storage-layout > storage-layouts/v2-layout.json
+forge inspect ShoTokenL2 storage-layout > storage-layouts/v1-layout.json
+forge inspect ShoTokenL2V2 storage-layout > storage-layouts/v2-layout.json
 ```
 
 ### Upgrade Safety

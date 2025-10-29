@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {ConfigLoader, EnvConfig} from "../../script/ConfigLoader.sol";
 import {BaseScript} from "../../script/BaseScript.sol";
-import {CNSTokenL2} from "../../src/CNSTokenL2.sol";
+import {ShoTokenL2} from "../../src/ShoTokenL2.sol";
 
 /**
  * @title ProductionForkTest
@@ -18,7 +18,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
     EnvConfig config = _loadEnvConfig();
 
     // Contract addresses from production
-    address internal cnsTokenL2Proxy;
+    address internal shoTokenL2Proxy;
     address internal timelockController;
     address internal safeMultisig;
 
@@ -126,12 +126,12 @@ abstract contract ProductionForkTest is Test, BaseScript {
             abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, initData);
 
         // Generate a proper salt (like the working script)
-        bytes32 salt = keccak256(abi.encodePacked("CNSTokenL2V2", newImplementation));
+        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL2V2", newImplementation));
 
         // Encode the timelock schedule call
         bytes memory scheduleCalldata = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
-            cnsTokenL2Proxy, // Call the proxy directly, not the proxy admin
+            shoTokenL2Proxy, // Call the proxy directly, not the proxy admin
             0, // value
             upgradeCalldata,
             bytes32(0), // predecessor
@@ -167,12 +167,12 @@ abstract contract ProductionForkTest is Test, BaseScript {
             abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, initData);
 
         // Generate the same salt used in scheduling (like the working script)
-        bytes32 salt = keccak256(abi.encodePacked("CNSTokenL2V2", newImplementation));
+        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL2V2", newImplementation));
 
         // Encode the timelock execute call
         bytes memory executeCalldata = abi.encodeWithSignature(
             "execute(address,uint256,bytes,bytes32,bytes32)",
-            cnsTokenL2Proxy, // Call the proxy directly, not the proxy admin
+            shoTokenL2Proxy, // Call the proxy directly, not the proxy admin
             0, // value
             upgradeCalldata,
             bytes32(0), // predecessor
@@ -202,17 +202,17 @@ abstract contract ProductionForkTest is Test, BaseScript {
      * @notice Verify that the fork state matches production expectations
      */
     function _verifyForkState() internal view {
-        require(cnsTokenL2Proxy != address(0), "CNS Token L2 proxy not found");
+        require(shoTokenL2Proxy != address(0), "Sho Token L2 proxy not found");
         require(timelockController != address(0), "Timelock controller not found");
         require(safeMultisig != address(0), "Safe multisig not found");
 
         // Verify contracts exist
-        require(cnsTokenL2Proxy.code.length > 0, "CNS Token L2 proxy has no code");
+        require(shoTokenL2Proxy.code.length > 0, "Sho Token L2 proxy has no code");
         require(timelockController.code.length > 0, "Timelock controller has no code");
         require(safeMultisig.code.length > 0, "Safe multisig has no code");
 
         console.log("Fork state verified successfully");
-        console.log("CNS Token L2 Proxy:", cnsTokenL2Proxy);
+        console.log("Sho Token L2 Proxy:", shoTokenL2Proxy);
         console.log("Timelock Controller:", timelockController);
         console.log("Safe Multisig:", safeMultisig);
     }
@@ -223,11 +223,11 @@ abstract contract ProductionForkTest is Test, BaseScript {
     function _loadProductionAddresses() internal {
         console.log("Loading addresses from config for env:", config.env);
 
-        cnsTokenL2Proxy = config.l2.proxy;
+        shoTokenL2Proxy = config.l2.proxy;
         timelockController = config.l2.timelock.addr;
         safeMultisig = config.l2.roles.admin; // Assuming admin is the Safe
 
-        console.log("CNS Token L2 Proxy:", cnsTokenL2Proxy);
+        console.log("Sho Token L2 Proxy:", shoTokenL2Proxy);
         console.log("Timelock Controller:", timelockController);
         console.log("Safe Multisig:", safeMultisig);
     }
@@ -270,7 +270,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
     function _verifyUpgrade(address newImplementation) internal view {
         // Get the current implementation from storage (like the working script)
         bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
-        address currentImpl = address(uint160(uint256(vm.load(cnsTokenL2Proxy, implementationSlot))));
+        address currentImpl = address(uint160(uint256(vm.load(shoTokenL2Proxy, implementationSlot))));
 
         require(currentImpl == newImplementation, "Upgrade verification failed");
         console.log("Upgrade verified successfully");

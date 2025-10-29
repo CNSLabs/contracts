@@ -24,7 +24,7 @@ if [ ! -d "$LAYOUTS_DIR" ]; then
 fi
 
 # Contracts to validate (upgradeable contracts only)
-CONTRACTS=("CNSTokenL2" "CNSTokenL2V2")
+CONTRACTS=("ShoTokenL2" "ShoTokenL2V2")
 
 all_valid=true
 
