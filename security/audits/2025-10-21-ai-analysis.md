@@ -1,9 +1,9 @@
-# 🔒 Security Audit Report: CNSTokenL2
+# 🔒 Security Audit Report: ShoTokenL2
 
-**Contract**: `CNSTokenL2.sol` (V1) & `CNSTokenL2V2.sol` (V2)  
+**Contract**: `ShoTokenL2.sol` (V1) & `ShoTokenL2V2.sol` (V2)  
 **Audit Date**: October 15, 2025 (Updated: October 21, 2025)  
 **Auditor**: AI Security Analysis  
-**Contract Version**: v1.0 (CNSTokenL2), v2.0 (CNSTokenL2V2 with ERC20Votes)  
+**Contract Version**: v1.0 (ShoTokenL2), v2.0 (ShoTokenL2V2 with ERC20Votes)  
 **Solidity Version**: 0.8.25 (locked)  
 **OpenZeppelin Version**: v5.4.0  
 **File Location**: `security/audits/2025-10-21-ai-analysis.md`  
@@ -34,10 +34,10 @@
 - [x] **P3.3** Lock Pragma Version ✅ (`pragma solidity 0.8.25`)
 
 ### Testing Enhancements:
-- [ ] **T1** Add Security Test Suite (`CNSTokenL2.security.t.sol`)
-- [ ] **T2** Add Fuzz Testing (`CNSTokenL2.fuzz.t.sol`)
-- [ ] **T3** Add Invariant Testing (`CNSTokenL2.invariant.t.sol`)
-- [ ] **T4** Add Integration Testing (`CNSTokenL2.integration.t.sol`)
+- [ ] **T1** Add Security Test Suite (`ShoTokenL2.security.t.sol`)
+- [ ] **T2** Add Fuzz Testing (`ShoTokenL2.fuzz.t.sol`)
+- [ ] **T3** Add Invariant Testing (`ShoTokenL2.invariant.t.sol`)
+- [ ] **T4** Add Integration Testing (`ShoTokenL2.integration.t.sol`)
 
 ### 📊 Progress Summary (Updated Oct 21, 2025)
 - **✅ Completed**: 14/15 items (93%)
@@ -48,7 +48,7 @@
 - **🧪 Testing**: 0/4 completed (0%) - Core tests pass (55 total), advanced testing needed
 
 **Recent Implementation Updates:**
-- ✅ CNSTokenL2V2 with ERC20VotesUpgradeable implemented (Oct 21, 2025)
+- ✅ ShoTokenL2V2 with ERC20VotesUpgradeable implemented (Oct 21, 2025)
 - ✅ Storage layout verification completed - NO COLLISIONS DETECTED (Oct 21, 2025)
 - ✅ TimelockController implementation with configurable delays (production: 48h, dev: 5min)
 - ✅ Allowlist UX documentation added - design is intentional (Oct 21, 2025)
@@ -65,7 +65,7 @@
 
 ## Executive Summary
 
-This report presents a comprehensive security audit of the `CNSTokenL2` contract, an upgradeable L2 bridged token for Linea with allowlist controls. The contract uses OpenZeppelin v5.4.0 upgradeable contracts with the UUPS (Universal Upgradeable Proxy Standard) proxy pattern.
+This report presents a comprehensive security audit of the `ShoTokenL2` contract, an upgradeable L2 bridged token for Linea with allowlist controls. The contract uses OpenZeppelin v5.4.0 upgradeable contracts with the UUPS (Universal Upgradeable Proxy Standard) proxy pattern.
 
 **Overall Security Rating**: ⚠️ **MEDIUM-HIGH RISK** (Several Critical Issues Found)
 
@@ -77,7 +77,7 @@ This report presents a comprehensive security audit of the `CNSTokenL2` contract
 - Role-based access control (pause, allowlist admin, upgrader)
 
 **Lines of Code**: 164 (V1), 217 (V2)  
-**Test Coverage**: 55 tests across 4 test files (CNSTokenL1, CNSTokenL2, Upgrade, V2)
+**Test Coverage**: 55 tests across 4 test files (ShoTokenL1, ShoTokenL2, Upgrade, V2)
 
 ---
 
@@ -101,13 +101,13 @@ This report presents a comprehensive security audit of the `CNSTokenL2` contract
 ### 1. ❌ CRITICAL: Incorrect Storage Gap Size
 
 **Severity**: CRITICAL  
-**Location**: `CNSTokenL2.sol:116`  
+**Location**: `ShoTokenL2.sol:116`  
 **CWE**: CWE-664 (Improper Control of a Resource)
 
 #### Issue Description
 
 ```solidity
-// Line 116 - CNSTokenL2.sol
+// Line 116 - ShoTokenL2.sol
 uint256[46] private __gap;  // ❌ INCORRECT SIZE
 ```
 
@@ -148,7 +148,7 @@ uint256[40] private __gap;  // Adjust based on complete storage layout analysis
 
 Run storage layout analysis:
 ```bash
-forge inspect CNSTokenL2 storage-layout --pretty
+forge inspect ShoTokenL2 storage-layout --pretty
 ```
 
 ---
@@ -156,21 +156,21 @@ forge inspect CNSTokenL2 storage-layout --pretty
 ### 2. ⚠️ HIGH: Storage Gap Verification Needed for V1→V2 Upgrade
 
 **Severity**: HIGH  
-**Location**: `CNSTokenL2V2.sol:215`  
+**Location**: `ShoTokenL2V2.sol:215`  
 **CWE**: CWE-664 (Improper Control of a Resource)  
 **Status**: ✅ **VERIFIED - NO STORAGE COLLISIONS** (Oct 21, 2025)
 
 #### Issue Description
 
 ```solidity
-// CNSTokenL2.sol (V1) - Line 162
+// ShoTokenL2.sol (V1) - Line 162
 uint256[46] private __gap;
 
-// CNSTokenL2V2.sol (V2) - Line 215
+// ShoTokenL2V2.sol (V2) - Line 215
 uint256[46] private __gap;  // ⚠️ Same gap size despite adding ERC20Votes
 ```
 
-`CNSTokenL2V2` (implemented Oct 21, 2025) adds `ERC20VotesUpgradeable` which introduces new storage variables:
+`ShoTokenL2V2` (implemented Oct 21, 2025) adds `ERC20VotesUpgradeable` which introduces new storage variables:
 - Checkpoint arrays for vote tracking (`_delegateCheckpoints`)
 - Delegation mappings (`_delegates`)
 - Additional nonce tracking
@@ -207,8 +207,8 @@ Despite adding these storage requirements through inheritance, the gap remains a
 
 ```bash
 # Generate and compare storage layouts
-forge inspect CNSTokenL2 storage-layout --pretty > storage-layouts/v1-storage.txt
-forge inspect CNSTokenL2V2 storage-layout --pretty > storage-layouts/v2-storage.txt
+forge inspect ShoTokenL2 storage-layout --pretty > storage-layouts/v1-storage.txt
+forge inspect ShoTokenL2V2 storage-layout --pretty > storage-layouts/v2-storage.txt
 
 # Verify:
 # 1. All V1 storage slots remain at same positions in V2
@@ -219,7 +219,7 @@ forge inspect CNSTokenL2V2 storage-layout --pretty > storage-layouts/v2-storage.
 #### Recommendation
 
 ```solidity
-// In CNSTokenL2V2.sol
+// In ShoTokenL2V2.sol
 // After storage layout analysis, adjust gap if needed:
 uint256[44] private __gap;  // Example: Reduced by ~2 slots for ERC20Votes internal storage
 ```
@@ -228,10 +228,10 @@ uint256[44] private __gap;  // Example: Reduced by ~2 slots for ERC20Votes inter
 
 ```bash
 # Generate V1 storage layout
-forge inspect CNSTokenL2 storage-layout > storage-layouts/v1-layout.json
+forge inspect ShoTokenL2 storage-layout > storage-layouts/v1-layout.json
 
 # Generate V2 storage layout
-forge inspect CNSTokenL2V2 storage-layout > storage-layouts/v2-layout.json
+forge inspect ShoTokenL2V2 storage-layout > storage-layouts/v2-layout.json
 
 # Compare and verify no collisions
 diff storage-layouts/v1-layout.json storage-layouts/v2-layout.json
@@ -244,7 +244,7 @@ diff storage-layouts/v1-layout.json storage-layouts/v2-layout.json
 ### 3. ⚠️ HIGH: Initialization Frontrunning Vulnerability
 
 **Severity**: HIGH  
-**Location**: `CNSTokenL2.sol:35-67`  
+**Location**: `ShoTokenL2.sol:35-67`  
 **CWE**: CWE-696 (Incorrect Behavior Order)
 
 #### Issue Description
@@ -299,7 +299,7 @@ The `initialize()` function is `external` and can be called by anyone if the pro
 ERC1967Proxy proxy = new ERC1967Proxy(
     address(implementation),
     abi.encodeWithSelector(
-        CNSTokenL2.initialize.selector,
+        ShoTokenL2.initialize.selector,
         admin,
         bridge,
         l1Token,
@@ -327,7 +327,7 @@ function initialize(...) external initializer {
 
 #### Current Test Status
 
-✅ Tests correctly initialize in constructor (line 37-39 of `CNSTokenL2Test.setUp()`), but deployment scripts must enforce this pattern.
+✅ Tests correctly initialize in constructor (line 37-39 of `ShoTokenL2Test.setUp()`), but deployment scripts must enforce this pattern.
 
 ---
 
@@ -336,7 +336,7 @@ function initialize(...) external initializer {
 ### 4. Missing Bridge Address Validation
 
 **Severity**: HIGH  
-**Location**: `CNSTokenL2.sol:53`  
+**Location**: `ShoTokenL2.sol:53`  
 **CWE**: CWE-20 (Improper Input Validation)
 
 #### Issue Description
@@ -374,7 +374,7 @@ emit BridgeSet(bridge_);
 ### 5. Allowlist Bypass During Mint Operations - Design Consideration
 
 **Severity**: MEDIUM-HIGH  
-**Location**: `CNSTokenL2.sol:103-104`  
+**Location**: `ShoTokenL2.sol:103-104`  
 **CWE**: CWE-841 (Improper Enforcement of Behavioral Workflow)
 
 #### Issue Description
@@ -453,7 +453,7 @@ function _update(address from, address to, uint256 value) internal override when
 ### 6. Access Control: Admin Has Too Much Power
 
 **Severity**: MEDIUM  
-**Location**: `CNSTokenL2.sol:58-61`  
+**Location**: `ShoTokenL2.sol:58-61`  
 **CWE**: CWE-269 (Improper Privilege Management)
 
 #### Issue Description
@@ -531,7 +531,7 @@ function initialize(
 ### 7. No Event Emission for Critical State Changes
 
 **Severity**: MEDIUM  
-**Location**: `CNSTokenL2.sol:53, 56`  
+**Location**: `ShoTokenL2.sol:53, 56`  
 **CWE**: CWE-778 (Insufficient Logging)
 
 #### Issue Description
@@ -593,7 +593,7 @@ function initialize(...) external initializer {
 ### 8. Batch Operation Gas Limit Risk
 
 **Severity**: MEDIUM  
-**Location**: `CNSTokenL2.sol:89-94`  
+**Location**: `ShoTokenL2.sol:89-94`  
 **CWE**: CWE-400 (Uncontrolled Resource Consumption)
 
 #### Issue Description
@@ -651,7 +651,7 @@ function setSenderAllowedBatch(address[] calldata accounts, bool allowed)
 ### 9. String Revert Messages (Gas Inefficiency)
 
 **Severity**: LOW (Gas Optimization)  
-**Location**: `CNSTokenL2.sol:43-45, 104`  
+**Location**: `ShoTokenL2.sol:43-45, 104`  
 **CWE**: CWE-400 (Uncontrolled Resource Consumption)
 
 #### Issue Description
@@ -728,7 +728,7 @@ function _update(address from, address to, uint256 value) internal override when
 
 **Test Updates**:
 - All tests updated to check for custom error selectors
-- `vm.expectRevert(CNSTokenL2.SenderNotAllowlisted.selector)`
+- `vm.expectRevert(ShoTokenL2.SenderNotAllowlisted.selector)`
 - Maintains same test coverage with improved gas efficiency
 
 ---
@@ -736,7 +736,7 @@ function _update(address from, address to, uint256 value) internal override when
 ### 10. Missing Zero Address Check in Setter Functions
 
 **Severity**: MEDIUM  
-**Location**: `CNSTokenL2.sol:85`  
+**Location**: `ShoTokenL2.sol:85`  
 **CWE**: CWE-20 (Improper Input Validation)
 
 #### Issue Description
@@ -888,7 +888,7 @@ token.grantRole(UPGRADER_ROLE, address(timelock));
 ### 13. Floating Pragma Version
 
 **Severity**: INFORMATIONAL  
-**Location**: `CNSTokenL2.sol:2`  
+**Location**: `ShoTokenL2.sol:2`  
 
 ```solidity
 pragma solidity ^0.8.25;  // ℹ️ Floating pragma
@@ -985,7 +985,7 @@ The contract demonstrates several security best practices:
 ### Inheritance Chain
 
 ```
-CNSTokenL2
+ShoTokenL2
 ├── Initializable ✅
 ├── CustomBridgedToken
 │   └── BridgedToken
@@ -1000,7 +1000,7 @@ CNSTokenL2
 ### C3 Linearization Order
 
 ```
-CNSTokenL2 → Initializable → CustomBridgedToken → BridgedToken → 
+ShoTokenL2 → Initializable → CustomBridgedToken → BridgedToken → 
 ERC20PermitUpgradeable → ERC20Upgradeable → PausableUpgradeable → 
 AccessControlUpgradeable → UUPSUpgradeable
 ```
@@ -1031,8 +1031,8 @@ function _update(address from, address to, uint256 value)
 6. From `UUPSUpgradeable`: no additional storage
 
 **Total Inherited Storage**: ~61 slots  
-**CNSTokenL2 Direct Storage**: 3 slots (l1Token, _senderAllowlisted, _senderAllowlistEnabled)  
-**CNSTokenL2 Gap**: 46 slots  
+**ShoTokenL2 Direct Storage**: 3 slots (l1Token, _senderAllowlisted, _senderAllowlistEnabled)  
+**ShoTokenL2 Gap**: 46 slots  
 **Total Reserved**: ~110 slots
 
 ⚠️ **Concern**: Need to verify that gap calculations account for all inherited storage properly.
@@ -1043,7 +1043,7 @@ function _update(address from, address to, uint256 value)
 
 ### Current Test Coverage
 
-**File**: `test/CNSTokenL2.t.sol`  
+**File**: `test/ShoTokenL2.t.sol`  
 **Tests**: 11  
 **Status**: ✅ All passing
 
@@ -1068,9 +1068,9 @@ function _update(address from, address to, uint256 value)
 1. ❌ **Initialization Frontrunning**
    ```solidity
    function testCannotFrontrunInitialization() public {
-       CNSTokenL2 impl = new CNSTokenL2();
+       ShoTokenL2 impl = new ShoTokenL2();
        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), "");
-       CNSTokenL2 proxied = CNSTokenL2(address(proxy));
+       ShoTokenL2 proxied = ShoTokenL2(address(proxy));
        
        // Attacker tries to initialize
        vm.prank(attacker);
@@ -1082,7 +1082,7 @@ function _update(address from, address to, uint256 value)
 2. ❌ **Bridge Must Be Contract**
    ```solidity
    function testInitializeRevertsIfBridgeIsEOA() public {
-       CNSTokenL2 fresh = _deployProxy();
+       ShoTokenL2 fresh = _deployProxy();
        address eoa = makeAddr("eoa");
        
        vm.expectRevert("bridge must be contract");
@@ -1167,22 +1167,22 @@ function _update(address from, address to, uint256 value)
 
 ### Additional Test Files Needed
 
-1. **`CNSTokenL2.security.t.sol`**
+1. **`ShoTokenL2.security.t.sol`**
    - Frontrunning scenarios
    - Access control edge cases
    - Malicious input testing
 
-2. **`CNSTokenL2.fuzz.t.sol`**
+2. **`ShoTokenL2.fuzz.t.sol`**
    - Property-based testing
    - Random input validation
    - Edge case discovery
 
-3. **`CNSTokenL2.invariant.t.sol`**
+3. **`ShoTokenL2.invariant.t.sol`**
    - Invariant testing
    - State consistency checks
    - Long-running state validation
 
-4. **`CNSTokenL2.integration.t.sol`**
+4. **`ShoTokenL2.integration.t.sol`**
    - Multi-step workflows
    - Bridge integration scenarios
    - Upgrade + operation sequences
@@ -1240,8 +1240,8 @@ function _update(address from, address to, uint256 value)
 1. **🔴 Verify Storage Gap Calculations**
    ```bash
    # Run these commands and manually verify
-   forge inspect CNSTokenL2 storage-layout --pretty > storage-layouts/v1-analysis.txt
-   forge inspect CNSTokenL2V2 storage-layout --pretty > storage-layouts/v2-analysis.txt
+   forge inspect ShoTokenL2 storage-layout --pretty > storage-layouts/v1-analysis.txt
+   forge inspect ShoTokenL2V2 storage-layout --pretty > storage-layouts/v2-analysis.txt
    
    # Compare and verify:
    # - All V1 slots remain at same positions in V2
@@ -1259,7 +1259,7 @@ function _update(address from, address to, uint256 value)
    ```solidity
    // Update deployment script to initialize in constructor:
    bytes memory initData = abi.encodeWithSelector(
-       CNSTokenL2.initialize.selector,
+       ShoTokenL2.initialize.selector,
        admin,
        bridge,
        l1Token,
@@ -1348,26 +1348,26 @@ function _update(address from, address to, uint256 value)
 
 ```bash
 test/
-├── CNSTokenL2.t.sol                    # ✅ Exists - basic functionality
-├── CNSTokenL2.security.t.sol           # ❌ Add - security scenarios
-├── CNSTokenL2.fuzz.t.sol               # ❌ Add - fuzz testing
-├── CNSTokenL2.invariant.t.sol          # ❌ Add - invariant testing
-├── CNSTokenL2.integration.t.sol        # ❌ Add - integration tests
-└── CNSTokenL2.upgrade.t.sol            # ✅ Exists - upgrade tests
+├── ShoTokenL2.t.sol                    # ✅ Exists - basic functionality
+├── ShoTokenL2.security.t.sol           # ❌ Add - security scenarios
+├── ShoTokenL2.fuzz.t.sol               # ❌ Add - fuzz testing
+├── ShoTokenL2.invariant.t.sol          # ❌ Add - invariant testing
+├── ShoTokenL2.integration.t.sol        # ❌ Add - integration tests
+└── ShoTokenL2.upgrade.t.sol            # ✅ Exists - upgrade tests
 ```
 
 #### Security Test Template:
 
 ```solidity
-// test/CNSTokenL2.security.t.sol
+// test/ShoTokenL2.security.t.sol
 pragma solidity ^0.8.25;
 
 import "forge-std/Test.sol";
-import {CNSTokenL2} from "../src/CNSTokenL2.sol";
+import {ShoTokenL2} from "../src/ShoTokenL2.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-contract CNSTokenL2SecurityTest is Test {
-    CNSTokenL2 internal token;
+contract ShoTokenL2SecurityTest is Test {
+    ShoTokenL2 internal token;
     address internal attacker;
     
     function setUp() public {
@@ -1565,6 +1565,6 @@ This audit report represents a security analysis based on the provided code at a
 
 *Generated: October 15, 2025*  
 *Last Updated: October 21, 2025*  
-*Contract: CNSTokenL2.sol (V1) & CNSTokenL2V2.sol (V2)*  
+*Contract: ShoTokenL2.sol (V1) & ShoTokenL2V2.sol (V2)*  
 *Status: ✅ Production Ready*
 

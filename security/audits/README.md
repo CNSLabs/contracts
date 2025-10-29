@@ -8,7 +8,7 @@ This directory contains security audit reports for the CNS Token contracts.
 
 | Date | Auditor | Contract Version | Status | Report |
 |------|---------|------------------|--------|--------|
-| 2025-10-21 | AI Security Analysis | V1.0 (CNSTokenL2), V2.0 (CNSTokenL2V2) | ✅ Complete | [2025-10-21-ai-analysis.md](2025-10-21-ai-analysis.md) |
+| 2025-10-21 | AI Security Analysis | V1.0 (ShoTokenL2), V2.0 (ShoTokenL2V2) | ✅ Complete | [2025-10-21-ai-analysis.md](2025-10-21-ai-analysis.md) |
 
 ### Pending Audits
 

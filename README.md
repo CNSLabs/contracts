@@ -4,8 +4,8 @@ Smart contracts and tooling for the CNS token stack across L1 ↔ Linea L2.
 
 ## Components
 
-- `CNSTokenL1`: canonical ERC20 on Ethereum L1 with ERC20Permit support.
-- `CNSTokenL2`: upgradeable Linea bridged token with pause + transfer allowlist, inheriting Linea's `CustomBridgedToken`.
+- `ShoTokenL1`: canonical ERC20 on Ethereum L1 with ERC20Permit support.
+- `ShoTokenL2`: upgradeable Linea bridged token with pause + transfer allowlist, inheriting Linea's `CustomBridgedToken`.
 - Foundry scripts/tests for deployment, upgrade rehearsals, and bridge validation.
 
 ## Local Development
@@ -19,9 +19,9 @@ forge test
 
 Key tests:
 
-- `forge test --match-contract CNSTokenL2Test`
-- `forge test --match-contract CNSTokenL1Test`
-- `forge test --match-contract CNSTokenL2V2Test`
+- `forge test --match-contract ShoTokenL2Test`
+- `forge test --match-contract ShoTokenL1Test`
+- `forge test --match-contract ShoTokenL2V2Test`
 
 ### Local Testing with Anvil
 
@@ -93,7 +93,7 @@ See [`script/README.md`](./script/README.md) for complete deployment workflow.
 
 - **Pin dependencies**: Vendor `src/linea/BridgedToken.sol` and `CustomBridgedToken.sol` from Linea commit `c7bc6313a6309d31ac532ce0801d1c3ad3426842`. Record this hash in deployment notes.
 - **Bridge addresses**: Supply the correct Linea TokenBridge (L2) address through `LINEA_L2_BRIDGE` env var during scripts. Refer to Consensys docs or deployment manifests (e.g., `linea-deployment-manifests`) for network-specific values (Mainnet vs Sepolia).
-- **Initializer params**: When calling `CNSTokenL2.initialize`, provide admin Safe, TokenBridge address, linked L1 token, L2 metadata (`name`, `symbol`, `decimals`). Ensure non-zero addresses to satisfy runtime guards.
+- **Initializer params**: When calling `ShoTokenL2.initialize`, provide admin Safe, TokenBridge address, linked L1 token, L2 metadata (`name`, `symbol`, `decimals`). Ensure non-zero addresses to satisfy runtime guards.
 - **Role separation**:
   - `DEFAULT_ADMIN_ROLE` / `UPGRADER_ROLE`: governance Safe (timelock if possible).
   - `PAUSER_ROLE`: fast-response Safe for incident handling.

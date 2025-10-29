@@ -34,7 +34,7 @@ forge snapshot --snap custom-snapshot.txt
 forge test --gas-report
 
 # Gas report for specific contract
-forge test --gas-report --match-contract CNSTokenL2
+forge test --gas-report --match-contract ShoTokenL2
 
 # Detailed gas report with opcodes
 forge test --gas-report -vvvv
@@ -75,12 +75,12 @@ When optimizing for gas:
 
 Current gas costs (see `.gas-snapshot` for exact values):
 
-**CNSTokenL1**
+**ShoTokenL1**
 - Transfer: ~45k gas
 - Approve: ~39k gas
 - Permit (signature): ~939k gas
 
-**CNSTokenL2**  
+**ShoTokenL2**  
 - Bridge mint (bypassing allowlist): ~77k gas
 - Allowlist transfer: ~156k gas
 - Pause/unpause: ~169k gas
@@ -117,7 +117,7 @@ forge test --gas-report -vvvv --match-test testTransfer
 #### Storage Layout Analysis
 ```bash
 # View storage layout and check for packing opportunities
-forge inspect CNSTokenL2 storage-layout
+forge inspect ShoTokenL2 storage-layout
 ```
 
 ### Best Practices

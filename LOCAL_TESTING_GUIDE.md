@@ -104,7 +104,7 @@ forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
 Network: Local Anvil
 Chain ID: 31337
 ...
-CNSTokenL1: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+ShoTokenL1: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 Owner Balance: 100000000 tokens
 Total Supply: 100000000 tokens
 ```

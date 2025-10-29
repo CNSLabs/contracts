@@ -1,7 +1,7 @@
 [
   {
     "astId": 56058,
-    "contract": "src/CNSTokenL2.sol:CNSTokenL2",
+    "contract": "src/ShoTokenL2.sol:ShoTokenL2",
     "label": "bridge",
     "offset": 0,
     "slot": "0",
@@ -9,7 +9,7 @@
   },
   {
     "astId": 56060,
-    "contract": "src/CNSTokenL2.sol:CNSTokenL2",
+    "contract": "src/ShoTokenL2.sol:ShoTokenL2",
     "label": "_decimals",
     "offset": 20,
     "slot": "0",
@@ -17,7 +17,7 @@
   },
   {
     "astId": 56065,
-    "contract": "src/CNSTokenL2.sol:CNSTokenL2",
+    "contract": "src/ShoTokenL2.sol:ShoTokenL2",
     "label": "__gap",
     "offset": 0,
     "slot": "1",
@@ -25,7 +25,7 @@
   },
   {
     "astId": 55327,
-    "contract": "src/CNSTokenL2.sol:CNSTokenL2",
+    "contract": "src/ShoTokenL2.sol:ShoTokenL2",
     "label": "_allowlisted",
     "offset": 0,
     "slot": "51",
@@ -33,7 +33,7 @@
   },
   {
     "astId": 55329,
-    "contract": "src/CNSTokenL2.sol:CNSTokenL2",
+    "contract": "src/ShoTokenL2.sol:ShoTokenL2",
     "label": "l1Token",
     "offset": 0,
     "slot": "52",
@@ -41,7 +41,7 @@
   },
   {
     "astId": 55637,
-    "contract": "src/CNSTokenL2.sol:CNSTokenL2",
+    "contract": "src/ShoTokenL2.sol:ShoTokenL2",
     "label": "__gap",
     "offset": 0,
     "slot": "53",

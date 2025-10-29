@@ -1,15 +1,15 @@
-# Upgrade Guide for CNSTokenL2
+# Upgrade Guide for ShoTokenL2
 
 ## Overview
 
-CNSTokenL2 uses the UUPS (Universal Upgradeable Proxy Standard) pattern, allowing the contract logic to be upgraded while preserving state. This guide covers safe upgrade procedures and best practices.
+ShoTokenL2 uses the UUPS (Universal Upgradeable Proxy Standard) pattern, allowing the contract logic to be upgraded while preserving state. This guide covers safe upgrade procedures and best practices.
 
 ## Architecture
 
 ```
-User → Proxy (ERC1967) → Implementation (CNSTokenL2)
+User → Proxy (ERC1967) → Implementation (ShoTokenL2)
          ↓ upgradeable
-         Implementation V2 (CNSTokenL2V2)
+         Implementation V2 (ShoTokenL2V2)
 ```
 
 **Key Components:**
@@ -22,13 +22,13 @@ User → Proxy (ERC1967) → Implementation (CNSTokenL2)
 ### 1. Storage Layout Verification
 ```bash
 # Generate current storage layout
-forge inspect CNSTokenL2 storage-layout > storage-layouts/CNSTokenL2-v1.json
+forge inspect ShoTokenL2 storage-layout > storage-layouts/ShoTokenL2-v1.json
 
 # Generate new version layout
-forge inspect CNSTokenL2V2 storage-layout > storage-layouts/CNSTokenL2V2-v2.json
+forge inspect ShoTokenL2V2 storage-layout > storage-layouts/ShoTokenL2V2-v2.json
 
 # Compare layouts (manually verify no collisions)
-diff storage-layouts/CNSTokenL2-v1.json storage-layouts/CNSTokenL2V2-v2.json
+diff storage-layouts/ShoTokenL2-v1.json storage-layouts/ShoTokenL2V2-v2.json
 ```
 
 **Critical Rules:**
@@ -42,10 +42,10 @@ diff storage-layouts/CNSTokenL2-v1.json storage-layouts/CNSTokenL2V2-v2.json
 ### 2. Run Upgrade Tests
 ```bash
 # Run comprehensive upgrade test suite
-forge test --match-contract CNSTokenL2UpgradeTest -vvv
+forge test --match-contract ShoTokenL2UpgradeTest -vvv
 
 # Run with gas report
-forge test --match-contract CNSTokenL2UpgradeTest --gas-report
+forge test --match-contract ShoTokenL2UpgradeTest --gas-report
 
 # Run specific upgrade test
 forge test --match-test testUpgradePreservesAllState -vvv
@@ -53,7 +53,7 @@ forge test --match-test testUpgradePreservesAllState -vvv
 
 ### 3. Storage Gap Validation
 ```solidity
-// Before upgrade, check gap size in CNSTokenL2:
+// Before upgrade, check gap size in ShoTokenL2:
 uint256[47] private __gap;
 
 // If adding N storage variables in V2:
@@ -85,7 +85,7 @@ forge script script/2_DeployShoTokenL2.s.sol --rpc-url http://localhost:8545 --b
 export PROXY_ADDRESS=0x...
 
 # 4. Deploy V2 implementation
-forge create src/CNSTokenL2V2.sol:CNSTokenL2V2 --rpc-url http://localhost:8545 --private-key $PRIVATE_KEY
+forge create src/ShoTokenL2V2.sol:ShoTokenL2V2 --rpc-url http://localhost:8545 --private-key $PRIVATE_KEY
 
 # 5. Upgrade proxy to V2
 cast send $PROXY_ADDRESS "upgradeToAndCall(address,bytes)" $NEW_IMPL_ADDRESS 0x --rpc-url http://localhost:8545 --private-key $PRIVATE_KEY
@@ -98,7 +98,7 @@ cast call $PROXY_ADDRESS "version()(uint256)" --rpc-url http://localhost:8545
 
 ```bash
 # 1. Deploy new implementation (DO NOT INITIALIZE)
-forge create src/CNSTokenL2V2.sol:CNSTokenL2V2 \
+forge create src/ShoTokenL2V2.sol:ShoTokenL2V2 \
   --rpc-url $L2_RPC_URL \
   --private-key $PRIVATE_KEY \
   --verify
@@ -133,7 +133,7 @@ cast call $PROXY_ADDRESS "version()(uint256)" --rpc-url $L2_RPC_URL
 **Procedure:**
 1. **Deploy Implementation** (via timelock/multisig)
    ```bash
-   forge create src/CNSTokenL2V2.sol:CNSTokenL2V2 \
+   forge create src/ShoTokenL2V2.sol:ShoTokenL2V2 \
      --rpc-url $MAINNET_RPC_URL \
      --private-key $DEPLOYER_KEY \
      --verify
@@ -184,14 +184,14 @@ cast call $PROXY_ADDRESS "version()(uint256)" --rpc-url $L2_RPC_URL
 
 ```solidity
 // V1
-contract CNSTokenL2 {
+contract ShoTokenL2 {
     address public l1Token;
     mapping(address => bool) private _allowlisted;
     uint256[47] private __gap;
 }
 
 // V2 - Adding one variable
-contract CNSTokenL2V2 {
+contract ShoTokenL2V2 {
     address public l1Token;
     mapping(address => bool) private _allowlisted;
     uint256 public newFeature;  // New variable
@@ -202,7 +202,7 @@ contract CNSTokenL2V2 {
 ### Upgrading with Initialization
 
 ```solidity
-contract CNSTokenL2V2 {
+contract ShoTokenL2V2 {
     uint256 public newFeature;
     
     function initializeV2(uint256 _initialValue) external reinitializer(2) {
@@ -212,7 +212,7 @@ contract CNSTokenL2V2 {
 
 // Upgrade call with initialization
 bytes memory initData = abi.encodeWithSelector(
-    CNSTokenL2V2.initializeV2.selector,
+    ShoTokenL2V2.initializeV2.selector,
     100
 );
 proxy.upgradeToAndCall(newImplementation, initData);
@@ -227,7 +227,7 @@ If critical bug found post-upgrade:
 cast send $PROXY_ADDRESS "pause()" --private-key $PAUSER_KEY
 
 # 2. Deploy previous version or fixed version
-forge create src/CNSTokenL2.sol:CNSTokenL2 --rpc-url $RPC_URL
+forge create src/ShoTokenL2.sol:ShoTokenL2 --rpc-url $RPC_URL
 
 # 3. Upgrade to safe version
 cast send $PROXY_ADDRESS "upgradeToAndCall(address,bytes)" $SAFE_IMPL 0x
