@@ -271,7 +271,7 @@ The script validates:
 ## Troubleshooting
 
 **"Token contract address not found"**
-- Set `CNS_TOKEN_L1` environment variable
+- Set `SHO_TOKEN_L1` environment variable
 - Or use `--token-contract` command line option
 - Or ensure `l2.l1Token` is set in your config file
 
