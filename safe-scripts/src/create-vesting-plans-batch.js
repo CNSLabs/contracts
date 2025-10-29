@@ -214,7 +214,7 @@ function generateVestingPlansBatch() {
     const tokenContract = validateAddress(
       getValue(
         options.tokenContract,
-        null,
+        'SHO_TOKEN_L2_PROXY',
         'l2.proxy',
         config
       ),

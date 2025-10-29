@@ -257,11 +257,6 @@ npm run generate-token-bridge-batch-test   # Generate testnet token bridge batch
 # Vesting plans scripts
 npm run generate-vesting-plans-batch       # Generate mainnet vesting plans batch
 npm run generate-vesting-plans-batch-test  # Generate testnet vesting plans batch
-
-# Legacy scripts (for reference)
-npm run legacy                             # Run original generate-safe-batch.js
-npm start                                  # Run generic batch generator
-npm test                                   # Validate configuration
 ```
 
 ## Error Handling

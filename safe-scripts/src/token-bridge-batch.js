@@ -103,7 +103,7 @@ function generateBridgeBatch() {
     const tokenHolderSafe = validateAddress(
       getValue(
         options.tokenHolder,
-        null,
+        'SHO_DEFAULT_ADMIN',
         `l1.roles.admin`,
         config
       ),
@@ -113,7 +113,7 @@ function generateBridgeBatch() {
     // Get token contract address
     const tokenContractValue = getValue(
       options.tokenContract,
-      null,
+      'SHO_TOKEN_L1',
       'l2.l1Token',
       config
     );
