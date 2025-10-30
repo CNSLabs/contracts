@@ -169,12 +169,12 @@ The script generates a JSON file compatible with Safe's transaction builder inte
         "payable": false
       },
       "contractInputsValues": {
-        "spender": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
+        "spender": "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
         "value": "1000000000000000000000"
       }
     },
     {
-      "to": "0xd19d4B5d358258f05D7B411E21A1460D11B0876F",
+      "to": "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319",
       "value": "0",
       "data": null,
       "contractMethod": {
