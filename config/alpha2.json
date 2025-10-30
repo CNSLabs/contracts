@@ -14,8 +14,8 @@
     "decimals": 18,
     "bridge": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
     "l1Token": "0x41A91956A1de443ef1720bb417eF550a354cAf18",
-    "addr": "",
-    "proxy": "",
+    "addr": "0x2117443e72b0065C4C4fFe8dae2Fa0d2F1e72E2f",
+    "proxy": "0x4Ec6F2a0C8DBB5C27E14324cbe81C7D4B95d0952",
     "roles": {
       "admin": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
       "allowlistAdmin": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
@@ -26,7 +26,7 @@
       "admin": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
       "proposers": ["0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": ""
+      "addr": "0x18934fE5Da7E39acA4B8D23D883DCB147Ff03258"
     }
   },
   "hedgey": {
