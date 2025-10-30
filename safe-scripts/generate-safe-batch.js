@@ -249,7 +249,7 @@ function generateBatch() {
       'Recipient'
     );
     
-    const bridgeContract = options.testnet ? '0x5A0a48389BB0f12E5e017116c1105da97E129142' : '0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319';
+    const bridgeContract = options.testnet ? '0x5A0a48389BB0f12E5e017116c1105da97E129142' : '0xd19d4B5d358258f05D7B411E21A1460D11B0876F';
     
     // Create a deep copy of the template
     const batch = JSON.parse(JSON.stringify(template));
