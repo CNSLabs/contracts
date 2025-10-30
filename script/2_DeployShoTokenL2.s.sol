@@ -59,9 +59,9 @@ import "../src/ShoTokenL2.sol";
  *   - All setup is atomic - single transaction with no intermediate steps
  *   - No private keys required for DEFAULT_ADMIN role (supports multisig)
  *
- * Bridge Addresses:
+ * L2 Bridge Addresses:
  *   Linea Sepolia: 0x93DcAdf238932e6e6a85852caC89cBd71798F463
- *   Linea Mainnet: 0xd19d4B5d358258f05D7B411E21A1460D11B0876F
+ *   Linea Mainnet: 0x353012dc4a9A6cF55c941bADC267f82004A8ceB9
  */
 contract DeployShoTokenL2 is BaseScript {
     // Deployed contracts

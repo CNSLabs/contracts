@@ -38,7 +38,7 @@ Update your configuration files (`config/dev.json`, `config/production.json`) wi
 {
   "env": "production",
   "l2": {
-    "proxy": "0x...", // CNS Token L2 Proxy address
+    "proxy": "0x...", // Token L2 Proxy address
     "timelock": {
       "addr": "0x...", // Timelock Controller address
       "minDelay": 172800

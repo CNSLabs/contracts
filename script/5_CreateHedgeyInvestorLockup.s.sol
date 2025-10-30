@@ -6,32 +6,44 @@ import "./ConfigLoader.sol";
 
 /**
  * @title CreateHedgeyInvestorLockup
- * @notice Calls Hedgey's InvestorLockup contract `createPlan` on Linea networks.
- * @dev Uses a typed interface for `createPlan` and takes parameters from env
- *      variables to avoid raw calldata in configuration.
+ * @notice Creates Hedgey vesting or locking plans using batchVestingPlans or batchLockingPlans on Linea networks.
+ * @dev Uses typed interfaces and takes parameters from config files to avoid raw calldata in configuration.
+ *      Defaults to vesting plans with admin controls, use locking plans only if hedgey.useInvestorLockup=true in config.
  *
  * Usage:
- *   # Default (dev)
- *   forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
+ *   # Default (dev) - Vesting plans
+ *   forge script script/5_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
  *     --rpc-url linea-sepolia \
  *     --broadcast
  *
- *   # Explicit non-default environment via ENV
- *   ENV=production forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
+ *   # Explicit environment
+ *   ENV=production forge script script/5_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
  *     --rpc-url linea \
  *     --broadcast
  *
  * Environment Variables:
  *   - PRIVATE_KEY: Deployer key for broadcasting
- *   - ENV: Select public config JSON
- *   - Optional overrides (only if not set in config):
- *       HEDGEY_INVESTOR_LOCKUP, HEDGEY_BATCH_PLANNER,
- *       HEDGEY_RECIPIENT, HEDGEY_AMOUNT, HEDGEY_START,
- *       HEDGEY_CLIFF, HEDGEY_RATE, HEDGEY_PERIOD,
- *       SHO_TOKEN_L2_PROXY
+ *   - ENV: Select public config JSON (defaults to "dev")
+ *
+ * Configuration:
+ *   All parameters are configured in config/{env}.json files under the "hedgey" section:
+ *   - investorLockup: Hedgey InvestorLockup contract address
+ *   - batchPlanner: Hedgey BatchPlanner contract address
+ *   - tokenVestingPlans: Hedgey TokenVestingPlans contract address
+ *   - period: Vesting period in seconds
+ *   - useInvestorLockup: Set to 1 for locking plans, 0 for vesting plans (default)
+ *   - vestingAdmin: Admin address for vesting plans (required for vesting)
+ *   - adminTransferOBO: Admin transfer on behalf of flag (defaults to 0)
+ *   - plans: Array of plan objects, each containing:
+ *     - recipient: Plan recipient address
+ *     - amount: Token amount to lock/vest
+ *     - start: Vesting start timestamp
+ *     - cliff: Cliff period end timestamp
+ *     - rate: Tokens per second vesting rate
  *
  * Notes:
- *   - Configure the parameters above in your `.env` or export them in shell.
+ *   - Defaults to vesting plans, set useInvestorLockup=1 in config for locking plans.
+ *   - For vesting plans, vestingAdmin is required and adminTransferOBO defaults to 0.
  */
 interface IInvestorLockup {
     function createPlan(
@@ -49,6 +61,35 @@ interface IInvestorLockup {
         external
         view
         returns (address token, uint256 amount, uint256 start, uint256 cliff, uint256 rate, uint256 period);
+}
+
+interface ITokenVestingPlans {
+    function createPlan(
+        address recipient,
+        address token,
+        uint256 amount,
+        uint256 start,
+        uint256 cliff,
+        uint256 rate,
+        uint256 period,
+        address vestingAdmin,
+        bool adminTransferOBO
+    ) external returns (uint256 newPlanId);
+    function balanceOf(address owner) external view returns (uint256);
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    function plans(uint256 planId)
+        external
+        view
+        returns (
+            address token,
+            uint256 amount,
+            uint256 start,
+            uint256 cliff,
+            uint256 rate,
+            uint256 period,
+            address vestingAdmin,
+            bool adminTransferOBO
+        );
 }
 
 interface IERC20Minimal {
@@ -69,14 +110,6 @@ interface ISHOAllowlistAdmin {
     function setSenderAllowed(address account, bool allowed) external;
 }
 
-struct Plan {
-    address recipient;
-    uint256 amount;
-    uint256 start;
-    uint256 cliff;
-    uint256 rate;
-}
-
 interface IHedgeyBatchPlanner {
     function batchLockingPlans(
         address locker,
@@ -86,36 +119,42 @@ interface IHedgeyBatchPlanner {
         uint256 period,
         uint8 mintType
     ) external;
+
+    function batchVestingPlans(
+        address locker,
+        address token,
+        uint256 totalAmount,
+        Plan[] calldata plans,
+        uint256 period,
+        address vestingAdmin,
+        bool adminTransferOBO,
+        uint8 mintType
+    ) external;
 }
 
 contract CreateHedgeyInvestorLockup is BaseScript {
     address public hedgeyInvestorLockup;
     address public hedgeyBatchPlanner;
+    address public hedgeyTokenVestingPlans;
 
     function run() external {
         EnvConfig memory cfg = _loadEnvConfig();
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        // Load and validate target contract addresses (prefer config, fallback env)
+        // Load and validate target contract addresses from config
         hedgeyInvestorLockup = cfg.hedgey.investorLockup;
-        if (hedgeyInvestorLockup == address(0)) {
-            hedgeyInvestorLockup = vm.envAddress("HEDGEY_INVESTOR_LOCKUP");
-        }
-        _requireNonZeroAddress(hedgeyInvestorLockup, "HEDGEY_INVESTOR_LOCKUP");
-        _requireContract(hedgeyInvestorLockup, "HEDGEY_INVESTOR_LOCKUP");
+        _requireNonZeroAddress(hedgeyInvestorLockup, "hedgey.investorLockup");
+        _requireContract(hedgeyInvestorLockup, "hedgey.investorLockup");
+
+        hedgeyTokenVestingPlans = cfg.hedgey.tokenVestingPlans;
+        _requireNonZeroAddress(hedgeyTokenVestingPlans, "hedgey.tokenVestingPlans");
+        _requireContract(hedgeyTokenVestingPlans, "hedgey.tokenVestingPlans");
 
         hedgeyBatchPlanner = cfg.hedgey.batchPlanner;
-        if (hedgeyBatchPlanner == address(0)) {
-            hedgeyBatchPlanner = vm.envAddress("HEDGEY_BATCH_PLANNER");
-        }
-        _requireNonZeroAddress(hedgeyBatchPlanner, "HEDGEY_BATCH_PLANNER");
-        _requireContract(hedgeyBatchPlanner, "HEDGEY_BATCH_PLANNER");
+        _requireNonZeroAddress(hedgeyBatchPlanner, "hedgey.batchPlanner");
+        _requireContract(hedgeyBatchPlanner, "hedgey.batchPlanner");
 
-        // Load parameters (prefer config, fallback env)
-        address recipient = cfg.hedgey.recipient;
-        if (recipient == address(0)) {
-            recipient = vm.envAddress("HEDGEY_RECIPIENT");
-        }
+        // Load token address
         address token = cfg.l2.proxy;
         if (token == address(0)) {
             // fallback: env variable or broadcast inference used in other scripts
@@ -125,32 +164,73 @@ contract CreateHedgeyInvestorLockup is BaseScript {
                 token = _inferL2ProxyFromBroadcast(block.chainid);
             }
         }
-        uint256 amount = cfg.hedgey.amount != 0 ? cfg.hedgey.amount : vm.envUint("HEDGEY_AMOUNT");
-        uint256 start = cfg.hedgey.start != 0 ? cfg.hedgey.start : vm.envUint("HEDGEY_START");
-        uint256 cliff = cfg.hedgey.cliff != 0 ? cfg.hedgey.cliff : vm.envUint("HEDGEY_CLIFF");
-        uint256 rate = cfg.hedgey.rate != 0 ? cfg.hedgey.rate : vm.envUint("HEDGEY_RATE");
-        uint256 period = cfg.hedgey.period != 0 ? cfg.hedgey.period : vm.envUint("HEDGEY_PERIOD");
+        _requireNonZeroAddress(token, "l2.proxy");
 
-        _requireNonZeroAddress(recipient, "HEDGEY_RECIPIENT");
-        _requireNonZeroAddress(token, "SHO_TOKEN_L2_PROXY");
-        require(amount > 0, "HEDGEY_AMOUNT must be > 0");
-        require(period > 0, "HEDGEY_PERIOD must be > 0");
-        require(rate > 0, "HEDGEY_RATE must be > 0");
-        require(start <= cliff, "start must be <= cliff");
+        // Load plans from config
+        Plan[] memory plans = cfg.hedgey.plans;
+        require(plans.length > 0, "hedgey.plans array is empty");
+
+        // Validate all plans
+        for (uint256 i = 0; i < plans.length; i++) {
+            Plan memory plan = plans[i];
+            _requireNonZeroAddress(plan.recipient, "hedgey.plans[].recipient");
+            require(plan.amount > 0, "hedgey.plans[].amount must be > 0");
+            require(plan.rate > 0, "hedgey.plans[].rate must be > 0");
+            require(plan.start <= plan.cliff, "hedgey.plans[].start must be <= cliff");
+        }
+
+        // Calculate total amount
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < plans.length; i++) {
+            totalAmount += plans[i].amount;
+        }
+
+        // Load other parameters
+        uint256 period = cfg.hedgey.period;
+        require(period > 0, "hedgey.period must be > 0");
+
+        // Plan type: defaults to "vesting", use "locking" only if useInvestorLockup=true in config
+        bool useInvestorLockup = cfg.hedgey.useInvestorLockup;
+        string memory planType = useInvestorLockup ? "locking" : "vesting";
+        address vestingAdmin = cfg.hedgey.vestingAdmin;
+        bool adminTransferOBO = cfg.hedgey.adminTransferOBO;
+
+        // Validate vesting parameters if using vesting plans (default)
+        if (!useInvestorLockup) {
+            _requireNonZeroAddress(vestingAdmin, "hedgey.vestingAdmin");
+        }
 
         // Log context
-        _logDeploymentHeader("Calling Hedgey Batch Planner batchlockingplans");
+        string memory header = !useInvestorLockup
+            ? "Calling Hedgey Batch Planner batchVestingPlans"
+            : "Calling Hedgey Batch Planner batchLockingPlans";
+        _logDeploymentHeader(header);
+        console.log("Plan Type:", planType);
+        console.log("Use Investor Lockup:", useInvestorLockup);
         console.log("InvestorLockup:", hedgeyInvestorLockup);
         console.log("Batch Planner:", hedgeyBatchPlanner);
         console.log("Deployer:", deployer);
-        console.log("Recipient:", recipient);
         console.log("Token:", token);
-        console.log("Amount:", amount);
-        console.log("Start:", start);
-        console.log("Cliff:", cliff);
-        console.log("Rate:", rate);
+        console.log("Number of Plans:", plans.length);
+        console.log("Total Amount:", totalAmount);
         console.log("Period:", period);
-        console.log("Approve Amount:", amount);
+        console.log("Approve Amount:", totalAmount);
+        if (!useInvestorLockup) {
+            console.log("Vesting Admin:", vestingAdmin);
+            console.log("Admin Transfer OBO:", adminTransferOBO);
+        }
+
+        // Log individual plans
+        console.log("\nPlans:");
+        for (uint256 i = 0; i < plans.length; i++) {
+            Plan memory plan = plans[i];
+            console.log("  Plan %s:", i + 1);
+            console.log("    Recipient: %s", plan.recipient);
+            console.log("    Amount: %s", plan.amount);
+            console.log("    Start: %s", plan.start);
+            console.log("    Cliff: %s", plan.cliff);
+            console.log("    Rate: %s", plan.rate);
+        }
 
         // Safety for mainnet
         _requireMainnetConfirmation();
@@ -187,75 +267,133 @@ contract CreateHedgeyInvestorLockup is BaseScript {
         }
 
         // Approve token allowance to Hedgey Batch Planner if requested
-        if (amount > 0) {
-            bool approved = IERC20Minimal(token).approve(hedgeyBatchPlanner, amount);
+        if (totalAmount > 0) {
+            bool approved = IERC20Minimal(token).approve(hedgeyBatchPlanner, totalAmount);
             require(approved, "ERC20 approve failed");
         }
-        // Prepare Plan struct for batchLockingPlans (single plan)
-        Plan[] memory plans = new Plan[](1);
-        plans[0] = Plan({recipient: recipient, amount: amount, start: start, cliff: cliff, rate: rate});
 
-        // Capture detailed revert reasons from batchLockingPlans
-        try IHedgeyBatchPlanner(hedgeyBatchPlanner)
-            .batchLockingPlans(hedgeyInvestorLockup, token, amount, plans, period, 0) {
-            console.log("batchLockingPlans succeeded");
-        } catch Error(string memory reason) {
-            console.log("batchLockingPlans Error(string):", reason);
-            revert(string(abi.encodePacked("batchLockingPlans failed: ", reason)));
-        } catch (bytes memory lowLevelData) {
-            console.log("batchLockingPlans low-level revert data:");
-            console.logBytes(lowLevelData);
-            revert("batchLockingPlans failed (low-level)");
+        // Execute the appropriate batch function based on plan type
+        if (!useInvestorLockup) {
+            // Capture detailed revert reasons from batchVestingPlans
+            try IHedgeyBatchPlanner(hedgeyBatchPlanner)
+                .batchVestingPlans(
+                    hedgeyTokenVestingPlans, token, totalAmount, plans, period, vestingAdmin, adminTransferOBO, 0
+                ) {
+                console.log("batchVestingPlans succeeded");
+            } catch Error(string memory reason) {
+                console.log("batchVestingPlans Error(string):", reason);
+                revert(string(abi.encodePacked("batchVestingPlans failed: ", reason)));
+            } catch (bytes memory lowLevelData) {
+                console.log("batchVestingPlans low-level revert data:");
+                console.logBytes(lowLevelData);
+                revert("batchVestingPlans failed (low-level)");
+            }
+        } else {
+            // Capture detailed revert reasons from batchLockingPlans
+            try IHedgeyBatchPlanner(hedgeyBatchPlanner)
+                .batchLockingPlans(hedgeyInvestorLockup, token, totalAmount, plans, period, 0) {
+                console.log("batchLockingPlans succeeded");
+            } catch Error(string memory reason) {
+                console.log("batchLockingPlans Error(string):", reason);
+                revert(string(abi.encodePacked("batchLockingPlans failed: ", reason)));
+            } catch (bytes memory lowLevelData) {
+                console.log("batchLockingPlans low-level revert data:");
+                console.logBytes(lowLevelData);
+                revert("batchLockingPlans failed (low-level)");
+            }
         }
         vm.stopBroadcast();
 
         // Summary
-        console.log("\n=== Hedgey batchLockingPlans submitted ===");
+        string memory summaryHeader = !useInvestorLockup
+            ? "=== Hedgey batchVestingPlans submitted ==="
+            : "=== Hedgey batchLockingPlans submitted ===";
+        console.log(summaryHeader);
         console.log("Network:", _getNetworkName(block.chainid));
+        console.log("Plan Type:", planType);
+        console.log("Use Investor Lockup:", useInvestorLockup);
         console.log("InvestorLockup:", hedgeyInvestorLockup);
         console.log("Batch Planner:", hedgeyBatchPlanner);
-        console.log("Locker (InvestorLockup):", hedgeyInvestorLockup);
-        console.log("Recipient:", recipient);
-        console.log("Amount:", amount);
+        console.log("Number of Plans:", plans.length);
+        console.log("Total Amount:", totalAmount);
+        if (!useInvestorLockup) {
+            console.log("Vesting Admin:", vestingAdmin);
+            console.log("Admin Transfer OBO:", adminTransferOBO);
+        }
 
-        // Post-call verification (skip plan ID verification since function doesn't return it)
-        _verifyPlanCreated(recipient, token, amount, start, cliff, rate, period);
+        // Post-call verification (works for both locking and vesting plans)
+        _verifyPlansCreated(plans, token, period, useInvestorLockup, vestingAdmin, adminTransferOBO);
     }
 
-    function _verifyPlanCreated(
-        address recipient,
+    function _verifyPlansCreated(
+        Plan[] memory plans,
         address token,
-        uint256 amount,
-        uint256 start,
-        uint256 cliff,
-        uint256 rate,
-        uint256 period
+        uint256 period,
+        bool useInvestorLockup,
+        address vestingAdmin,
+        bool adminTransferOBO
     ) internal view {
-        console.log("\n=== Verifying Plan Created ===");
+        console.log("\n=== Verifying Plans Created ===");
 
-        uint256 count = IInvestorLockup(hedgeyInvestorLockup).balanceOf(recipient);
-        require(count > 0, "No plans found for recipient");
-        console.log("[OK] Recipient has", count, "plan(s)");
+        // Use the correct contract based on plan type
+        address targetContract = useInvestorLockup ? hedgeyInvestorLockup : hedgeyTokenVestingPlans;
+        string memory planType = useInvestorLockup ? "locking" : "vesting";
+        console.log("Verifying", planType, "plans in contract:", targetContract);
 
-        // Get the most recent plan (last one created)
-        uint256 latestPlanId = IInvestorLockup(hedgeyInvestorLockup).tokenOfOwnerByIndex(recipient, count - 1);
-        console.log("[OK] Latest plan ID:", latestPlanId);
+        // Verify each plan
+        for (uint256 i = 0; i < plans.length; i++) {
+            Plan memory plan = plans[i];
+            console.log("Verifying plan %s for recipient: %s", i + 1, plan.recipient);
 
-        (
-            address plansToken,
-            uint256 plansAmount,
-            uint256 plansStart,
-            uint256 plansCliff,
-            uint256 plansRate,
-            uint256 plansPeriod
-        ) = IInvestorLockup(hedgeyInvestorLockup).plans(latestPlanId);
+            uint256 count = IInvestorLockup(targetContract).balanceOf(plan.recipient);
+            require(count > 0, "No plans found for recipient");
+            console.log("[OK] Recipient has %s %s plan(s)", count, planType);
 
-        require(plansToken == token, "plans.token mismatch");
-        require(plansAmount == amount, "plans.amount mismatch");
-        require(plansStart == start, "plans.start mismatch");
-        require(plansCliff == cliff, "plans.cliff mismatch");
-        require(plansRate == rate, "plans.rate mismatch");
-        require(plansPeriod == period, "plans.period mismatch");
-        console.log("[OK] Latest plan matches inputs");
+            // Get the most recent plan (last one created)
+            uint256 latestPlanId = IInvestorLockup(targetContract).tokenOfOwnerByIndex(plan.recipient, count - 1);
+            console.log("[OK] Latest plan ID: %s", latestPlanId);
+
+            if (useInvestorLockup) {
+                // For locking plans, use the simpler interface
+                (
+                    address plansToken,
+                    uint256 plansAmount,
+                    uint256 plansStart,
+                    uint256 plansCliff,
+                    uint256 plansRate,
+                    uint256 plansPeriod
+                ) = IInvestorLockup(targetContract).plans(latestPlanId);
+
+                require(plansToken == token, "plans.token mismatch");
+                require(plansAmount == plan.amount, "plans.amount mismatch");
+                require(plansStart == plan.start, "plans.start mismatch");
+                require(plansCliff == plan.cliff, "plans.cliff mismatch");
+                require(plansRate == plan.rate, "plans.rate mismatch");
+                require(plansPeriod == period, "plans.period mismatch");
+            } else {
+                // For vesting plans, use the extended interface
+                (
+                    address plansToken,
+                    uint256 plansAmount,
+                    uint256 plansStart,
+                    uint256 plansCliff,
+                    uint256 plansRate,
+                    uint256 plansPeriod,
+                    address plansVestingAdmin,
+                    bool plansAdminTransferOBO
+                ) = ITokenVestingPlans(targetContract).plans(latestPlanId);
+
+                require(plansToken == token, "plans.token mismatch");
+                require(plansAmount == plan.amount, "plans.amount mismatch");
+                require(plansStart == plan.start, "plans.start mismatch");
+                require(plansCliff == plan.cliff, "plans.cliff mismatch");
+                require(plansRate == plan.rate, "plans.rate mismatch");
+                require(plansPeriod == period, "plans.period mismatch");
+                require(plansVestingAdmin == vestingAdmin, "plans.vestingAdmin mismatch");
+                require(plansAdminTransferOBO == adminTransferOBO, "plans.adminTransferOBO mismatch");
+            }
+            console.log("[OK] Plan %s matches inputs", i + 1);
+        }
+        console.log("[OK] All %s %s plans verified successfully", plans.length, planType);
     }
 }
