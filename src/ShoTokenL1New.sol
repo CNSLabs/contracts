@@ -6,10 +6,12 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {
+    ERC20PermitUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 
 /// @title ShoTokenL1 – Canonical L1 Token with Allowlist-Controlled Transfers
-/// @notice Only allowlisted addresses can transfer. 
+/// @notice Only allowlisted addresses can transfer.
 contract ShoTokenL1 is
     Initializable,
     ERC20Upgradeable,
@@ -19,8 +21,8 @@ contract ShoTokenL1 is
     UUPSUpgradeable
 {
     // ────────────────────────────────────────────────────────────── Roles
-    bytes32 public constant UPGRADER_ROLE        = keccak256("UPGRADER_ROLE");
-    bytes32 public constant PAUSER_ROLE          = keccak256("PAUSER_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant ALLOWLIST_ADMIN_ROLE = keccak256("ALLOWLIST_ADMIN_ROLE");
 
     // ─────────────────────────────────────────────────────── Constants
@@ -45,15 +47,12 @@ contract ShoTokenL1 is
     event SenderAllowlistUpdated(address indexed account, bool allowed);
     event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
     event SenderAllowlistEnabledUpdated(bool enabled);
-    event Initialized(
-        address indexed admin,
-        address indexed initialRecipient,
-        string name,
-        string symbol
-    );
+    event Initialized(address indexed admin, address indexed initialRecipient, string name, string symbol);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() { _disableInitializers(); }
+    constructor() {
+        _disableInitializers();
+    }
 
     /* ============================================================= */
     /* ========================= INITIALIZER ======================= */
@@ -80,9 +79,9 @@ contract ShoTokenL1 is
         string memory symbol_,
         address[] calldata initialAllowlist_
     ) external initializer {
-        if (defaultAdmin_   == address(0)) revert InvalidDefaultAdmin();
-        if (upgrader_       == address(0)) revert InvalidUpgrader();
-        if (pauser_         == address(0)) revert InvalidPauser();
+        if (defaultAdmin_ == address(0)) revert InvalidDefaultAdmin();
+        if (upgrader_ == address(0)) revert InvalidUpgrader();
+        if (pauser_ == address(0)) revert InvalidPauser();
         if (allowlistAdmin_ == address(0)) revert InvalidAllowlistAdmin();
         if (initialRecipient == address(0)) revert ZeroAddress();
 
@@ -94,13 +93,13 @@ contract ShoTokenL1 is
 
         // Grant roles
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
-        _grantRole(UPGRADER_ROLE,       upgrader_);
-        _grantRole(PAUSER_ROLE,         pauser_);
-        _grantRole(ALLOWLIST_ADMIN_ROLE,allowlistAdmin_);
+        _grantRole(UPGRADER_ROLE, upgrader_);
+        _grantRole(PAUSER_ROLE, pauser_);
+        _grantRole(ALLOWLIST_ADMIN_ROLE, allowlistAdmin_);
 
         // Backup roles for admin
-        _grantRole(PAUSER_ROLE,         defaultAdmin_);
-        _grantRole(ALLOWLIST_ADMIN_ROLE,defaultAdmin_);
+        _grantRole(PAUSER_ROLE, defaultAdmin_);
+        _grantRole(ALLOWLIST_ADMIN_ROLE, defaultAdmin_);
 
         // Mint full supply
         _mint(initialRecipient, INITIAL_SUPPLY);
@@ -109,8 +108,8 @@ contract ShoTokenL1 is
         _senderAllowlistEnabled = true;
 
         // Default allowlisted actors
-        _setSenderAllowlist(address(this), true);     // contract itself
-        _setSenderAllowlist(defaultAdmin_, true);     // admin
+        _setSenderAllowlist(address(this), true); // contract itself
+        _setSenderAllowlist(defaultAdmin_, true); // admin
 
         // Optional: pre-allowlist others
         if (initialAllowlist_.length > 0) {
@@ -136,32 +135,28 @@ contract ShoTokenL1 is
     /* =========================== PAUSE =========================== */
     /* ============================================================= */
 
-    function pause()   external onlyRole(PAUSER_ROLE) { _pause(); }
-    function unpause() external onlyRole(PAUSER_ROLE) { _unpause(); }
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
 
     /* ============================================================= */
     /* ====================== ALLOWLIST ADMIN ===================== */
     /* ============================================================= */
 
-    function setSenderAllowed(address account, bool allowed)
-        external
-        onlyRole(ALLOWLIST_ADMIN_ROLE)
-    {
+    function setSenderAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
         if (account == address(0)) revert ZeroAddress();
         _setSenderAllowlist(account, allowed);
     }
 
-    function setSenderAllowedBatch(address[] calldata accounts, bool allowed)
-        external
-        onlyRole(ALLOWLIST_ADMIN_ROLE)
-    {
+    function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
         _setBatchSenderAllowlist(accounts, allowed);
     }
 
-    function setSenderAllowlistEnabled(bool enabled)
-        external
-        onlyRole(ALLOWLIST_ADMIN_ROLE)
-    {
+    function setSenderAllowlistEnabled(bool enabled) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
         _senderAllowlistEnabled = enabled;
         emit SenderAllowlistEnabledUpdated(enabled);
     }
@@ -171,11 +166,7 @@ contract ShoTokenL1 is
     /* ============================================================= */
 
     /// @dev Only allowlisted senders can transfer (to anyone)
-    function _update(address from, address to, uint256 value)
-        internal
-        override(ERC20Upgradeable)
-        whenNotPaused
-    {
+    function _update(address from, address to, uint256 value) internal override(ERC20Upgradeable) whenNotPaused {
         if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
             if (!_senderAllowlisted[from]) {
                 revert SenderNotAllowlisted();
@@ -188,11 +179,7 @@ contract ShoTokenL1 is
     /* ======================== UPGRADE AUTH ====================== */
     /* ============================================================= */
 
-    function _authorizeUpgrade(address)
-        internal
-        override
-        onlyRole(UPGRADER_ROLE)
-    {}
+    function _authorizeUpgrade(address) internal override onlyRole(UPGRADER_ROLE) {}
 
     /* ============================================================= */
     /* ====================== INTERNAL HELPERS ==================== */
