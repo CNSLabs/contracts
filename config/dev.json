@@ -1,59 +1,22 @@
 {
   "env": "dev",
   "l1": {
-    "name": "Shodai Token",
-    "symbol": "SHO",
+    "name": "FOO TOKEN",
+    "symbol": "FOO",
     "initialSupply": 1000000000000000000000000000,
+    "proxy": "0x0000000000000000000000000000000000000000",
+    "implementation": "0x0000000000000000000000000000000000000000",
     "roles": {
-      "admin": "0xa645207e14c6077d0e78788a6a52Def4c0c88288"
-    }
-  },
-  "l2": {
-    "name": "Shodai Token",
-    "symbol": "SHO",
-    "decimals": 18,
-    "bridge": "0x93DcAdf238932e6e6a85852caC89cBd71798F463",
-    "l1Token": "",
-    "proxy": "",
-    "roles": {
-      "admin": "0x42f04534d384673a884227b8a347598916003270",
-      "allowlistAdmin": "0x42f04534d384673a884227b8a347598916003270",
-      "pauser": "0x42f04534d384673a884227b8a347598916003270"
+      "admin": "0xa645207e14c6077d0e78788a6a52Def4c0c88288",
+      "pauser": "0xa645207e14c6077d0e78788a6a52Def4c0c88288",
+      "allowlistAdmin": "0xa645207e14c6077d0e78788a6a52Def4c0c88288"
     },
     "timelock": {
       "minDelay": 300,
-      "admin": "0x42f04534d384673a884227b8a347598916003270",
-      "proposers": ["0x42f04534d384673a884227b8a347598916003270"],
+      "admin": "0xa645207e14c6077d0e78788a6a52Def4c0c88288",
+      "proposers": ["0xa645207e14c6077d0e78788a6a52Def4c0c88288"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": ""
+      "addr": "0xf61Ad78Aca16c9013A93813C787f70F855723FA3"
     }
   }
-  ,
-  "hedgey": {
-    "investorLockup": "0xaA8d13b9c2A9368aa108dde629237EF719eEC14e",
-    "batchPlanner": "0x642581ed679E77e0D9AebFdBCA2a0B4ab194532c",
-    "tokenVestingPlans": "0xa32705Ce46A33407DC93663dAcE4a3d0408A6C42",
-    "vestingAdmin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
-    "adminTransferOBO": 0,
-    "useInvestorLockup": 0,
-    "period": 1,
-    "plans": [
-      {
-        "recipient": "0x057ef20Ed09fc34Da5af791376F4447ba0B8cDE6",
-        "amount": 10000000000000000000,
-        "start": 1759752000,
-        "cliff": 1759838400,
-        "rate": 23148148148148
-      },
-      {
-        "recipient": "0x1234567890123456789012345678901234567890",
-        "amount": 20000000000000000000,
-        "start": 1759752000,
-        "cliff": 1759838400,
-        "rate": 46296296296296
-      }
-    ]
-  }
 }
-
-

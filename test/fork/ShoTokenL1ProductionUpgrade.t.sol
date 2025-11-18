@@ -1,33 +1,31 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "./ProductionForkTest.sol";
-import "../../src/ShoTokenL2V2.sol";
+import "../../src/ShoTokenL1V2.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /**
- * @title ShoTokenL2ProductionUpgradeTest
- * @notice Comprehensive test suite for upgrading ShoTokenL2 on production-like forked state
+ * @title ShoTokenL1ProductionUpgradeTest
+ * @notice Comprehensive test suite for upgrading ShoTokenL1 on production-like forked state
  * @dev Tests the complete upgrade flow: schedule -> wait -> execute -> verify
  */
-contract ShoTokenL2ProductionUpgradeTest is ProductionForkTest {
-    ShoTokenL2V2 internal newImplementation;
+contract ShoTokenL1ProductionUpgradeTest is ProductionForkTest {
+    ShoTokenL1V2 internal newImplementation;
     address internal proxyAdmin;
 
     // Test state tracking
     uint256 internal preUpgradeBalance;
     uint256 internal preUpgradeTotalSupply;
-    address internal preUpgradeBridge;
-    address internal preUpgradeL1Token;
     bool internal preUpgradePaused;
 
     function setUp() public override {
         super.setUp();
 
-        // Deploy new implementation
-        newImplementation = new ShoTokenL2V2();
+        // Deploy new implementation (V2)
+        newImplementation = new ShoTokenL1V2();
 
         // Find proxy admin (this would need to be configured or inferred)
         proxyAdmin = _findProxyAdmin();
@@ -69,13 +67,11 @@ contract ShoTokenL2ProductionUpgradeTest is ProductionForkTest {
      * @notice Capture state before upgrade
      */
     function _capturePreUpgradeState() internal {
-        ShoTokenL2 token = ShoTokenL2(shoTokenL2Proxy);
+        ShoTokenL1 token = ShoTokenL1(shoTokenL1Proxy);
 
         // Capture critical state
         preUpgradeBalance = token.balanceOf(address(this));
         preUpgradeTotalSupply = token.totalSupply();
-        preUpgradeBridge = token.bridge();
-        preUpgradeL1Token = token.l1Token();
         preUpgradePaused = token.paused();
 
         console.log("Pre-upgrade state captured");
@@ -85,13 +81,11 @@ contract ShoTokenL2ProductionUpgradeTest is ProductionForkTest {
      * @notice Verify that all state was preserved after upgrade
      */
     function _verifyStatePreservation() internal view {
-        ShoTokenL2 token = ShoTokenL2(shoTokenL2Proxy);
+        ShoTokenL1 token = ShoTokenL1(shoTokenL1Proxy);
 
         // Verify critical state preservation
         assertEq(token.balanceOf(address(this)), preUpgradeBalance, "Balance not preserved");
         assertEq(token.totalSupply(), preUpgradeTotalSupply, "Total supply not preserved");
-        assertEq(token.bridge(), preUpgradeBridge, "Bridge not preserved");
-        assertEq(token.l1Token(), preUpgradeL1Token, "L1 token not preserved");
         assertEq(token.paused(), preUpgradePaused, "Paused state not preserved");
 
         // Verify roles are preserved
@@ -103,22 +97,22 @@ contract ShoTokenL2ProductionUpgradeTest is ProductionForkTest {
     /**
      * @notice Test new functionality after upgrade
      */
-    function _testNewFunctionality() internal {
-        ShoTokenL2V2 upgradedToken = ShoTokenL2V2(shoTokenL2Proxy);
+    function _testNewFunctionality() internal view {
+        ShoTokenL1V2 upgradedToken = ShoTokenL1V2(shoTokenL1Proxy);
 
-        // Test that voting functionality is available
-        assertTrue(upgradedToken.supportsInterface(type(IERC165).interfaceId), "Should support ERC165");
+        // Test that the new V2 function is available
+        (string memory foo, uint256 bar, bool baz) = upgradedToken.getFooData();
 
-        // Test delegation functionality (new in V2)
-        address testUser = makeAddr("testUser");
-        vm.prank(testUser);
-        upgradedToken.delegate(testUser); // Should not revert
-
-        // Test voting power tracking
-        uint256 votingPower = upgradedToken.getVotes(testUser);
-        assertTrue(votingPower >= 0, "Voting power should be tracked");
+        // Verify the returned values
+        assertEq(foo, "foo", "Foo value should be 'foo'");
+        assertEq(bar, 42, "Bar value should be 42");
+        assertTrue(baz, "Baz value should be true");
 
         console.log("New functionality tested successfully");
+        console.log("  getFooData() returned:");
+        console.log("    foo:", foo);
+        console.log("    bar:", bar);
+        console.log("    baz:", baz);
     }
 
     /**
@@ -127,6 +121,6 @@ contract ShoTokenL2ProductionUpgradeTest is ProductionForkTest {
      */
     function _findProxyAdmin() internal view returns (address admin) {
         // Use the admin role from config, same as in the script
-        return config.l2.roles.admin;
+        return config.l1.roles.admin;
     }
 }

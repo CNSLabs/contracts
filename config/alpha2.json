@@ -4,42 +4,19 @@
     "name": "Foo Token",
     "symbol": "FOO",
     "initialSupply": 1000000000000000000000000000,
+    "proxy": "0x0000000000000000000000000000000000000000",
+    "implementation": "0x0000000000000000000000000000000000000000",
     "roles": {
-      "admin": "0x8A40D38FAF4b0dCF1c749C7A71cb9b1e74eF0f84"
-    }
-  },
-  "l2": {
-    "name": "Foo Token",
-    "symbol": "FOO",
-    "decimals": 18,
-    "bridge": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
-    "l1Token": "0x20C556eBf3148e81716988c0c25d2B76Fbca14Ee",
-    "addr": "0x1059E8b3dAab8F2C9d25077F519ea4DF6B557469",
-    "proxy": "0xf61Ad78Aca16c9013A93813C787f70F855723FA3",
-    "roles": {
-      "admin": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
-      "allowlistAdmin": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
-      "pauser": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683"
+      "admin": "0x8A40D38FAF4b0dCF1c749C7A71cb9b1e74eF0f84",
+      "pauser": "0x8A40D38FAF4b0dCF1c749C7A71cb9b1e74eF0f84",
+      "allowlistAdmin": "0x8A40D38FAF4b0dCF1c749C7A71cb9b1e74eF0f84"
     },
     "timelock": {
-      "minDelay": 300,
-      "admin": "0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683",
-      "proposers": ["0x54CFA52153DBeC31c1f0E2E42b4Da91A7d291683"],
+      "minDelay": 3600,
+      "admin": "0x8A40D38FAF4b0dCF1c749C7A71cb9b1e74eF0f84",
+      "proposers": ["0x8A40D38FAF4b0dCF1c749C7A71cb9b1e74eF0f84"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": "0xcC576087DAE6093c625AfD8f449254e42Aa787f1"
+      "addr": ""
     }
-  },
-  "hedgey": {
-    "investorLockup": "0xA600EC7Db69DFCD21f19face5B209a55EAb7a7C0",
-    "batchPlanner": "0x3466EB008EDD8d5052446293D1a7D212cb65C646",
-    "tokenVestingPlans": "0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C",
-    "recipient": "0x0000000000000000000000000000000000000000",
-    "amount": 0,
-    "start": 0,
-    "cliff": 0,
-    "rate": 0,
-    "period": 0
   }
 }
-
-

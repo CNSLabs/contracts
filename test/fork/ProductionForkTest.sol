@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity 0.8.30;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {ConfigLoader, EnvConfig} from "../../script/ConfigLoader.sol";
 import {BaseScript} from "../../script/BaseScript.sol";
-import {ShoTokenL2} from "../../src/ShoTokenL2.sol";
+import {ShoTokenL1} from "../../src/ShoTokenL1.sol";
 
 /**
  * @title ProductionForkTest
@@ -18,7 +18,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
     EnvConfig config = _loadEnvConfig();
 
     // Contract addresses from production
-    address internal shoTokenL2Proxy;
+    address internal shoTokenL1Proxy;
     address internal timelockController;
     address internal safeMultisig;
 
@@ -73,6 +73,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
         vm.roll(block.number + 1);
 
         emit TimelockBypassed(delay);
+        console.log("Timelock bypassed successfully");
     }
 
     /**
@@ -126,12 +127,12 @@ abstract contract ProductionForkTest is Test, BaseScript {
             abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, initData);
 
         // Generate a proper salt (like the working script)
-        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL2V2", newImplementation));
+        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL1V2", newImplementation));
 
         // Encode the timelock schedule call
         bytes memory scheduleCalldata = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
-            shoTokenL2Proxy, // Call the proxy directly, not the proxy admin
+            shoTokenL1Proxy, // Call the proxy directly, not the proxy admin
             0, // value
             upgradeCalldata,
             bytes32(0), // predecessor
@@ -167,12 +168,12 @@ abstract contract ProductionForkTest is Test, BaseScript {
             abi.encodeWithSignature("upgradeToAndCall(address,bytes)", newImplementation, initData);
 
         // Generate the same salt used in scheduling (like the working script)
-        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL2V2", newImplementation));
+        bytes32 salt = keccak256(abi.encodePacked("ShoTokenL1V2", newImplementation));
 
         // Encode the timelock execute call
         bytes memory executeCalldata = abi.encodeWithSignature(
             "execute(address,uint256,bytes,bytes32,bytes32)",
-            shoTokenL2Proxy, // Call the proxy directly, not the proxy admin
+            shoTokenL1Proxy, // Call the proxy directly, not the proxy admin
             0, // value
             upgradeCalldata,
             bytes32(0), // predecessor
@@ -202,17 +203,17 @@ abstract contract ProductionForkTest is Test, BaseScript {
      * @notice Verify that the fork state matches production expectations
      */
     function _verifyForkState() internal view {
-        require(shoTokenL2Proxy != address(0), "Sho Token L2 proxy not found");
+        require(shoTokenL1Proxy != address(0), "Sho Token L1 proxy not found");
         require(timelockController != address(0), "Timelock controller not found");
         require(safeMultisig != address(0), "Safe multisig not found");
 
         // Verify contracts exist
-        require(shoTokenL2Proxy.code.length > 0, "Sho Token L2 proxy has no code");
+        require(shoTokenL1Proxy.code.length > 0, "Sho Token L1 proxy has no code");
         require(timelockController.code.length > 0, "Timelock controller has no code");
         require(safeMultisig.code.length > 0, "Safe multisig has no code");
 
         console.log("Fork state verified successfully");
-        console.log("Sho Token L2 Proxy:", shoTokenL2Proxy);
+        console.log("Sho Token L1 Proxy:", shoTokenL1Proxy);
         console.log("Timelock Controller:", timelockController);
         console.log("Safe Multisig:", safeMultisig);
     }
@@ -223,11 +224,11 @@ abstract contract ProductionForkTest is Test, BaseScript {
     function _loadProductionAddresses() internal {
         console.log("Loading addresses from config for env:", config.env);
 
-        shoTokenL2Proxy = config.l2.proxy;
-        timelockController = config.l2.timelock.addr;
-        safeMultisig = config.l2.roles.admin; // Assuming admin is the Safe
+        shoTokenL1Proxy = config.l1.proxy;
+        timelockController = config.l1.timelock.addr;
+        safeMultisig = config.l1.roles.admin; // Assuming admin is the Safe
 
-        console.log("Sho Token L2 Proxy:", shoTokenL2Proxy);
+        console.log("Sho Token L1 Proxy:", shoTokenL1Proxy);
         console.log("Timelock Controller:", timelockController);
         console.log("Safe Multisig:", safeMultisig);
     }
@@ -238,10 +239,10 @@ abstract contract ProductionForkTest is Test, BaseScript {
      */
     function _getForkUrl() internal view returns (string memory url) {
         if (keccak256(bytes(config.env)) == keccak256(bytes("production"))) {
-            url = vm.envOr("LINEA_MAINNET_RPC_URL", string(""));
+            url = vm.envOr("ETH_MAINNET_RPC_URL", string(""));
             console.log("Using production RPC URL:", url);
         } else {
-            url = vm.envOr("LINEA_SEPOLIA_RPC_URL", string(""));
+            url = vm.envOr("ETH_SEPOLIA_RPC_URL", string(""));
             console.log("Using dev RPC URL:", url);
         }
 
@@ -270,7 +271,7 @@ abstract contract ProductionForkTest is Test, BaseScript {
     function _verifyUpgrade(address newImplementation) internal view {
         // Get the current implementation from storage (like the working script)
         bytes32 implementationSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
-        address currentImpl = address(uint160(uint256(vm.load(shoTokenL2Proxy, implementationSlot))));
+        address currentImpl = address(uint160(uint256(vm.load(shoTokenL1Proxy, implementationSlot))));
 
         require(currentImpl == newImplementation, "Upgrade verification failed");
         console.log("Upgrade verified successfully");
