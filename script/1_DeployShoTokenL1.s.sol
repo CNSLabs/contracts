@@ -127,7 +127,16 @@ contract DeployShoTokenL1 is BaseScript {
         console.log("   Implementation:", address(implementation));
 
         // 2. Prepare initialization data
-        address[] memory emptyAllowlist = new address[](0);
+        // If initialRecipient is different from defaultAdmin, add them to allowlist
+        address[] memory initialAllowlist;
+        if (initialRecipient != defaultAdmin) {
+            initialAllowlist = new address[](1);
+            initialAllowlist[0] = initialRecipient;
+            console.log("   Note: initialRecipient differs from defaultAdmin, adding to allowlist");
+        } else {
+            initialAllowlist = new address[](0);
+        }
+
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
             defaultAdmin,
@@ -137,7 +146,7 @@ contract DeployShoTokenL1 is BaseScript {
             initialRecipient,
             tokenName,
             tokenSymbol,
-            emptyAllowlist
+            initialAllowlist
         );
 
         // 3. Deploy proxy with initialization
