@@ -8,7 +8,15 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 
 contract ShoTokenL1Test is Test {
     ShoTokenL1 public token;
-    address public owner = address(0x123);
+    
+    // Different addresses for each role
+    address public defaultAdmin = address(0x111);
+    address public upgrader = address(0x222);
+    address public pauser = address(0x333);
+    address public allowlistAdmin = address(0x444);
+    address public initialRecipient = address(0x555);
+    
+    // Test users
     address public user1 = address(0x456);
     address public user2 = address(0x789);
 
@@ -18,15 +26,15 @@ contract ShoTokenL1Test is Test {
         // Deploy implementation
         ShoTokenL1 implementation = new ShoTokenL1();
 
-        // Prepare initialization data
+        // Prepare initialization data with different addresses for each role
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            owner, // defaultAdmin
-            owner, // upgrader (for tests, use owner directly)
-            owner, // pauser
-            owner, // allowlistAdmin
-            owner, // initialRecipient
+            defaultAdmin,    // defaultAdmin
+            upgrader,       // upgrader
+            pauser,         // pauser
+            allowlistAdmin, // allowlistAdmin
+            initialRecipient, // initialRecipient
             "Canonical SHO Token",
             "SHO",
             emptyAllowlist
@@ -38,7 +46,7 @@ contract ShoTokenL1Test is Test {
     }
 
     function testInitialSupply() public view {
-        assertEq(token.balanceOf(owner), INITIAL_SUPPLY);
+        assertEq(token.balanceOf(initialRecipient), INITIAL_SUPPLY);
         assertEq(token.totalSupply(), INITIAL_SUPPLY);
     }
 
@@ -53,10 +61,10 @@ contract ShoTokenL1Test is Test {
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            owner,
-            owner,
-            owner,
-            owner,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
             address(0), // zero recipient should revert
             "Test Token",
             "TEST",
@@ -71,24 +79,28 @@ contract ShoTokenL1Test is Test {
     function testTransfer() public {
         uint256 transferAmount = 1000 * 10 ** 18;
 
-        vm.prank(owner);
+        // Allowlist initialRecipient so they can transfer
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(initialRecipient, true);
+
+        vm.prank(initialRecipient);
         bool success = token.transfer(user1, transferAmount);
 
         assertTrue(success);
-        assertEq(token.balanceOf(owner), INITIAL_SUPPLY - transferAmount);
+        assertEq(token.balanceOf(initialRecipient), INITIAL_SUPPLY - transferAmount);
         assertEq(token.balanceOf(user1), transferAmount);
     }
 
     function testTransferInsufficientBalance() public {
         uint256 transferAmount = INITIAL_SUPPLY + 1;
 
-        vm.prank(owner);
+        vm.prank(initialRecipient);
         vm.expectRevert();
         token.transfer(user1, transferAmount);
     }
 
     function testTransferToZeroAddress() public {
-        vm.prank(owner);
+        vm.prank(initialRecipient);
         vm.expectRevert();
         token.transfer(address(0), 1000);
     }
@@ -96,42 +108,44 @@ contract ShoTokenL1Test is Test {
     function testApprove() public {
         uint256 approveAmount = 1000 * 10 ** 18;
 
-        vm.prank(owner);
+        vm.prank(initialRecipient);
         bool success = token.approve(user1, approveAmount);
 
         assertTrue(success);
-        assertEq(token.allowance(owner, user1), approveAmount);
+        assertEq(token.allowance(initialRecipient, user1), approveAmount);
     }
 
     function testTransferFrom() public {
         uint256 approveAmount = 1000 * 10 ** 18;
 
-        // Allowlist user1 so they can transfer
-        vm.prank(owner);
+        // Allowlist both initialRecipient and user1 so they can transfer
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(initialRecipient, true);
+        vm.prank(allowlistAdmin);
         token.setSenderAllowed(user1, true);
 
-        // Owner approves user1 to spend tokens
-        vm.prank(owner);
+        // Initial recipient approves user1 to spend tokens
+        vm.prank(initialRecipient);
         token.approve(user1, approveAmount);
 
-        // User1 transfers from owner to user2
+        // User1 transfers from initialRecipient to user2
         vm.prank(user1);
-        bool success = token.transferFrom(owner, user2, approveAmount);
+        bool success = token.transferFrom(initialRecipient, user2, approveAmount);
 
         assertTrue(success);
         assertEq(token.balanceOf(user2), approveAmount);
-        assertEq(token.balanceOf(owner), INITIAL_SUPPLY - approveAmount);
-        assertEq(token.allowance(owner, user1), 0);
+        assertEq(token.balanceOf(initialRecipient), INITIAL_SUPPLY - approveAmount);
+        assertEq(token.allowance(initialRecipient, user1), 0);
     }
 
     function testTransferFromInsufficientAllowance() public {
         // Allowlist user1 so they can attempt transfer
-        vm.prank(owner);
+        vm.prank(allowlistAdmin);
         token.setSenderAllowed(user1, true);
 
         vm.prank(user1);
         vm.expectRevert();
-        token.transferFrom(owner, user2, 1000);
+        token.transferFrom(initialRecipient, user2, 1000);
     }
 
     // ERC20Permit functionality tests
@@ -139,16 +153,16 @@ contract ShoTokenL1Test is Test {
         uint256 privateKey = 0x1234567890123456789012345678901234567890123456789012345678901234;
         address signer = vm.addr(privateKey);
 
-        // Create a new token instance with the signer as the initial recipient
+        // Create a new token instance with different addresses for each role
         ShoTokenL1 impl = new ShoTokenL1();
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            signer,
-            signer,
-            signer,
-            signer,
-            signer,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            signer, // signer is the initial recipient for permit tests
             "Test SHO Token",
             "TSHO",
             emptyAllowlist
@@ -191,11 +205,11 @@ contract ShoTokenL1Test is Test {
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            signer,
-            signer,
-            signer,
-            signer,
-            signer,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            signer, // signer is the initial recipient for permit tests
             "Test SHO Token",
             "TSHO",
             emptyAllowlist
@@ -233,11 +247,11 @@ contract ShoTokenL1Test is Test {
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            signer,
-            signer,
-            signer,
-            signer,
-            signer,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            signer, // signer is the initial recipient for permit tests
             "Test SHO Token",
             "TSHO",
             emptyAllowlist
@@ -276,11 +290,11 @@ contract ShoTokenL1Test is Test {
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            signer,
-            signer,
-            signer,
-            signer,
-            signer,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            signer, // signer is the initial recipient for permit tests
             "Test SHO Token",
             "TSHO",
             emptyAllowlist
