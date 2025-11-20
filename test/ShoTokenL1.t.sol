@@ -8,14 +8,14 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 
 contract ShoTokenL1Test is Test {
     ShoTokenL1 public token;
-    
+
     // Different addresses for each role
     address public defaultAdmin = address(0x111);
     address public upgrader = address(0x222);
     address public pauser = address(0x333);
     address public allowlistAdmin = address(0x444);
     address public initialRecipient = address(0x555);
-    
+
     // Test users
     address public user1 = address(0x456);
     address public user2 = address(0x789);
@@ -30,9 +30,9 @@ contract ShoTokenL1Test is Test {
         address[] memory emptyAllowlist = new address[](0);
         bytes memory initData = abi.encodeWithSelector(
             ShoTokenL1.initialize.selector,
-            defaultAdmin,    // defaultAdmin
-            upgrader,       // upgrader
-            pauser,         // pauser
+            defaultAdmin, // defaultAdmin
+            upgrader, // upgrader
+            pauser, // pauser
             allowlistAdmin, // allowlistAdmin
             initialRecipient, // initialRecipient
             "Canonical SHO Token",
