@@ -5,7 +5,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {
     ERC20PermitUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
@@ -14,7 +13,6 @@ import {
 /// @notice Only allowlisted addresses can transfer.
 contract ShoTokenL1 is
     Initializable,
-    ERC20Upgradeable,
     ERC20PermitUpgradeable,
     PausableUpgradeable,
     AccessControlUpgradeable,
@@ -166,7 +164,7 @@ contract ShoTokenL1 is
     /* ============================================================= */
 
     /// @dev Only allowlisted senders can transfer (to anyone)
-    function _update(address from, address to, uint256 value) internal override(ERC20Upgradeable) whenNotPaused {
+    function _update(address from, address to, uint256 value) internal override whenNotPaused {
         if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
             if (!_senderAllowlisted[from]) {
                 revert SenderNotAllowlisted();
