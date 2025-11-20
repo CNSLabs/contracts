@@ -4,8 +4,8 @@
     "name": "FOO TOKEN",
     "symbol": "FOO",
     "initialSupply": 1000000000000000000000000000,
-    "proxy": "0x0000000000000000000000000000000000000000",
-    "implementation": "0x0000000000000000000000000000000000000000",
+    "proxy": "0x58C46afA58A3f1Fed69551dCc69578d6B83283c0",
+    "implementation": "0x5884b4907251302DfD068De8cc8C8A4290C91B22",
     "roles": {
       "admin": "0xa645207e14c6077d0e78788a6a52Def4c0c88288",
       "pauser": "0xa645207e14c6077d0e78788a6a52Def4c0c88288",
