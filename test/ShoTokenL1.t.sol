@@ -6,6 +6,15 @@ import "../src/ShoTokenL1.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
+// Re-declare OZ AccessControl custom error for selector-precise revert checks
+error AccessControlUnauthorizedAccount(address account, bytes32 neededRole);
+// Re-declare Pausable custom error for selector-precise revert checks
+error EnforcedPause();
+// Re-declare Initializable custom error for selector-precise revert checks
+error InvalidInitialization();
+// Local copy of ShoTokenL1 Initialized event signature for expectEmit matching
+event Initialized(address indexed admin, address indexed initialRecipient, string name, string symbol);
+
 contract ShoTokenL1Test is Test {
     ShoTokenL1 public token;
 
@@ -326,5 +335,491 @@ contract ShoTokenL1Test is Test {
         // Second permit with same signature should fail (replay attack)
         vm.expectRevert();
         permitToken.permit(signer, user1, value, deadline, v, r, s);
+    }
+
+    /* ============================================================= */
+    /* ===================== ACCESS CONTROL TESTS ================== */
+    /* ============================================================= */
+
+    function testInitialRoleAssignmentsAndAdmins() public view {
+        // Role admins are DEFAULT_ADMIN_ROLE
+        assertEq(token.getRoleAdmin(token.PAUSER_ROLE()), token.DEFAULT_ADMIN_ROLE());
+        assertEq(token.getRoleAdmin(token.ALLOWLIST_ADMIN_ROLE()), token.DEFAULT_ADMIN_ROLE());
+        assertEq(token.getRoleAdmin(token.UPGRADER_ROLE()), token.DEFAULT_ADMIN_ROLE());
+
+        // Initial role holders
+        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), defaultAdmin));
+        assertTrue(token.hasRole(token.PAUSER_ROLE(), pauser));
+        assertTrue(token.hasRole(token.PAUSER_ROLE(), defaultAdmin)); // backup grant
+        assertTrue(token.hasRole(token.ALLOWLIST_ADMIN_ROLE(), allowlistAdmin));
+        assertTrue(token.hasRole(token.ALLOWLIST_ADMIN_ROLE(), defaultAdmin)); // backup grant
+        assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
+    }
+
+    function testDefaultAdminCanGrantAndRevokePauserRole() public {
+        bytes32 PAUSER = token.PAUSER_ROLE();
+
+        // Grant PAUSER_ROLE to user1
+        vm.startPrank(defaultAdmin);
+        token.grantRole(PAUSER, user1);
+        vm.stopPrank();
+        assertTrue(token.hasRole(PAUSER, user1));
+
+        // user1 can pause/unpause
+        vm.startPrank(user1);
+        token.pause();
+        token.unpause();
+        vm.stopPrank();
+
+        // Revoke and ensure no longer authorized
+        vm.startPrank(defaultAdmin);
+        token.revokeRole(PAUSER, user1);
+        vm.stopPrank();
+        assertFalse(token.hasRole(PAUSER, user1));
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, PAUSER));
+        token.pause();
+        vm.stopPrank();
+    }
+
+    function testNonAdminCannotGrantRoles() public {
+        bytes32 DEFAULT_ADMIN = token.DEFAULT_ADMIN_ROLE();
+        bytes32 PAUSER = token.PAUSER_ROLE();
+
+        // Non-admin attempting to grant PAUSER_ROLE should revert with needed DEFAULT_ADMIN_ROLE
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, DEFAULT_ADMIN));
+        token.grantRole(PAUSER, user2);
+        vm.stopPrank();
+    }
+
+    function testPauserAndDefaultAdminCanPauseUnpause() public {
+        // pauser can pause/unpause
+        vm.prank(pauser);
+        token.pause();
+        vm.prank(pauser);
+        token.unpause();
+
+        // defaultAdmin (backup PAUSER_ROLE) can pause/unpause
+        vm.prank(defaultAdmin);
+        token.pause();
+        vm.prank(defaultAdmin);
+        token.unpause();
+    }
+
+    function testNonPauserCannotPause() public {
+        bytes32 PAUSER = token.PAUSER_ROLE();
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, PAUSER));
+        token.pause();
+        vm.stopPrank();
+    }
+
+    function testAllowlistEditingAccessControlledSingle() public {
+        bytes32 ALLOWLIST = token.ALLOWLIST_ADMIN_ROLE();
+
+        // allowlistAdmin can edit
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(user1, true);
+
+        // defaultAdmin (backup allowlist admin) can edit
+        vm.prank(defaultAdmin);
+        token.setSenderAllowed(user2, true);
+
+        // others cannot
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, ALLOWLIST));
+        token.setSenderAllowed(user1, false);
+        vm.stopPrank();
+    }
+
+    function testAllowlistEditingAccessControlledBatchAndToggle() public {
+        bytes32 ALLOWLIST = token.ALLOWLIST_ADMIN_ROLE();
+        address[] memory accounts = new address[](2);
+        accounts[0] = user1;
+        accounts[1] = user2;
+
+        // allowlistAdmin can batch edit
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowedBatch(accounts, true);
+
+        // defaultAdmin can toggle allowlist
+        vm.prank(defaultAdmin);
+        token.setSenderAllowlistEnabled(false);
+
+        // others cannot batch edit or toggle
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, ALLOWLIST));
+        token.setSenderAllowedBatch(accounts, false);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user2, ALLOWLIST));
+        token.setSenderAllowlistEnabled(true);
+        vm.stopPrank();
+    }
+
+    function testAdminCanGrantAndRevokeAllowlistAdminRole() public {
+        bytes32 ALLOWLIST = token.ALLOWLIST_ADMIN_ROLE();
+
+        // Grant ALLOWLIST_ADMIN_ROLE to user1
+        vm.startPrank(defaultAdmin);
+        token.grantRole(ALLOWLIST, user1);
+        vm.stopPrank();
+        assertTrue(token.hasRole(ALLOWLIST, user1));
+
+        // user1 can now toggle allowlist
+        vm.startPrank(user1);
+        token.setSenderAllowlistEnabled(true);
+        vm.stopPrank();
+
+        // Revoke role and verify user1 loses permission
+        vm.startPrank(defaultAdmin);
+        token.revokeRole(ALLOWLIST, user1);
+        vm.stopPrank();
+        assertFalse(token.hasRole(ALLOWLIST, user1));
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, ALLOWLIST));
+        token.setSenderAllowed(user2, true);
+        vm.stopPrank();
+    }
+
+    /* ============================================================= */
+    /* =================== INIT AND DEFAULTS TESTS ================= */
+    /* ============================================================= */
+
+    function testInitializeZeroDefaultAdmin() public {
+        ShoTokenL1 impl = new ShoTokenL1();
+        address[] memory empty = new address[](0);
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            address(0), // defaultAdmin zero
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            initialRecipient,
+            "Canonical SHO Token",
+            "SHO",
+            empty
+        );
+        vm.expectRevert(ShoTokenL1.InvalidDefaultAdmin.selector);
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    function testInitializeZeroUpgrader() public {
+        ShoTokenL1 impl = new ShoTokenL1();
+        address[] memory empty = new address[](0);
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            defaultAdmin,
+            address(0), // upgrader zero
+            pauser,
+            allowlistAdmin,
+            initialRecipient,
+            "Canonical SHO Token",
+            "SHO",
+            empty
+        );
+        vm.expectRevert(ShoTokenL1.InvalidUpgrader.selector);
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    function testInitializeZeroPauser() public {
+        ShoTokenL1 impl = new ShoTokenL1();
+        address[] memory empty = new address[](0);
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            defaultAdmin,
+            upgrader,
+            address(0), // pauser zero
+            allowlistAdmin,
+            initialRecipient,
+            "Canonical SHO Token",
+            "SHO",
+            empty
+        );
+        vm.expectRevert(ShoTokenL1.InvalidPauser.selector);
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    function testInitializeZeroAllowlistAdmin() public {
+        ShoTokenL1 impl = new ShoTokenL1();
+        address[] memory empty = new address[](0);
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            address(0), // allowlist admin zero
+            initialRecipient,
+            "Canonical SHO Token",
+            "SHO",
+            empty
+        );
+        vm.expectRevert(ShoTokenL1.InvalidAllowlistAdmin.selector);
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    function testReinitializeReverts() public {
+        // Attempt to initialize again should revert with InvalidInitialization
+        address[] memory empty = new address[](0);
+        vm.startPrank(defaultAdmin);
+        vm.expectRevert(InvalidInitialization.selector);
+        token.initialize(
+            defaultAdmin, upgrader, pauser, allowlistAdmin, initialRecipient, "Canonical SHO Token", "SHO", empty
+        );
+        vm.stopPrank();
+    }
+
+    function testInitializedEventEmittedOnDeploy() public {
+        ShoTokenL1 impl = new ShoTokenL1();
+        address[] memory empty = new address[](0);
+
+        // Expect the ShoTokenL1 Initialized event (not the OZ Initializable one)
+        vm.expectEmit(true, true, true, true);
+        emit Initialized(defaultAdmin, initialRecipient, "Canonical SHO Token", "SHO");
+
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            initialRecipient,
+            "Canonical SHO Token",
+            "SHO",
+            empty
+        );
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    function testDefaultAllowlistDefaults() public view {
+        // Contract itself and default admin should be allowlisted by default; allowlist enabled by default
+        assertTrue(token.senderAllowlistEnabled());
+        assertTrue(token.isSenderAllowlisted(address(token)));
+        assertTrue(token.isSenderAllowlisted(defaultAdmin));
+    }
+
+    /* ============================================================= */
+    /* ===================== PAUSABLE BEHAVIOR ===================== */
+    /* ============================================================= */
+
+    function testTransfersRevertWithEnforcedPauseApprovePermitSucceed() public {
+        // Make from and spender allowlisted to avoid allowlist errors masking pause errors
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(initialRecipient, true);
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(user1, true);
+
+        // Pause
+        vm.prank(pauser);
+        token.pause();
+
+        // transfer reverts with EnforcedPause
+        vm.startPrank(initialRecipient);
+        vm.expectRevert(EnforcedPause.selector);
+        token.transfer(user1, 1 ether);
+        vm.stopPrank();
+
+        // Approve still succeeds while paused
+        vm.prank(initialRecipient);
+        assertTrue(token.approve(user1, 2 ether));
+
+        // transferFrom reverts with EnforcedPause even with allowance
+        vm.startPrank(user1);
+        vm.expectRevert(EnforcedPause.selector);
+        token.transferFrom(initialRecipient, user2, 1 ether);
+        vm.stopPrank();
+
+        // Permit still succeeds while paused: deploy fresh token for clean signer setup, pause, then permit
+        ShoTokenL1 impl = new ShoTokenL1();
+        address[] memory emptyAllowlist = new address[](0);
+        uint256 privateKey = 0xabc;
+        address signer = vm.addr(privateKey);
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            defaultAdmin,
+            upgrader,
+            pauser,
+            allowlistAdmin,
+            signer,
+            "Paused Permit",
+            "PP",
+            emptyAllowlist
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
+        ShoTokenL1 pausedToken = ShoTokenL1(address(proxy));
+        vm.prank(pauser);
+        pausedToken.pause();
+
+        uint256 value = 5 ether;
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 nonce = pausedToken.nonces(signer);
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
+                signer,
+                user1,
+                value,
+                nonce,
+                deadline
+            )
+        );
+        bytes32 hash = MessageHashUtils.toTypedDataHash(pausedToken.DOMAIN_SEPARATOR(), structHash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
+        pausedToken.permit(signer, user1, value, deadline, v, r, s);
+        assertEq(pausedToken.allowance(signer, user1), value);
+    }
+
+    /* ============================================================= */
+    /* ================= ALLOWLIST SEMANTICS & LIMITS ============== */
+    /* ============================================================= */
+
+    function testSenderNotAllowlistedRevertsSpecific() public {
+        // initialRecipient is not allowlisted by default; allowlist enabled by default
+        vm.startPrank(initialRecipient);
+        vm.expectRevert(ShoTokenL1.SenderNotAllowlisted.selector);
+        token.transfer(user1, 1);
+        vm.stopPrank();
+    }
+
+    function testAllowlistToggleAffectsTransfers() public {
+        // Disable allowlist, transfer should succeed even if sender not allowlisted
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowlistEnabled(false);
+        vm.prank(initialRecipient);
+        token.transfer(user1, 1 ether);
+        assertEq(token.balanceOf(user1), 1 ether);
+
+        // Re-enable and ensure non-allowlisted sender reverts
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowlistEnabled(true);
+        vm.startPrank(initialRecipient);
+        vm.expectRevert(ShoTokenL1.SenderNotAllowlisted.selector);
+        token.transfer(user1, 1);
+        vm.stopPrank();
+    }
+
+    function testSetSenderAllowedZeroAddressReverts() public {
+        vm.startPrank(allowlistAdmin);
+        vm.expectRevert(ShoTokenL1.ZeroAddress.selector);
+        token.setSenderAllowed(address(0), true);
+        vm.stopPrank();
+    }
+
+    function testSetSenderAllowedBatchEmptyReverts() public {
+        address[] memory empty = new address[](0);
+        vm.startPrank(allowlistAdmin);
+        vm.expectRevert(ShoTokenL1.EmptyBatch.selector);
+        token.setSenderAllowedBatch(empty, true);
+        vm.stopPrank();
+    }
+
+    function testSetSenderAllowedBatchTooLargeReverts() public {
+        uint256 size = token.MAX_BATCH_SIZE() + 1;
+        address[] memory big = new address[](size);
+        for (uint256 i; i < size; ++i) {
+            big[i] = address(uint160(i + 1));
+        }
+        vm.startPrank(allowlistAdmin);
+        vm.expectRevert(ShoTokenL1.BatchTooLarge.selector);
+        token.setSenderAllowedBatch(big, true);
+        vm.stopPrank();
+    }
+
+    function testSetSenderAllowedBatchWithZeroAddressReverts() public {
+        address[] memory accounts = new address[](3);
+        accounts[0] = user1;
+        accounts[1] = address(0);
+        accounts[2] = user2;
+        vm.startPrank(allowlistAdmin);
+        vm.expectRevert(ShoTokenL1.ZeroAddress.selector);
+        token.setSenderAllowedBatch(accounts, true);
+        vm.stopPrank();
+    }
+
+    function testBatchEventsEmitted() public {
+        address[] memory accounts = new address[](2);
+        accounts[0] = user1;
+        accounts[1] = user2;
+
+        // Expect per-item updates and a final batch update
+        vm.expectEmit(true, true, true, true);
+        emit ShoTokenL1.SenderAllowlistUpdated(user1, true);
+        vm.expectEmit(true, true, true, true);
+        emit ShoTokenL1.SenderAllowlistUpdated(user2, true);
+        vm.expectEmit(true, true, true, true);
+        emit ShoTokenL1.SenderAllowlistBatchUpdated(accounts, true);
+
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowedBatch(accounts, true);
+    }
+
+    function testToggleEventEmitted() public {
+        vm.expectEmit(true, true, true, true);
+        emit ShoTokenL1.SenderAllowlistEnabledUpdated(false);
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowlistEnabled(false);
+    }
+
+    /* ============================================================= */
+    /* ================= TRANSFER FROM EDGE CASES ================== */
+    /* ============================================================= */
+
+    function testSpenderAllowlistedOwnerNot_reverts() public {
+        // Allowlist spender only
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(user1, true);
+        // Approve
+        vm.prank(initialRecipient);
+        token.approve(user1, 1 ether);
+        // TransferFrom should revert because from is not allowlisted
+        vm.startPrank(user1);
+        vm.expectRevert(ShoTokenL1.SenderNotAllowlisted.selector);
+        token.transferFrom(initialRecipient, user2, 1 ether);
+        vm.stopPrank();
+    }
+
+    function testOwnerAllowlistedSpenderNot_succeeds() public {
+        // Allowlist owner only
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowed(initialRecipient, true);
+        // Approve
+        vm.prank(initialRecipient);
+        token.approve(user1, 1 ether);
+        // TransferFrom should succeed because allowlist checks the from
+        vm.prank(user1);
+        token.transferFrom(initialRecipient, user2, 1 ether);
+        assertEq(token.balanceOf(user2), 1 ether);
+    }
+
+    function testTransferFromBothNotAllowlisted_succeedsWhenAllowlistDisabled() public {
+        // Disable allowlist
+        vm.prank(allowlistAdmin);
+        token.setSenderAllowlistEnabled(false);
+        // Approve
+        vm.prank(initialRecipient);
+        token.approve(user1, 1 ether);
+        // TransferFrom should succeed
+        vm.prank(user1);
+        token.transferFrom(initialRecipient, user2, 1 ether);
+        assertEq(token.balanceOf(user2), 1 ether);
+    }
+
+    /* ============================================================= */
+    /* ===================== UPGRADE AUTH CHECKS =================== */
+    /* ============================================================= */
+
+    function testNonUpgraderCannotUpgrade() public {
+        // Use any address as new implementation; authorization check happens first
+        address newImpl = address(new ShoTokenL1());
+        bytes32 UPGRADER = token.UPGRADER_ROLE();
+
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, UPGRADER));
+        token.upgradeToAndCall(newImpl, "");
+        vm.stopPrank();
     }
 }
