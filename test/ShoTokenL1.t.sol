@@ -81,7 +81,7 @@ contract ShoTokenL1Test is Test {
 
         // Allowlist initialRecipient so they can transfer
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(initialRecipient, true);
+        token.setTransferFromAllowed(initialRecipient, true);
 
         vm.prank(initialRecipient);
         bool success = token.transfer(user1, transferAmount);
@@ -120,9 +120,9 @@ contract ShoTokenL1Test is Test {
 
         // Allowlist both initialRecipient and user1 so they can transfer
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(initialRecipient, true);
+        token.setTransferFromAllowed(initialRecipient, true);
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(user1, true);
+        token.setTransferFromAllowed(user1, true);
 
         // Initial recipient approves user1 to spend tokens
         vm.prank(initialRecipient);
@@ -141,7 +141,7 @@ contract ShoTokenL1Test is Test {
     function testTransferFromInsufficientAllowance() public {
         // Allowlist user1 so they can attempt transfer
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(user1, true);
+        token.setTransferFromAllowed(user1, true);
 
         vm.prank(user1);
         vm.expectRevert();

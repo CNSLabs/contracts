@@ -200,7 +200,7 @@ contract DeployShoTokenL1 is BaseScript {
         console.log("Name:", tokenName);
         console.log("Symbol:", tokenSymbol);
         console.log("Decimals:", token.decimals());
-        console.log("Allowlist Enabled:", token.senderAllowlistEnabled());
+        console.log("Allowlist Enabled:", token.transferFromAllowlistEnabled());
 
         console.log("\n=== Access Control (Role Separation) ===");
         console.log("Default Admin: Controls role management");

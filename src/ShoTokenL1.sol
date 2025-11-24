@@ -28,23 +28,23 @@ contract ShoTokenL1 is
     uint256 public constant MAX_BATCH_SIZE = 200;
 
     // ─────────────────────────────────────────────────────── State
-    mapping(address => bool) private _senderAllowlisted;
-    bool private _senderAllowlistEnabled;
+    mapping(address => bool) private _transferFromAllowlisted;
+    bool private _transferFromAllowlistEnabled;
 
     // ─────────────────────────────────────────────────────── Errors
     error InvalidDefaultAdmin();
     error InvalidUpgrader();
     error InvalidPauser();
     error InvalidAllowlistAdmin();
-    error SenderNotAllowlisted();
+    error TransferFromNotAllowlisted();
     error ZeroAddress();
     error EmptyBatch();
     error BatchTooLarge();
 
     // ─────────────────────────────────────────────────────── Events
-    event SenderAllowlistUpdated(address indexed account, bool allowed);
-    event SenderAllowlistBatchUpdated(address[] accounts, bool allowed);
-    event SenderAllowlistEnabledUpdated(bool enabled);
+    event TransferFromAllowlistUpdated(address indexed account, bool allowed);
+    event TransferFromAllowlistBatchUpdated(address[] accounts, bool allowed);
+    event TransferFromAllowlistEnabledUpdated(bool enabled);
     event Initialized(address indexed admin, address indexed initialRecipient, string name, string symbol);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -103,21 +103,21 @@ contract ShoTokenL1 is
         _mint(initialRecipient, INITIAL_SUPPLY);
 
         // Enable allowlist
-        _senderAllowlistEnabled = true;
+        _transferFromAllowlistEnabled = true;
 
         // Default allowlisted actors
-        _setSenderAllowlist(address(this), true); // contract itself
-        _setSenderAllowlist(defaultAdmin_, true); // admin
+        _setTransferFromAllowlist(address(this), true); // contract itself
+        _setTransferFromAllowlist(defaultAdmin_, true); // admin
 
         // If initialRecipient differs from defaultAdmin, add them to allowlist
         // (defaultAdmin is already allowlisted above)
         if (initialRecipient != defaultAdmin_) {
-            _setSenderAllowlist(initialRecipient, true);
+            _setTransferFromAllowlist(initialRecipient, true);
         }
 
         // Optional: pre-allowlist others
         if (initialAllowlist_.length > 0) {
-            _setBatchSenderAllowlist(initialAllowlist_, true);
+            _setBatchTransferFromAllowlist(initialAllowlist_, true);
         }
 
         emit Initialized(defaultAdmin_, initialRecipient, name_, symbol_);
@@ -127,12 +127,12 @@ contract ShoTokenL1 is
     /* =========================== VIEWS =========================== */
     /* ============================================================= */
 
-    function isSenderAllowlisted(address account) external view returns (bool) {
-        return _senderAllowlisted[account];
+    function isTransferFromAllowlisted(address account) external view returns (bool) {
+        return _transferFromAllowlisted[account];
     }
 
-    function senderAllowlistEnabled() external view returns (bool) {
-        return _senderAllowlistEnabled;
+    function transferFromAllowlistEnabled() external view returns (bool) {
+        return _transferFromAllowlistEnabled;
     }
 
     /* ============================================================= */
@@ -151,29 +151,32 @@ contract ShoTokenL1 is
     /* ====================== ALLOWLIST ADMIN ===================== */
     /* ============================================================= */
 
-    function setSenderAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+    function setTransferFromAllowed(address account, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
         if (account == address(0)) revert ZeroAddress();
-        _setSenderAllowlist(account, allowed);
+        _setTransferFromAllowlist(account, allowed);
     }
 
-    function setSenderAllowedBatch(address[] calldata accounts, bool allowed) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        _setBatchSenderAllowlist(accounts, allowed);
+    function setTransferFromAllowedBatch(address[] calldata accounts, bool allowed)
+        external
+        onlyRole(ALLOWLIST_ADMIN_ROLE)
+    {
+        _setBatchTransferFromAllowlist(accounts, allowed);
     }
 
-    function setSenderAllowlistEnabled(bool enabled) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
-        _senderAllowlistEnabled = enabled;
-        emit SenderAllowlistEnabledUpdated(enabled);
+    function setTransferFromAllowlistEnabled(bool enabled) external onlyRole(ALLOWLIST_ADMIN_ROLE) {
+        _transferFromAllowlistEnabled = enabled;
+        emit TransferFromAllowlistEnabledUpdated(enabled);
     }
 
     /* ============================================================= */
     /* ======================= TRANSFER HOOK ====================== */
     /* ============================================================= */
 
-    /// @dev Only allowlisted senders can transfer (to anyone)
+    /// @dev Only allowlisted transferFrom addresses can transfer (to anyone)
     function _update(address from, address to, uint256 value) internal override whenNotPaused {
-        if (_senderAllowlistEnabled && from != address(0) && to != address(0)) {
-            if (!_senderAllowlisted[from]) {
-                revert SenderNotAllowlisted();
+        if (_transferFromAllowlistEnabled && from != address(0) && to != address(0)) {
+            if (!_transferFromAllowlisted[from]) {
+                revert TransferFromNotAllowlisted();
             }
         }
         super._update(from, to, value);
@@ -189,20 +192,20 @@ contract ShoTokenL1 is
     /* ====================== INTERNAL HELPERS ==================== */
     /* ============================================================= */
 
-    function _setSenderAllowlist(address account, bool allowed) private {
-        _senderAllowlisted[account] = allowed;
-        emit SenderAllowlistUpdated(account, allowed);
+    function _setTransferFromAllowlist(address account, bool allowed) private {
+        _transferFromAllowlisted[account] = allowed;
+        emit TransferFromAllowlistUpdated(account, allowed);
     }
 
-    function _setBatchSenderAllowlist(address[] calldata accounts, bool allowed) private {
+    function _setBatchTransferFromAllowlist(address[] calldata accounts, bool allowed) private {
         if (accounts.length == 0) revert EmptyBatch();
         if (accounts.length > MAX_BATCH_SIZE) revert BatchTooLarge();
 
         for (uint256 i; i < accounts.length; ++i) {
             if (accounts[i] == address(0)) revert ZeroAddress();
-            _setSenderAllowlist(accounts[i], allowed);
+            _setTransferFromAllowlist(accounts[i], allowed);
         }
-        emit SenderAllowlistBatchUpdated(accounts, allowed);
+        emit TransferFromAllowlistBatchUpdated(accounts, allowed);
     }
 
     /* ============================================================= */
