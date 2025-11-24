@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity 0.8.30;
 
 import "forge-std/Script.sol";
 import "./ConfigLoader.sol";
@@ -324,62 +324,6 @@ abstract contract BaseScript is Script {
     }
 
     function _inferL1TokenFromBroadcast(uint256 l1ChainId) internal view returns (address) {
-        return _inferFromBroadcast(l1ChainId, "1_DeployShoTokenL1.s.sol", "ShoTokenL1");
-    }
-
-    function _inferL2ProxyFromBroadcast(uint256 l2ChainId) internal view returns (address) {
-        return _inferFromBroadcast(l2ChainId, "2_DeployShoTokenL2.s.sol", "ERC1967Proxy");
-    }
-
-    function _inferTimelockFromBroadcast(uint256 l2ChainId) internal view returns (address) {
-        // Try from L2 deploy script first (may deploy timelock)
-        address addr = _inferFromBroadcast(l2ChainId, "2_DeployShoTokenL2.s.sol", "TimelockController");
-        if (addr != address(0)) return addr;
-        // Also try upgrade script in case timelock was deployed there earlier
-        addr = _inferFromBroadcast(l2ChainId, "3_UpgradeShoTokenL2ToV2.s.sol", "TimelockController");
-        return addr;
-    }
-
-    // ============================================
-    // L2 Address Resolution Helpers
-    // ============================================
-
-    /**
-     * @notice Resolve L2 token proxy address from env, config, or broadcast artifacts
-     * @param cfg EnvConfig containing proxy address
-     * @return The resolved proxy address
-     */
-    function _resolveL2ProxyAddress(EnvConfig memory cfg) internal view returns (address) {
-        address fromEnv = address(0);
-        try vm.envAddress("SHO_TOKEN_L2_PROXY") returns (address a) {
-            fromEnv = a;
-        } catch {}
-        if (fromEnv != address(0)) return fromEnv;
-
-        if (cfg.l2.proxy != address(0)) {
-            return cfg.l2.proxy;
-        }
-
-        address fromArtifacts = _inferL2ProxyFromBroadcast(block.chainid);
-        return fromArtifacts;
-    }
-
-    /**
-     * @notice Resolve L2 timelock address from env, config, or broadcast artifacts
-     * @param cfg EnvConfig containing timelock address
-     * @param proxyAddress The proxy address (used to avoid false matches)
-     * @return The resolved timelock address, or 0x0 if not found
-     */
-    function _resolveL2TimelockAddress(EnvConfig memory cfg, address proxyAddress) internal view returns (address) {
-        address timelockAddress = vm.envOr("SHO_L2_TIMELOCK", cfg.l2.timelock.addr);
-        if (timelockAddress == address(0)) {
-            address inferred = _inferTimelockFromBroadcast(block.chainid);
-            if (inferred != address(0) && inferred != proxyAddress) {
-                try TimelockController(payable(inferred)).getMinDelay() returns (uint256) {
-                    timelockAddress = inferred;
-                } catch {}
-            }
-        }
-        return timelockAddress;
+        return _inferFromBroadcast(l1ChainId, "1_DeployShoTokenL1.s.sol", "ERC1967Proxy");
     }
 }

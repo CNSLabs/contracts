@@ -1,6 +1,6 @@
 # Deployment Scripts
 
-This directory contains deployment and utility scripts for the SHO token contracts.
+This directory contains deployment and utility scripts for the SHO token L1 contract.
 
 ## Quick Start
 
@@ -20,88 +20,28 @@ contract MyScript is BaseScript {
 
 ### Deployment Scripts
 
-- **`1_DeployShoTokenL1.s.sol`** - Deploy SHO Token on L1 (Ethereum)
+- **`1_DeployShoTokenL1.s.sol`** - Deploy SHO Token on L1 (Ethereum) as upgradeable UUPS contract
   ```bash
-  # New: zero-arg run() with inferred config
-  # Select env via ENV (default: dev)
-  forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
-    --rpc-url sepolia \
-    --broadcast --verify
-
-  # Sepolia testnet
+  # Deploy to Sepolia testnet
   forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
     --rpc-url sepolia \
     --broadcast \
     --verify
   
-  # Mainnet
-  forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
+  # Deploy to Mainnet
+  ENV=production forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
     --rpc-url mainnet \
     --broadcast \
     --verify \
     --slow
   ```
-
-- **`2_DeployShoTokenL2.s.sol`** - Deploy SHO Token on L2 (Linea) with proxy
-  ```bash
-  # New: zero-arg run() with inferred config
-  # Select env via ENV (default: dev)
-  forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
-    --rpc-url linea-sepolia \
-    --broadcast --verify
-
-  # Linea Sepolia testnet
-  forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
-    --rpc-url linea-sepolia \
-    --broadcast \
-    --verify
   
-  # Linea Mainnet
-  forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
-    --rpc-url linea \
-    --broadcast \
-    --verify \
-    --slow
-  ```
-  
-  > 💡 **Note:** Ensure `SHO_TOKEN_L1` is set in your `.env` file before deployment.
-  > If you encounter "Replacement transaction underpriced" errors, clear the broadcast cache:
-  > ```bash
-  > rm -rf broadcast/2_DeployShoTokenL2.s.sol/59141/
-  > ```
-
-### Upgrade Scripts
-
-- **`3_UpgradeShoTokenL2ToV2_Schedule.s.sol`** - Upgrade L2 token from V1 to V2 (adds voting)
-  ```bash
-  # Testnet
-  forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
-    --rpc-url linea-sepolia \
-    --broadcast \
-    --verify
-  
-  # Local testing
-  forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
-    --rpc-url http://localhost:8545 \
-    --broadcast
-  ```
-
-- **`4_CreateHedgeyInvestorLockup.s.sol`** - Create Hedgey investor lockup plan
-  ```bash
-  # Linea Sepolia testnet
-  forge script script/4_CreateHedgeyInvestorLockup.s.sol:CreateHedgeyInvestorLockup \
-    --rpc-url linea-sepolia \
-    --broadcast
-  ```
-  
-  > 💡 **Note:** Requires `HEDGEY_INVESTOR_LOCKUP` and other Hedgey parameters in `.env`
-
-### Utility Scripts
-
-- **`DemoV2Features.s.sol`** - Demo script showing V2 voting features
-  ```bash
-  forge script script/DemoV2Features.s.sol:DemoV2Features --rpc-url linea-sepolia
-  ```
+  > 💡 **Note:** This script deploys:
+  > 1. Implementation contract (ShoTokenL1)
+  > 2. ERC1967Proxy pointing to the implementation
+  > 3. Initializes the proxy with all roles and mints initial supply
+  > 
+  > The proxy address is the token address users interact with. The implementation can be upgraded later by authorized roles.
 
 ## BaseScript Utilities
 
@@ -227,59 +167,66 @@ contract DeployMyContract is BaseScript {
 
 ## Deployment Workflow
 
-### Full Deployment (L1 + L2)
+### Deploy L1 Token
 
-1. **Deploy L1 Token on Ethereum**
+1. **Set Environment Variables**
    ```bash
-   # Set environment variables
-   export SHO_OWNER=0xYourMultisigAddress
+   # Required
+   export PRIVATE_KEY=0xYourPrivateKey
+   export ENV=dev  # or production, alpha, alpha2
    
+   # Optional overrides (otherwise uses config/<ENV>.json)
+   export SHO_DEFAULT_ADMIN=0xYourMultisigAddress
+   export SHO_UPGRADER=0xUpgraderAddress
+   export SHO_PAUSER=0xPauserAddress
+   export SHO_ALLOWLIST_ADMIN=0xAllowlistAdminAddress
+   export SHO_INITIAL_RECIPIENT=0xRecipientAddress
+   export L1_TOKEN_NAME="SHO Token"
+   export L1_TOKEN_SYMBOL="SHO"
+   
+   # For mainnet deployments
+   export MAINNET_DEPLOYMENT_ALLOWED=true
+   ```
+
+2. **Deploy to Testnet**
+   ```bash
    # Deploy to Sepolia
    forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
      --rpc-url sepolia \
      --broadcast \
      --verify
-   
-   # Save the deployed L1 token address
-   export SHO_TOKEN_L1=0xDeployedL1Address
    ```
 
-2. **Deploy L2 Token on Linea**
+3. **Verify Deployment**
    ```bash
-   # Make sure SHO_TOKEN_L1 is set from step 1 (or in .env)
-   # Bridge address should already be in your .env file
-   
-   # Deploy to Linea Sepolia
-   forge script script/2_DeployShoTokenL2.s.sol:DeployShoTokenL2 \
-     --rpc-url linea-sepolia \
+   # Check token info
+   cast call <PROXY_ADDRESS> "name()(string)" --rpc-url sepolia
+   cast call <PROXY_ADDRESS> "symbol()(string)" --rpc-url sepolia
+   cast call <PROXY_ADDRESS> "totalSupply()(uint256)" --rpc-url sepolia
+   cast call <PROXY_ADDRESS> "balanceOf(address)(uint256)" <RECIPIENT_ADDRESS> --rpc-url sepolia
+   ```
+
+4. **Deploy to Mainnet**
+   ```bash
+   # Make sure MAINNET_DEPLOYMENT_ALLOWED=true
+   ENV=production forge script script/1_DeployShoTokenL1.s.sol:DeployShoTokenL1 \
+     --rpc-url mainnet \
      --broadcast \
-     --verify
-   
-   # Save the deployed L2 proxy address to .env
-   echo "SHO_TOKEN_L2_PROXY=<deployed_address>" >> .env
+     --verify \
+     --slow
    ```
 
-3. **Test the Deployment**
-   ```bash
-   # Add addresses to allowlist
-   cast send $SHO_TOKEN_L2_PROXY \
-     "setAllowlist(address,bool)" \
-     0xUserAddress \
-     true \
-     --private-key $PRIVATE_KEY \
-     --rpc-url linea-sepolia
-   
-   # Bridge some tokens from L1 to L2 using Linea bridge UI
-   ```
+### Post-Deployment
 
-4. **Upgrade to V2 (Optional)**
-   ```bash
-   # Upgrade to add voting capabilities
-   forge script script/3_UpgradeShoTokenL2ToV2_Schedule.s.sol:UpgradeShoTokenL2ToV2_Schedule \
-     --rpc-url linea-sepolia \
-     --broadcast \
-     --verify
-   ```
+After deployment, you'll have:
+- **Implementation Contract**: The upgradeable logic contract
+- **Proxy Contract**: The ERC1967Proxy that users interact with (this is the token address)
+- **Initial Supply**: 1B tokens minted to the initial recipient
+- **Allowlist**: Enabled by default, with contract, admin, and initial recipient allowlisted
+
+To upgrade the contract later:
+1. Deploy a new implementation contract
+2. Call `upgradeTo(newImplementation)` from an address with `UPGRADER_ROLE`
 
 ## Environment Variables
 
@@ -287,15 +234,17 @@ Required variables in `.env`:
 
 ```bash
 # Required for all scripts
-PRIVATE_KEY=0x...
-SHO_OWNER=0x...
+PRIVATE_KEY=0x...                     # Deployer private key
+ENV=dev                                # Environment: dev, alpha, alpha2, production
 
-# Required for L2 deployment
-SHO_TOKEN_L1=0x...                    # L1 token address (deploy L1 first)
-LINEA_L2_BRIDGE=0x...                 # Linea bridge address for your network
-
-# Required for upgrade scripts
-SHO_TOKEN_L2_PROXY=0x...              # L2 proxy address (after L2 deployment)
+# Optional: Override config values (otherwise uses config/<ENV>.json)
+SHO_DEFAULT_ADMIN=0x...               # DEFAULT_ADMIN_ROLE address
+SHO_UPGRADER=0x...                    # UPGRADER_ROLE address
+SHO_PAUSER=0x...                      # PAUSER_ROLE address
+SHO_ALLOWLIST_ADMIN=0x...             # ALLOWLIST_ADMIN_ROLE address
+SHO_INITIAL_RECIPIENT=0x...           # Receives initial 1B token supply
+L1_TOKEN_NAME="SHO Token"             # Token name
+L1_TOKEN_SYMBOL="SHO"                 # Token symbol
 
 # Required for mainnet deployments
 MAINNET_DEPLOYMENT_ALLOWED=true
@@ -303,13 +252,31 @@ MAINNET_DEPLOYMENT_ALLOWED=true
 # Network RPC URLs (used by foundry.toml aliases)
 ETH_MAINNET_RPC_URL=https://...
 ETH_SEPOLIA_RPC_URL=https://...
-LINEA_MAINNET_RPC_URL=https://...
-LINEA_SEPOLIA_RPC_URL=https://...
 
 # Verification API keys
 ETHERSCAN_API_KEY=...
-LINEA_ETHERSCAN_API_KEY=...
 ```
+
+### Config Files
+
+Configuration is loaded from `config/<ENV>.json` files. The structure should include:
+
+```json
+{
+  "l1": {
+    "name": "SHO Token",
+    "symbol": "SHO",
+    "roles": {
+      "admin": "0x...",
+      "upgrader": "0x...",
+      "pauser": "0x...",
+      "allowlistAdmin": "0x..."
+    }
+  }
+}
+```
+
+Environment variables take precedence over config file values.
 
 ## Network Aliases
 
@@ -319,8 +286,6 @@ Defined in `foundry.toml`:
 # Use short names instead of full URLs
 forge script ... --rpc-url mainnet --broadcast
 forge script ... --rpc-url sepolia --broadcast
-forge script ... --rpc-url linea --broadcast
-forge script ... --rpc-url linea-sepolia --broadcast
 forge script ... --rpc-url local --broadcast
 ```
 
@@ -346,9 +311,32 @@ forge script script/YourScript.s.sol:YourScript \
 6. ✅ **Add usage docs** in contract comments
 7. ✅ **Use mainnet confirmation** for production deployments
 
+## Contract Details
+
+### ShoTokenL1 Features
+
+- **Upgradeable**: Uses UUPS (Universal Upgradeable Proxy Standard) pattern
+- **ERC20Permit**: Supports gasless approvals via EIP-2612
+- **Allowlist Control**: Only allowlisted addresses can transfer tokens
+- **Pausable**: Can be paused by authorized roles in emergencies
+- **Role-Based Access Control**: Separate roles for admin, upgrader, pauser, and allowlist admin
+- **Initial Supply**: 1 billion tokens minted to initial recipient on deployment
+
+### Upgrade Process
+
+The contract is upgradeable via UUPS pattern:
+
+1. Deploy new implementation contract
+2. Call `upgradeTo(newImplementation)` from address with `UPGRADER_ROLE`
+3. Storage is preserved in the proxy
+4. New logic takes effect immediately
+
+> ⚠️ **Important**: Always verify storage layout compatibility before upgrading!
+
 ## See Also
 
-- [`DEPLOYMENT_BEST_PRACTICES.md`](../DEPLOYMENT_BEST_PRACTICES.md) - Comprehensive deployment guide
 - [`BaseScript.sol`](./BaseScript.sol) - Source code for base script utilities
+- [`ConfigLoader.sol`](./ConfigLoader.sol) - Configuration loading utilities
 - [Foundry Book - Scripts](https://book.getfoundry.sh/tutorials/solidity-scripting) - Official Foundry scripting guide
+- [OpenZeppelin UUPS Docs](https://docs.openzeppelin.com/contracts/4.x/api/proxy#UUPSUpgradeable) - UUPS upgradeable pattern documentation
 

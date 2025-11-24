@@ -4,21 +4,12 @@
     "name": "Shodai Token",
     "symbol": "SHO",
     "initialSupply": 1000000000000000000000000000,
-    "roles": {
-      "admin": ""
-    }
-  },
-  "l2": {
-    "name": "Shodai Token",
-    "symbol": "SHO",
-    "decimals": 18,
-    "bridge": "0x353012dc4a9A6cF55c941bADC267f82004A8ceB9",
-    "l1Token": "",
-    "proxy": "",
+    "proxy": "0x0000000000000000000000000000000000000000",
+    "implementation": "0x0000000000000000000000000000000000000000",
     "roles": {
       "admin": "",
-      "allowlistAdmin": "",
-      "pauser": ""
+      "pauser": "",
+      "allowlistAdmin": ""
     },
     "timelock": {
       "minDelay": 172800,
@@ -28,17 +19,4 @@
       "addr": ""
     }
   }
-  ,
-  "hedgey": {
-    "investorLockup": "0xA600EC7Db69DFCD21f19face5B209a55EAb7a7C0",
-    "batchPlanner": "0x3466EB008EDD8d5052446293D1a7D212cb65C646",
-    "tokenVestingPlans": "0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C",
-    "vestingAdmin": "0x0000000000000000000000000000000000000000",
-    "adminTransferOBO": 0,
-    "useInvestorLockup": 0,
-    "period": 1,
-    "plans": []
-  }
 }
-
-

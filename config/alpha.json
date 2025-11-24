@@ -4,41 +4,19 @@
     "name": "Shodai Token",
     "symbol": "SHO",
     "initialSupply": 1000000000000000000000000000,
+    "proxy": "0x0000000000000000000000000000000000000000",
+    "implementation": "0x0000000000000000000000000000000000000000",
     "roles": {
-      "admin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d"
-    }
-  },
-  "l2": {
-    "name": "Shodai Token",
-    "symbol": "SHO",
-    "decimals": 18,
-    "bridge": "0x93DcAdf238932e6e6a85852caC89cBd71798F463",
-    "l1Token": "0xCFE498a38274dA49B31b79c0aE82CA0E5157d989",
-    "addr": "0xdcFd8285339F0F2dFaBCEbfddbd9Da77c9532247",
-    "proxy": "0x0689441307692ED00ffCd8eCB8385B8e10D43277",
-    "roles": {
-      "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
-      "allowlistAdmin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
-      "pauser": "0xD7C8FD8F38683110B15771392Eb74209c15495ac"
+      "admin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d",
+      "pauser": "0x17785585c05f8FEb292864ac22eD7c9D118B601d",
+      "allowlistAdmin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d"
     },
     "timelock": {
-      "minDelay": 300,
-      "admin": "0xD7C8FD8F38683110B15771392Eb74209c15495ac",
-      "proposers": ["0xD7C8FD8F38683110B15771392Eb74209c15495ac"],
+      "minDelay": 3600,
+      "admin": "0x17785585c05f8FEb292864ac22eD7c9D118B601d",
+      "proposers": ["0x17785585c05f8FEb292864ac22eD7c9D118B601d"],
       "executors": ["0x0000000000000000000000000000000000000000"],
-      "addr": "0xbc92828dB07ddd279D953Dd6AD26D71CB9d9467c"
+      "addr": ""
     }
-  },
-  "hedgey": {
-    "investorLockup": "0xaA8d13b9c2A9368aa108dde629237EF719eEC14e",
-    "batchPlanner": "0x642581ed679E77e0D9AebFdBCA2a0B4ab194532c",
-    "tokenVestingPlans": "0x23103cc8D394Cd4440711F2d2e436FA46d90EF55",
-    "vestingAdmin": "0x0000000000000000000000000000000000000000",
-    "adminTransferOBO": 0,
-    "useInvestorLockup": 0,
-    "period": 1,
-    "plans": []
   }
 }
-
-

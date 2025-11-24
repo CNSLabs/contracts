@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity 0.8.30;
 
 import "./BaseScript.sol";
 import "./ConfigLoader.sol";
 import "../src/ShoTokenL1.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {StdStyle} from "forge-std/StdStyle.sol";
 
 /**
  * @title DeployShoTokenL1
- * @notice Deploys SHO Token on L1 (Ethereum) with fixed supply
- * @dev This is a simple ERC20 with ERC20Permit, designed to be bridged to L2
+ * @notice Deploys SHO Token on L1 (Ethereum) as upgradeable UUPS contract
+ * @dev This script deploys ShoTokenL1 with:
+ *      - Role separation (defaultAdmin, upgrader via timelock, pauser, allowlist admin)
+ *      - Pausability and allowlist controls
+ *      - UUPS upgradeability
+ *      - Automatic TimelockController deployment with UPGRADER_ROLE
  *
  * Usage:
  *   # Default (dev): infer config from ENV
@@ -30,9 +36,26 @@ import {StdStyle} from "forge-std/StdStyle.sol";
  *   - PRIVATE_KEY: Deployer private key (from your shell env)
  *   - ENV: Select public config JSON
  *   - MAINNET_DEPLOYMENT_ALLOWED: Set to true for mainnet deployments
+ *
+ * Optional Configuration (with defaults from config):
+ *   - SHO_DEFAULT_ADMIN: Address for DEFAULT_ADMIN_ROLE
+ *   - SHO_PAUSER: Emergency pause address
+ *   - SHO_ALLOWLIST_ADMIN: Allowlist manager address
+ *   - SHO_INITIAL_RECIPIENT: Receives initial 1B token supply
+ *   - SHO_TIMELOCK_PROPOSER: Override timelock proposer address
+ *   - L1_TOKEN_NAME: Token name
+ *   - L1_TOKEN_SYMBOL: Token symbol
+ *
+ * Notes:
+ *   - TimelockController is automatically deployed and granted UPGRADER_ROLE
+ *   - All setup is atomic - single transaction with no intermediate steps
+ *   - No private keys required for DEFAULT_ADMIN role (supports multisig)
  */
 contract DeployShoTokenL1 is BaseScript {
     ShoTokenL1 public token;
+    ERC1967Proxy public proxy;
+    ShoTokenL1 public implementation;
+    TimelockController public timelock;
 
     // Convenience no-arg entrypoint: infer config path
     function run() external {
@@ -44,64 +67,169 @@ contract DeployShoTokenL1 is BaseScript {
         // Load token parameters: env overrides take precedence, fall back to config
         string memory tokenName = vm.envOr("L1_TOKEN_NAME", cfg.l1.name);
         string memory tokenSymbol = vm.envOr("L1_TOKEN_SYMBOL", cfg.l1.symbol);
-        uint256 initialSupply = vm.envOr("L1_INITIAL_SUPPLY", cfg.l1.initialSupply);
 
         // Get deployer credentials
         (uint256 deployerPrivateKey, address deployer) = _getDeployer();
 
-        // Owner comes from config (admin field)
-        address admin = cfg.l1.roles.admin;
-        admin = vm.envOr("SHO_DEFAULT_ADMIN", admin);
-        _requireNonZeroAddress(admin, "Admin");
+        // Get roles from config with env overrides
+        address defaultAdmin = vm.envOr("SHO_DEFAULT_ADMIN", cfg.l1.roles.admin);
+        address pauser = vm.envOr("SHO_PAUSER", cfg.l1.roles.pauser);
+        address allowlistAdmin = vm.envOr("SHO_ALLOWLIST_ADMIN", cfg.l1.roles.allowlistAdmin);
+        address initialRecipient = vm.envOr("SHO_INITIAL_RECIPIENT", defaultAdmin);
+
+        // Validate addresses
+        _requireNonZeroAddress(defaultAdmin, "DefaultAdmin");
+        _requireNonZeroAddress(pauser, "Pauser");
+        _requireNonZeroAddress(allowlistAdmin, "AllowlistAdmin");
+        _requireNonZeroAddress(initialRecipient, "InitialRecipient");
 
         // Log deployment info
-        _logDeploymentHeader("Deploying SHO Token L1");
+        _logDeploymentHeader("Deploying SHO Token L1 (Upgradeable)");
         console.log("Token Name:", tokenName);
         console.log("Token Symbol:", tokenSymbol);
-        console.log("Initial Supply:", initialSupply / 10 ** 18, "tokens");
-        console.log("Supply Recipient (Owner):", admin);
+        console.log("Initial Supply:", 1_000_000_000, "tokens (1B)");
+        console.log("Initial Recipient:", initialRecipient);
+        console.log("Default Admin:", defaultAdmin);
+        console.log("Pauser:", pauser);
+        console.log("Allowlist Admin:", allowlistAdmin);
         console.log("Deployer:", deployer);
 
         // Safety check for mainnet
         _requireMainnetConfirmation();
 
-        // Deploy L1 token
+        // Deploy TimelockController first
+        console.log("\n=== Timelock Deployment ===");
+        uint256 minDelay = cfg.l1.timelock.minDelay;
+        address tlAdmin = cfg.l1.timelock.admin;
+        address[] memory proposers = cfg.l1.timelock.proposers;
+        address proposerOverride = vm.envOr("SHO_TIMELOCK_PROPOSER", address(0));
+        if (proposerOverride != address(0)) {
+            proposers = new address[](1);
+            proposers[0] = proposerOverride;
+        }
+        address[] memory executors = cfg.l1.timelock.executors;
+
+        require(minDelay > 0, "timelock minDelay=0");
+        require(tlAdmin != address(0), "timelock admin=0");
+
+        vm.startBroadcast(deployerPrivateKey);
+        timelock = new TimelockController(minDelay, proposers, executors, tlAdmin);
+        vm.stopBroadcast();
+        console.log("Deployed TimelockController:", address(timelock));
+        console.log("Min delay:", timelock.getMinDelay());
+
+        // Deploy upgradeable token (implementation + proxy)
         vm.startBroadcast(deployerPrivateKey);
 
-        token = new ShoTokenL1(tokenName, tokenSymbol, initialSupply, admin);
+        // 1. Deploy implementation
+        console.log("\n1. Deploying ShoTokenL1 implementation...");
+        implementation = new ShoTokenL1();
+        console.log("   Implementation:", address(implementation));
+
+        // 2. Prepare initialization data
+        // Contract will automatically add initialRecipient to allowlist if different from defaultAdmin
+        address[] memory initialAllowlist = new address[](0);
+
+        bytes memory initData = abi.encodeWithSelector(
+            ShoTokenL1.initialize.selector,
+            defaultAdmin,
+            address(timelock),
+            pauser,
+            allowlistAdmin,
+            initialRecipient,
+            tokenName,
+            tokenSymbol,
+            initialAllowlist
+        );
+
+        // 3. Deploy proxy with initialization
+        console.log("\n2. Deploying ERC1967 proxy...");
+        proxy = new ERC1967Proxy(address(implementation), initData);
+        token = ShoTokenL1(address(proxy));
+        console.log("   Proxy:", address(proxy));
+
+        // CRITICAL: Verify initialization happened successfully
+        console.log("\n3. Verifying initialization...");
+        require(
+            token.hasRole(0x0000000000000000000000000000000000000000000000000000000000000000, defaultAdmin),
+            "FATAL: Initialization failed - defaultAdmin doesn't have DEFAULT_ADMIN_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("UPGRADER_ROLE"), address(timelock)),
+            "FATAL: Initialization failed - timelock doesn't have UPGRADER_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("PAUSER_ROLE"), pauser),
+            "FATAL: Initialization failed - pauser doesn't have PAUSER_ROLE"
+        );
+        require(
+            token.hasRole(keccak256("ALLOWLIST_ADMIN_ROLE"), allowlistAdmin),
+            "FATAL: Initialization failed - allowlistAdmin doesn't have ALLOWLIST_ADMIN_ROLE"
+        );
+        console.log("   [OK] Contract initialized successfully");
+        console.log("   [OK] All roles assigned correctly");
+        console.log("   [OK] UPGRADER_ROLE granted to TimelockController");
 
         vm.stopBroadcast();
 
         // Log deployment results
-        _logDeploymentResults(admin, tokenName, tokenSymbol);
+        _logDeploymentResults(initialRecipient, tokenName, tokenSymbol);
 
-        // Log verification command
-        _logVerificationCommand(address(token), "src/ShoTokenL1.sol:ShoTokenL1");
+        // Log verification commands
+        console.log("\n=== Verification Commands ===");
+        _logVerificationCommand(address(implementation), "src/ShoTokenL1.sol:ShoTokenL1");
+        console.log("# Proxy verification (if needed):");
+        console.log("# forge verify-contract", address(proxy), "ERC1967Proxy");
     }
 
-    function _logDeploymentResults(address owner, string memory tokenName, string memory tokenSymbol) internal view {
+    function _logDeploymentResults(address recipient, string memory tokenName, string memory tokenSymbol)
+        internal
+        view
+    {
         console.log("\n=== Deployment Complete ===");
         console.log("Network:", _getNetworkName(block.chainid));
-        console.log("ShoTokenL1:", address(token));
-        console.log("Owner Balance:", token.balanceOf(owner) / 10 ** 18, "tokens");
+        console.log("Implementation:", address(implementation));
+        console.log("Proxy (Token Address):", address(token));
+        if (address(timelock) != address(0)) {
+            console.log("Timelock:", address(timelock));
+            console.log("MinDelay:", timelock.getMinDelay());
+        }
+        console.log("Recipient Balance:", token.balanceOf(recipient) / 10 ** 18, "tokens");
         console.log("Total Supply:", token.totalSupply() / 10 ** 18, "tokens");
         console.log("\n=== Token Info ===");
         console.log("Name:", tokenName);
         console.log("Symbol:", tokenSymbol);
         console.log("Decimals:", token.decimals());
+        console.log("Allowlist Enabled:", token.transferFromAllowlistEnabled());
+
+        console.log("\n=== Access Control (Role Separation) ===");
+        console.log("Default Admin: Controls role management");
+        console.log("Upgrader (via Timelock):", address(timelock));
+        console.log("  - Controls: Contract upgrades");
+        console.log("  - MinDelay:", timelock.getMinDelay(), "seconds");
+        console.log("Pauser: Controls emergency pause/unpause");
+        console.log("Allowlist Admin: Controls sender allowlist management");
 
         // Log next steps
         console.log("\n=== Next Steps ===");
-        console.log("1. Verify the contract (see command below)");
-        console.log("2. Use this L1 token address when deploying L2 token");
-        console.log("3. Bridge tokens using the Linea canonical bridge");
-        console.log("   L1 Token Address:", address(token));
+        console.log("1. Verify the implementation contract (see command above)");
+        console.log("2. Users interact with the proxy address (this is the token address)");
+        console.log("3. To upgrade: deploy new implementation and schedule via timelock");
+        console.log("   Proxy Address:", address(token));
 
         // Final prominent contract address display
         console.log("\n");
         console.log(StdStyle.green("================================================================================"));
-        console.log(StdStyle.yellow(StdStyle.bold(">>> DEPLOYED CONTRACT ADDRESS <<<")));
-        console.log(StdStyle.cyan(StdStyle.bold(vm.toString(address(token)))));
+        console.log(StdStyle.yellow(StdStyle.bold(">>> DEPLOYED CONTRACT ADDRESSES <<<")));
+        console.log(StdStyle.green("================================================================================"));
+        console.log(StdStyle.cyan(StdStyle.bold("Timelock Controller:")));
+        console.log(StdStyle.cyan(vm.toString(address(timelock))));
+        console.log("");
+        console.log(StdStyle.magenta(StdStyle.bold("ShoTokenL1 Implementation:")));
+        console.log(StdStyle.magenta(vm.toString(address(implementation))));
+        console.log("");
+        console.log(StdStyle.blue(StdStyle.bold("ShoTokenL1 Proxy (Main Contract):")));
+        console.log(StdStyle.blue(vm.toString(address(proxy))));
         console.log(StdStyle.green("================================================================================"));
     }
 }
