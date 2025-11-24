@@ -421,16 +421,16 @@ contract ShoTokenL1Test is Test {
 
         // allowlistAdmin can edit
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(user1, true);
+        token.setTransferFromAllowed(user1, true);
 
         // defaultAdmin (backup allowlist admin) can edit
         vm.prank(defaultAdmin);
-        token.setSenderAllowed(user2, true);
+        token.setTransferFromAllowed(user2, true);
 
         // others cannot
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, ALLOWLIST));
-        token.setSenderAllowed(user1, false);
+        token.setTransferFromAllowed(user1, false);
         vm.stopPrank();
     }
 
@@ -442,21 +442,21 @@ contract ShoTokenL1Test is Test {
 
         // allowlistAdmin can batch edit
         vm.prank(allowlistAdmin);
-        token.setSenderAllowedBatch(accounts, true);
+        token.setTransferFromAllowedBatch(accounts, true);
 
         // defaultAdmin can toggle allowlist
         vm.prank(defaultAdmin);
-        token.setSenderAllowlistEnabled(false);
+        token.setTransferFromAllowlistEnabled(false);
 
         // others cannot batch edit or toggle
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, ALLOWLIST));
-        token.setSenderAllowedBatch(accounts, false);
+        token.setTransferFromAllowedBatch(accounts, false);
         vm.stopPrank();
 
         vm.startPrank(user2);
         vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user2, ALLOWLIST));
-        token.setSenderAllowlistEnabled(true);
+        token.setTransferFromAllowlistEnabled(true);
         vm.stopPrank();
     }
 
@@ -471,7 +471,7 @@ contract ShoTokenL1Test is Test {
 
         // user1 can now toggle allowlist
         vm.startPrank(user1);
-        token.setSenderAllowlistEnabled(true);
+        token.setTransferFromAllowlistEnabled(true);
         vm.stopPrank();
 
         // Revoke role and verify user1 loses permission
@@ -482,7 +482,7 @@ contract ShoTokenL1Test is Test {
 
         vm.startPrank(user1);
         vm.expectRevert(abi.encodeWithSelector(AccessControlUnauthorizedAccount.selector, user1, ALLOWLIST));
-        token.setSenderAllowed(user2, true);
+        token.setTransferFromAllowed(user2, true);
         vm.stopPrank();
     }
 
@@ -597,9 +597,9 @@ contract ShoTokenL1Test is Test {
 
     function testDefaultAllowlistDefaults() public view {
         // Contract itself and default admin should be allowlisted by default; allowlist enabled by default
-        assertTrue(token.senderAllowlistEnabled());
-        assertTrue(token.isSenderAllowlisted(address(token)));
-        assertTrue(token.isSenderAllowlisted(defaultAdmin));
+        assertTrue(token.transferFromAllowlistEnabled());
+        assertTrue(token.isTransferFromAllowlisted(address(token)));
+        assertTrue(token.isTransferFromAllowlisted(defaultAdmin));
     }
 
     /* ============================================================= */
@@ -609,9 +609,9 @@ contract ShoTokenL1Test is Test {
     function testTransfersRevertWithEnforcedPauseApprovePermitSucceed() public {
         // Make from and spender allowlisted to avoid allowlist errors masking pause errors
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(initialRecipient, true);
+        token.setTransferFromAllowed(initialRecipient, true);
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(user1, true);
+        token.setTransferFromAllowed(user1, true);
 
         // Pause
         vm.prank(pauser);
@@ -678,34 +678,39 @@ contract ShoTokenL1Test is Test {
     /* ============================================================= */
 
     function testSenderNotAllowlistedRevertsSpecific() public {
-        // initialRecipient is not allowlisted by default; allowlist enabled by default
-        vm.startPrank(initialRecipient);
-        vm.expectRevert(ShoTokenL1.SenderNotAllowlisted.selector);
-        token.transfer(user1, 1);
+        // Non-allowlisted user should revert while allowlist is enabled by default
+        vm.startPrank(user1);
+        vm.expectRevert(ShoTokenL1.TransferFromNotAllowlisted.selector);
+        token.transfer(user2, 1);
         vm.stopPrank();
     }
 
     function testAllowlistToggleAffectsTransfers() public {
-        // Disable allowlist, transfer should succeed even if sender not allowlisted
-        vm.prank(allowlistAdmin);
-        token.setSenderAllowlistEnabled(false);
+        // Fund a non-allowlisted sender (user1) from an allowlisted address (initialRecipient)
         vm.prank(initialRecipient);
         token.transfer(user1, 1 ether);
         assertEq(token.balanceOf(user1), 1 ether);
 
-        // Re-enable and ensure non-allowlisted sender reverts
+        // Disable allowlist: user1 (non-allowlisted) can transfer
         vm.prank(allowlistAdmin);
-        token.setSenderAllowlistEnabled(true);
-        vm.startPrank(initialRecipient);
-        vm.expectRevert(ShoTokenL1.SenderNotAllowlisted.selector);
-        token.transfer(user1, 1);
+        token.setTransferFromAllowlistEnabled(false);
+        vm.prank(user1);
+        token.transfer(user2, 0.5 ether);
+        assertEq(token.balanceOf(user2), 0.5 ether);
+
+        // Re-enable: user1 transfers should revert
+        vm.prank(allowlistAdmin);
+        token.setTransferFromAllowlistEnabled(true);
+        vm.startPrank(user1);
+        vm.expectRevert(ShoTokenL1.TransferFromNotAllowlisted.selector);
+        token.transfer(user2, 1);
         vm.stopPrank();
     }
 
     function testSetSenderAllowedZeroAddressReverts() public {
         vm.startPrank(allowlistAdmin);
         vm.expectRevert(ShoTokenL1.ZeroAddress.selector);
-        token.setSenderAllowed(address(0), true);
+        token.setTransferFromAllowed(address(0), true);
         vm.stopPrank();
     }
 
@@ -713,7 +718,7 @@ contract ShoTokenL1Test is Test {
         address[] memory empty = new address[](0);
         vm.startPrank(allowlistAdmin);
         vm.expectRevert(ShoTokenL1.EmptyBatch.selector);
-        token.setSenderAllowedBatch(empty, true);
+        token.setTransferFromAllowedBatch(empty, true);
         vm.stopPrank();
     }
 
@@ -725,7 +730,7 @@ contract ShoTokenL1Test is Test {
         }
         vm.startPrank(allowlistAdmin);
         vm.expectRevert(ShoTokenL1.BatchTooLarge.selector);
-        token.setSenderAllowedBatch(big, true);
+        token.setTransferFromAllowedBatch(big, true);
         vm.stopPrank();
     }
 
@@ -736,7 +741,7 @@ contract ShoTokenL1Test is Test {
         accounts[2] = user2;
         vm.startPrank(allowlistAdmin);
         vm.expectRevert(ShoTokenL1.ZeroAddress.selector);
-        token.setSenderAllowedBatch(accounts, true);
+        token.setTransferFromAllowedBatch(accounts, true);
         vm.stopPrank();
     }
 
@@ -747,21 +752,21 @@ contract ShoTokenL1Test is Test {
 
         // Expect per-item updates and a final batch update
         vm.expectEmit(true, true, true, true);
-        emit ShoTokenL1.SenderAllowlistUpdated(user1, true);
+        emit ShoTokenL1.TransferFromAllowlistUpdated(user1, true);
         vm.expectEmit(true, true, true, true);
-        emit ShoTokenL1.SenderAllowlistUpdated(user2, true);
+        emit ShoTokenL1.TransferFromAllowlistUpdated(user2, true);
         vm.expectEmit(true, true, true, true);
-        emit ShoTokenL1.SenderAllowlistBatchUpdated(accounts, true);
+        emit ShoTokenL1.TransferFromAllowlistBatchUpdated(accounts, true);
 
         vm.prank(allowlistAdmin);
-        token.setSenderAllowedBatch(accounts, true);
+        token.setTransferFromAllowedBatch(accounts, true);
     }
 
     function testToggleEventEmitted() public {
         vm.expectEmit(true, true, true, true);
-        emit ShoTokenL1.SenderAllowlistEnabledUpdated(false);
+        emit ShoTokenL1.TransferFromAllowlistEnabledUpdated(false);
         vm.prank(allowlistAdmin);
-        token.setSenderAllowlistEnabled(false);
+        token.setTransferFromAllowlistEnabled(false);
     }
 
     /* ============================================================= */
@@ -771,13 +776,16 @@ contract ShoTokenL1Test is Test {
     function testSpenderAllowlistedOwnerNot_reverts() public {
         // Allowlist spender only
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(user1, true);
+        token.setTransferFromAllowed(user1, true);
+        // Ensure owner (from) is NOT allowlisted
+        vm.prank(allowlistAdmin);
+        token.setTransferFromAllowed(initialRecipient, false);
         // Approve
         vm.prank(initialRecipient);
         token.approve(user1, 1 ether);
         // TransferFrom should revert because from is not allowlisted
         vm.startPrank(user1);
-        vm.expectRevert(ShoTokenL1.SenderNotAllowlisted.selector);
+        vm.expectRevert(ShoTokenL1.TransferFromNotAllowlisted.selector);
         token.transferFrom(initialRecipient, user2, 1 ether);
         vm.stopPrank();
     }
@@ -785,7 +793,7 @@ contract ShoTokenL1Test is Test {
     function testOwnerAllowlistedSpenderNot_succeeds() public {
         // Allowlist owner only
         vm.prank(allowlistAdmin);
-        token.setSenderAllowed(initialRecipient, true);
+        token.setTransferFromAllowed(initialRecipient, true);
         // Approve
         vm.prank(initialRecipient);
         token.approve(user1, 1 ether);
@@ -798,7 +806,7 @@ contract ShoTokenL1Test is Test {
     function testTransferFromBothNotAllowlisted_succeedsWhenAllowlistDisabled() public {
         // Disable allowlist
         vm.prank(allowlistAdmin);
-        token.setSenderAllowlistEnabled(false);
+        token.setTransferFromAllowlistEnabled(false);
         // Approve
         vm.prank(initialRecipient);
         token.approve(user1, 1 ether);
