@@ -109,6 +109,12 @@ contract ShoTokenL1 is
         _setSenderAllowlist(address(this), true); // contract itself
         _setSenderAllowlist(defaultAdmin_, true); // admin
 
+        // If initialRecipient differs from defaultAdmin, add them to allowlist
+        // (defaultAdmin is already allowlisted above)
+        if (initialRecipient != defaultAdmin_) {
+            _setSenderAllowlist(initialRecipient, true);
+        }
+
         // Optional: pre-allowlist others
         if (initialAllowlist_.length > 0) {
             _setBatchSenderAllowlist(initialAllowlist_, true);
